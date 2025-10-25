@@ -1,18 +1,30 @@
-import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+import { resolve } from 'path'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-  ],
+  plugins: [vue({
+    template: {
+      compilerOptions: {
+        // 启用运行时模板编译
+        isCustomElement: (tag) => false
+      }
+    }
+  })],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    },
+      '@': resolve(__dirname, 'src'),
+      'vue': 'vue/dist/vue.esm-bundler.js'  // 添加这一行！
+    }
   },
+  define: {
+    // 启用 Vue 开发特性
+    __VUE_OPTIONS_API__: true,
+    __VUE_PROD_DEVTOOLS__: false,
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false
+  },
+  server: {
+    port: 5174,
+    host: true
+  }
 })
