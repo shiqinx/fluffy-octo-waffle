@@ -24,21 +24,23 @@ import java.util.Map;
 @Component
 public class JwtInterceptor implements HandlerInterceptor {
 
-    @Getter
-    @Setter
     @Autowired
-    private JWTTokenUtil jwtTokenUtil; // 注入新的工具类
+    private JWTTokenUtil jwtTokenUtil;
 
-    // 定义需要排除的 API 文档路径
+    // 排除路径列表
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/check",
             "/swagger-ui.html",
             "/swagger-ui/",
-            "/swagger-ui/**",  // 添加通配符模式
+            "/swagger-ui/**",
             "/swagger-resources",
             "/swagger-resources/**",
             "/v2/api-docs",
             "/v3/api-docs",
-            "/v3/api-docs/**",  // 添加通配符
+            "/v3/api-docs/**",
             "/webjars/",
             "/webjars/**",
             "/doc.html",
@@ -46,73 +48,64 @@ public class JwtInterceptor implements HandlerInterceptor {
             "/error",
             "/error/**"
     );
-    /**
-     * 改进的路径匹配方法
-     */
+
     private boolean isExcludePath(String requestURI) {
-        // 完全匹配
         if (EXCLUDE_PATHS.contains(requestURI)) {
             return true;
         }
 
-        // 前缀匹配（处理子路径）
         return EXCLUDE_PATHS.stream().anyMatch(excludePath -> {
             if (excludePath.endsWith("/")) {
-                // 对于以/结尾的路径，匹配所有子路径
                 return requestURI.startsWith(excludePath);
             } else {
-                // 对于具体路径，只匹配该路径及其直接子路径
                 return requestURI.equals(excludePath) ||
                         requestURI.startsWith(excludePath + "/");
             }
         });
     }
 
-   @Override
+    @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String requestURI = request.getRequestURI();
 
-        // 添加调试信息
-        System.out.println("JWT拦截器 - 请求路径: " + requestURI);
-
-        // 检查是否为需要排除的 API 文档路径
+        // 检查排除路径
         if (isExcludePath(requestURI)) {
-            System.out.println("JWT拦截器 - 路径已排除: " + requestURI);
-            return true; // 直接放行，不进行 JWT 验证
+            return true;
         }
-
-        System.out.println("JWT拦截器 - 进行JWT验证: " + requestURI);
 
         // 1. 从请求头提取Token
         String token = jwtTokenUtil.extractToken(request);
 
         if (token == null) {
-            System.out.println("JWT拦截器 - Token为空");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             sendErrorResponse(response, "请先登录（缺少Token）");
             return false;
         }
+
         // 2. 验证Token有效性
         if (!jwtTokenUtil.validateToken(token)) {
-            System.out.println("JWT拦截器 - Token无效");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             sendErrorResponse(response, "Token无效或已过期");
             return false;
         }
 
         // 3. 解析Token中的用户ID
-        Integer userId = jwtTokenUtil.getUserIdFromToken(token);
-        request.setAttribute("currentUserId", userId);
-        System.out.println("JWT拦截器 - 验证通过, 用户ID: " + userId);
+        try {
+            Integer userId = jwtTokenUtil.getUserIdFromToken(token);
+            request.setAttribute("currentUserId", userId);
 
-        // 检查令牌是否即将过期
-        if (jwtTokenUtil.isTokenAboutToExpire(token, 15 * 60 * 1000)) {
-            response.setHeader("X-Token-Expiring-Soon", "true");
+            // 检查令牌是否即将过期（15分钟内）
+            if (jwtTokenUtil.isTokenAboutToExpire(token, 15 * 60 * 1000)) {
+                response.setHeader("X-Token-Expiring-Soon", "true");
+            }
+
+            return true;
+        } catch (RuntimeException e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            sendErrorResponse(response, "令牌解析失败");
+            return false;
         }
-
-        return true;
     }
-
 
     private void sendErrorResponse(HttpServletResponse response, String message) throws IOException {
         response.setContentType("application/json;charset=UTF-8");

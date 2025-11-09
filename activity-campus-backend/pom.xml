@@ -176,6 +176,27 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<!-- 修正：JMeter Maven Plugin -->
+			<plugin>
+				<groupId>com.lazerycode.jmeter</groupId>
+				<artifactId>jmeter-maven-plugin</artifactId>
+				<version>3.7.0</version>
+				<configuration>
+					<jmeterVersion>5.6.2</jmeterVersion>
+					<testFilesDirectory>${project.basedir}/src/test/jmeter</testFilesDirectory>
+					<resultsDirectory>${project.basedir}/target/jmeter/results</resultsDirectory>
+					<generateReports>true</generateReports>
+				</configuration>
+				<executions>
+					<execution>
+						<id>jmeter-tests</id>
+						<goals>
+							<goal>jmeter</goal>
+						</goals>
+						<phase>verify</phase>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>

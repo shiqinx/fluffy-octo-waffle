@@ -16,7 +16,7 @@ public class UserRegisterRequest {
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, message = "密码长度至少6位")
     private String userPassword;
-    public UserRegisterRequest(Integer userId, String userName, String userPassword, String userStatus) {
+    public UserRegisterRequest(Integer userId, String userName, String userPassword) {
         this.userId = userId;
         this.userName = userName;
         this.userPassword = userPassword;

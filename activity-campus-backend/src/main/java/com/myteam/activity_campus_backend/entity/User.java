@@ -47,6 +47,14 @@ public class User {
     @OneToMany(mappedBy = "user")
     private Set<com.myteam.activity_campus_backend.entity.Userlocation> userlocations = new LinkedHashSet<>();
 
+    public User() {}
+    public User(Integer id, String userName, String userPassword, String userStatus) {
+        this.id = id;
+        this.userName = userName;
+        this.userPassword = userPassword;
+        this.userStatus = userStatus;
+    }
+
     public Integer getId() {
         return id;
     }

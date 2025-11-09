@@ -4,86 +4,103 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 public class JWTTokenUtil {
 
-    // 从配置文件注入密钥和过期时间（非static，解决@Value注入static字段问题）
-    @Getter
-    @Setter
+    // 从配置文件注入密钥和过期时间
     @Value("${jwt.secret}")
     private String secret;
 
+    // Getter方法
     @Getter
-    @Setter
     @Value("${jwt.access-expiration}")
-    private long accessExpiration; // 单位：毫秒
+    private long accessExpiration;
 
     @Getter
-    @Setter
     @Value("${jwt.refresh-expiration}")
-    private long refreshExpiration; // 单位：毫秒
+    private long refreshExpiration;
 
+    @Getter
+    @Value("${jwt.remember-expiration}")
+    private long rememberExpiration;
 
-    // 密钥生成（懒加载，避免初始化时secret未注入）
+    // 缓存密钥避免重复生成
+    private SecretKey secretKeyCache;
+
+    // 密钥生成（线程安全，懒加载）
     private SecretKey getSecretKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        if (secretKeyCache == null) {
+            synchronized (this) {
+                if (secretKeyCache == null) {
+                    secretKeyCache = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+                }
+            }
+        }
+        return secretKeyCache;
     }
 
-    // 生成访问令牌（用户ID+自定义载荷）
-    public String generateAccessToken(Map<String, Object> claims, Integer userId) {
-        return generateToken(accessExpiration, userId, claims);
+    // 生成访问令牌（区分记住我）
+    public String generateAccessToken(Integer userId, Map<String, Object> claims, boolean rememberMe) {
+        long expiration = rememberMe ? rememberExpiration : accessExpiration;
+        return generateToken(expiration, userId, claims);
     }
 
-    // 生成刷新令牌（用户ID+默认载荷）
-    public String generateRefreshToken(Integer userId) {
-        return generateToken(refreshExpiration, userId, new HashMap<>());
+    // 生成刷新令牌（区分记住我）
+    public String generateRefreshToken(Integer userId, boolean rememberMe) {
+        long expiration = rememberMe ? rememberExpiration : refreshExpiration;
+        return generateToken(expiration, userId, new HashMap<>());
     }
 
-    // 通用令牌生成逻辑（兼容Spring Boot 3.x）
+    // 通用令牌生成逻辑
     private String generateToken(long expiresInMillis, Integer userId, Map<String, Object> claims) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiresInMillis);
+
         return Jwts.builder()
-                .claims(claims) // 自定义载荷（如角色、权限）
-                .id(UUID.randomUUID().toString()) // 令牌唯一标识（jti）
-                .issuer("ActivitySystem") // 签发人（系统标识）
-                .issuedAt(new Date()) // 签发时间（iat）
-                .subject(String.valueOf(userId)) // 主题（存储用户ID，sub）
-                .expiration(new Date(System.currentTimeMillis() + expiresInMillis)) // 过期时间（exp）
-                .signWith(getSecretKey(), SignatureAlgorithm.HS256) // 签名算法+密钥
+                .claims(claims)
+                .id(UUID.randomUUID().toString())
+                .issuer("ActivitySystem")
+                .issuedAt(now)
+                .subject(String.valueOf(userId))
+                .expiration(expiryDate)
+                .signWith(getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 解析令牌获取所有声明（兼容Spring Boot 3.x的verifyWith方式）
+    // 解析令牌获取所有声明
     public Claims getClaimsFromToken(String token) {
         try {
             return Jwts.parser()
-                    .verifyWith(getSecretKey()) // 验证密钥
+                    .verifyWith(getSecretKey())
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
+        } catch (ExpiredJwtException e) {
+            throw new RuntimeException("令牌已过期", e);
         } catch (JwtException | IllegalArgumentException e) {
             throw new RuntimeException("无效的JWT令牌", e);
         }
     }
 
-    // 从令牌中获取用户ID（subject字段）
+    // 从令牌中获取用户ID
     public Integer getUserIdFromToken(String token) {
-        String subject = getClaimsFromToken(token).getSubject();
-        return Integer.parseInt(subject);
+        try {
+            String subject = getClaimsFromToken(token).getSubject();
+            return Integer.parseInt(subject);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("令牌中的用户ID格式无效", e);
+        }
     }
 
-    // 获取所有自定义声明（排除标准声明）
+    // 获取自定义声明
     public Map<String, Object> getCustomClaims(String token) {
         Claims claims = getClaimsFromToken(token);
         Map<String, Object> customClaims = new HashMap<>();
@@ -95,57 +112,59 @@ public class JWTTokenUtil {
         return customClaims;
     }
 
-    // 判断是否为JWT标准声明（避免自定义声明覆盖标准字段）
+    // 判断是否为标准声明
     private boolean isStandardClaim(String claimName) {
-        return claimName.equals("iss") || claimName.equals("sub") ||
-                claimName.equals("aud") || claimName.equals("exp") ||
-                claimName.equals("nbf") || claimName.equals("iat") ||
-                claimName.equals("jti");
+        return Set.of("iss", "sub", "aud", "exp", "nbf", "iat", "jti").contains(claimName);
     }
 
     // 检查令牌是否过期
     public boolean isTokenExpired(String token) {
-        Date expiration = getClaimsFromToken(token).getExpiration();
-        return expiration.before(new Date());
+        try {
+            Date expiration = getClaimsFromToken(token).getExpiration();
+            return expiration.before(new Date());
+        } catch (RuntimeException e) {
+            return true;
+        }
     }
 
-    // 验证令牌有效性（未过期+签名正确）
+    // 验证令牌有效性
     public boolean validateToken(String token) {
         try {
-            getClaimsFromToken(token); // 解析成功即签名正确
-            return !isTokenExpired(token); // 且未过期
+            getClaimsFromToken(token);
+            return !isTokenExpired(token);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    // 刷新访问令牌
+    public String refreshAccessToken(String refreshToken) {
+        if (!validateToken(refreshToken)) {
+            throw new RuntimeException("刷新令牌无效或已过期");
+        }
+
+        Integer userId = getUserIdFromToken(refreshToken);
+        Map<String, Object> claims = getCustomClaims(refreshToken);
+
+        // 从刷新令牌中提取记住我状态
+        boolean rememberMe = isRememberMeFromToken(refreshToken);
+
+        return generateAccessToken(userId, claims, rememberMe);
+    }
+
+    // 从令牌中提取记住我状态（通过过期时间判断）
+    private boolean isRememberMeFromToken(String token) {
+        try {
+            Claims claims = getClaimsFromToken(token);
+            long tokenDuration = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+            // 如果令牌持续时间接近记住我过期时间，则认为是记住我令牌
+            return Math.abs(tokenDuration - rememberExpiration) < 60000; // 1分钟容差
         } catch (Exception e) {
             return false;
         }
     }
 
-    // 刷新令牌（基于旧令牌生成新令牌，保留用户ID和自定义载荷）
-    public String refreshToken(String oldToken, boolean isAccessToken) {
-        if (!canTokenBeRefreshed(oldToken)) {
-            throw new RuntimeException("令牌已过期，无法刷新");
-        }
-        Claims claims = getClaimsFromToken(oldToken);
-        Integer userId = Integer.parseInt(claims.getSubject());
-        Map<String, Object> customClaims = getCustomClaims(oldToken);
-        // 根据类型选择过期时间
-        long expiration = isAccessToken ? accessExpiration : refreshExpiration;
-        return generateToken(expiration, userId, customClaims);
-    }
-
-    // 检查令牌是否可刷新（未过期）
-    public boolean canTokenBeRefreshed(String token) {
-        return !isTokenExpired(token);
-    }
-
-    // 从请求头提取令牌（处理Bearer前缀）
-    public String extractToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // 去除"Bearer "前缀
-        }
-        return null;
-    }
-    // 添加方法：判断令牌是否即将过期（用于提前刷新）
+    // 检查令牌是否即将过期
     public boolean isTokenAboutToExpire(String token, long thresholdMillis) {
         try {
             Date expiration = getClaimsFromToken(token).getExpiration();
@@ -155,7 +174,14 @@ public class JWTTokenUtil {
             return true;
         }
     }
-    // 添加方法：从请求头提取令牌
+
+    // 从请求头提取令牌
+    public String extractToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        return extractTokenFromHeader(bearerToken);
+    }
+
+    // 从Authorization头提取令牌
     public String extractTokenFromHeader(String authorizationHeader) {
         if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);
@@ -163,13 +189,4 @@ public class JWTTokenUtil {
         return null;
     }
 
-    // 添加方法：专门用于刷新访问令牌
-    public String refreshAccessToken(String refreshToken) {
-        if (!validateToken(refreshToken)) {
-            throw new RuntimeException("刷新令牌无效或已过期");
-        }
-        Integer userId = getUserIdFromToken(refreshToken);
-        Map<String, Object> claims = getCustomClaims(refreshToken);
-        return generateAccessToken(claims, userId);
-    }
 }

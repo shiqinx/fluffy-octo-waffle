@@ -15,11 +15,6 @@ public class UserLoginResponse {
         this.message = message;
         this.userId = userId;
     }
-    public UserLoginResponse(String message, int userId, String token) {
-        this.message = message;
-        this.userId = userId;
-        this.token = token;
-    }
     public UserLoginResponse(String message, int userId, String token, String refreshToken) {
         this.message = message;
         this.userId = userId;
