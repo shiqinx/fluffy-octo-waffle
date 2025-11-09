@@ -39,7 +39,7 @@ public class UserService {
      * 用户激活/注册（实际是激活已存在用户）
      */
     public UserRegisterResponse registration(UserRegisterRequest request) {
-        try {
+
             Optional<User> userEntity = userRepository.findById(request.getUserId());
 
             if (userEntity.isPresent()) {
@@ -68,16 +68,14 @@ public class UserService {
             } else {
                 return new UserRegisterResponse("账号不存在", request.getUserId());
             }
-        } catch (Exception e) {
-            return new UserRegisterResponse("系统异常，请重试", request.getUserId());
-        }
+
     }
 
     /**
      * 用户登录
      */
     public UserLoginResponse login(UserLoginRequest request) {
-        try {
+
             Optional<User> userEntity = userRepository.findById(request.getUserId());
 
             if (userEntity.isPresent()) {
@@ -100,7 +98,7 @@ public class UserService {
 
 
                 // 生成令牌（使用rememberMe参数）
-                String accessToken = jwtTokenUtil.generateAccessToken(request.getUserId(), claims, request.isRememberMe());
+                String accessToken = jwtTokenUtil.generateAccessToken(request.getUserId(), claims);
                 String refreshToken = jwtTokenUtil.generateRefreshToken(request.getUserId(), request.isRememberMe());
 
                 return new UserLoginResponse("登录成功", request.getUserId(), accessToken, refreshToken);
@@ -108,16 +106,14 @@ public class UserService {
             } else {
                 return new UserLoginResponse("账号不存在", request.getUserId());
             }
-        } catch (Exception e) {
-            return new UserLoginResponse("登录系统异常，请重试", request.getUserId());
-        }
+
     }
 
     /**
      * 修改密码
      */
     public ChangePasswordResponse changePassword(ChangePasswordRequest request) {
-        try {
+
             Optional<User> userEntity = userRepository.findById(request.getUserId());
 
             if (userEntity.isPresent()) {
@@ -143,8 +139,5 @@ public class UserService {
             } else {
                 return new ChangePasswordResponse("用户不存在", request.getUserId());
             }
-        } catch (Exception e) {
-            return new ChangePasswordResponse("系统异常，请重试", request.getUserId());
-        }
     }
 }

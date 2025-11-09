@@ -40,7 +40,7 @@ public class AuthController {
             // 根据记住我选择不同的过期时间
             boolean rememberMe = loginRequest.isRememberMe();
 
-            String accessToken = jwtTokenUtil.generateAccessToken(userId, claims, rememberMe);
+            String accessToken = jwtTokenUtil.generateAccessToken(userId, claims);
             String refreshToken = jwtTokenUtil.generateRefreshToken(userId, rememberMe);
 
             Map<String, Object> response = new HashMap<>();

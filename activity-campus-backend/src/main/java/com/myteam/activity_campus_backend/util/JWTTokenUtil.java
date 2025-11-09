@@ -48,9 +48,8 @@ public class JWTTokenUtil {
     }
 
     // 生成访问令牌（区分记住我）
-    public String generateAccessToken(Integer userId, Map<String, Object> claims, boolean rememberMe) {
-        long expiration = rememberMe ? rememberExpiration : accessExpiration;
-        return generateToken(expiration, userId, claims);
+    public String generateAccessToken(Integer userId, Map<String, Object> claims) {
+        return generateToken(accessExpiration, userId, claims);
     }
 
     // 生成刷新令牌（区分记住我）
@@ -149,7 +148,7 @@ public class JWTTokenUtil {
         // 从刷新令牌中提取记住我状态
         boolean rememberMe = isRememberMeFromToken(refreshToken);
 
-        return generateAccessToken(userId, claims, rememberMe);
+        return generateAccessToken(userId, claims);
     }
 
     // 从令牌中提取记住我状态（通过过期时间判断）
