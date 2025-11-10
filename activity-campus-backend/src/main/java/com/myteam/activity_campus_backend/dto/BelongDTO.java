@@ -28,8 +28,7 @@ public class BelongDTO {
         UserDTO userDTO = new UserDTO();
         userDTO.setUser_id(belong.getUser().getId());
         userDTO.setUsername(belong.getUser().getUserName());
-        TeamDTO teamDTO = new TeamDTO();
-        teamDTO=TeamDTO.copy(belong.getTeam());
+        TeamDTO teamDTO = TeamDTO.copy(belong.getTeam());
         BelongDTO belongDTO = new BelongDTO();
         belongDTO.setTeamdto(teamDTO);
         belongDTO.setUser(userDTO);

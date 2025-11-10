@@ -25,5 +25,4 @@ public interface  TeamRepository extends JpaRepository<Team, Integer> {
             "CAST(t.id AS String) LIKE %:key% OR "+
             "t.teamName LIKE %:key%")
     List<Team> findByCreator_IdLikeOrIdLikeOrTeamNameLike(@Param("key") String keyword);
-
 }

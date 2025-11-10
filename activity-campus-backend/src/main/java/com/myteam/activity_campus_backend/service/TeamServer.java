@@ -18,9 +18,7 @@ import com.myteam.activity_campus_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -60,16 +58,21 @@ public class TeamServer {
     }
     //团队报名发送给团队主理人
     public BelongTeamResponse belongTeam(BelongTeamRequest teamrequest) {
-        User user = userRepository.findById(teamrequest.getUserId()).orElse(null);
-        Team team= teamRepository.findById(teamrequest.getTeamId()).get();
-        if(user == null||team == null) {
-            return new BelongTeamResponse(null,"用户或团队出错");
+        Optional<User> user1 = userRepository.findById(teamrequest.getUserId());
+        if (user1.isEmpty()) {
+            return new BelongTeamResponse(null, "用户不存在");
         }
+        User user = user1.get();
+        Optional<Team> team1= teamRepository.findById(teamrequest.getTeamId());
+        if(team1.isEmpty()) {
+            return new BelongTeamResponse(null, "团队不存在");
+        }
+        Team team=team1.get();
         UserDTO userDTO = new UserDTO();
         userDTO.setUser_id(user.getId());
         userDTO.setUsername(user.getUserName());
         TeamDTO teamDTO = new TeamDTO();
-        teamDTO.copy(team);
+        TeamDTO.copy(team);
         BelongDTO belongDTO = new BelongDTO();
         belongDTO.setTeamdto(teamDTO);
         belongDTO.setUser(userDTO);
@@ -77,26 +80,32 @@ public class TeamServer {
     }
     //同意团队报名申请
     public BelongTeamResponse agreeTeam(BelongTeamResponse agreement) {
-        agreement.setMessage("同意");
         Belong belong = new Belong();
-        Team team=TeamDTO.toTeam(agreement.getBelong().getTeamdto());
-        belong.setTeam(team);
-        Optional<User> user= Optional.of(new User());
-        user=userRepository.findById(agreement.getBelong().getUser().getUser_id());
+        Optional<User> user =userRepository.findById(agreement.getBelong().getUser().getUser_id());
+        if(user.isEmpty()) {
+            agreement.setMessage("用户不存在");
+            return agreement;
+        }
         User u=user.get();
         belong.setUser(u);
+        Optional<Team> team1=teamRepository.findById(agreement.getBelong().getTeamdto().getId());
+        if(team1.isEmpty()) {
+            agreement.setMessage("团队不存在");
+            return agreement;
+        }
+        Team team=team1.get();
+        belong.setTeam(team);
         belong.setJoinTime(LocalDateTime.now());
         belongRepository.save(belong);
+        agreement.setMessage("同意");
         return agreement;
     }
     public ResearchTeamResponse listResearchTeam(ResearchTeamRequest teamrequest) {
-        List<Team> teams=new ArrayList<>();
-        teams=teamRepository.findByCreator_IdLikeOrIdLikeOrTeamNameLike(teamrequest.getKeyword());
-        if(teams==null||teams.size()==0) {
-            return new ResearchTeamResponse(null);
+        List<Team> teams=teamRepository.findByCreator_IdLikeOrIdLikeOrTeamNameLike(teamrequest.getKeyword());
+        if(teams==null|| teams.isEmpty()) {
+            return new ResearchTeamResponse("找到0条记录",null);
         }
-        List<TeamDTO> teamDTOList=new ArrayList<>();
-        teamDTOList=teams.stream().map(TeamDTO::copy).collect(Collectors.toList());
-        return new ResearchTeamResponse(teamDTOList);
+        List<TeamDTO> teamDTOList=teams.stream().map(TeamDTO::copy).collect(Collectors.toList());
+        return new ResearchTeamResponse("找到"+teamDTOList.size()+"条记录",teamDTOList);
     }
 }

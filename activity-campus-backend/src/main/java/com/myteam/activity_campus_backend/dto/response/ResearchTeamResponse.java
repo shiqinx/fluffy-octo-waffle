@@ -11,9 +11,17 @@ import java.util.List;
  * @date 2025/11/2 18:35
  */
 public class ResearchTeamResponse {
+    private String message;
     private List<TeamDTO> teams;
-    public ResearchTeamResponse(List<TeamDTO> teams) {
+    public ResearchTeamResponse(String message, List<TeamDTO> teams) {
+        this.message = message;
         this.teams = teams;
+    }
+    public String getMessage() {
+        return message;
+    }
+    public void setMessage(String message) {
+        this.message = message;
     }
     public List<TeamDTO> getTeams() {
         return teams;
