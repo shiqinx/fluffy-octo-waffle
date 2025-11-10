@@ -13,7 +13,7 @@ public class RecallMessageRequest {
     @NotBlank(message = "消息内容不为空")
     private String message;
     @NotBlank(message = "操作人不能为空")
-    private Integer senderid;
+    private Integer senderId;
     @NotBlank(message = "接收方不能为空")
     private Integer receiverId;
     private LocalDateTime time;
@@ -23,11 +23,11 @@ public class RecallMessageRequest {
     public void setMessage(String message) {
         this.message = message;
     }
-    public Integer getSenderid() {
-        return senderid;
+    public Integer getSenderId() {
+        return senderId;
     }
-    public void setSenderid(Integer senderid) {
-        this.senderid = senderid;
+    public void setSenderId(Integer senderId) {
+        this.senderId = senderId;
     }
     public Integer getReceiverId() {
         return receiverId;

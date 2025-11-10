@@ -45,8 +45,7 @@ public class PartiDTO {
         userDTO.setUser_id(participate.getParticipant().getId());
         userDTO.setUsername(participate.getParticipant().getUserName());
         partiDTO.setUser(userDTO);
-        ActivityDTO activityDTO = new ActivityDTO();
-        activityDTO=ActivityDTO.convert(participate.getActivity());
+        ActivityDTO activityDTO =ActivityDTO.convert(participate.getActivity());
         partiDTO.setActivity(activityDTO);
         partiDTO.setTime(participate.getTime());
         return partiDTO;

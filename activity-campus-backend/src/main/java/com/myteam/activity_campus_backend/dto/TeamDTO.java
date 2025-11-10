@@ -19,7 +19,6 @@ public class TeamDTO {
     private Integer id;
     private String teamName;
     private UserDTO user;
-    private static UserRepository userRepository;
 
     public static TeamDTO copy(Team team) {
         TeamDTO teamDTO = new TeamDTO();
@@ -31,12 +30,15 @@ public class TeamDTO {
         teamDTO.setUser(userDTO);
         return teamDTO;
     }
-    public static Team toTeam(TeamDTO teamDTO) {
+    public static Team toTeam(TeamDTO teamDTO,UserRepository userRepository) {
         Team team = new Team();
         team.setId(teamDTO.getId());
         team.setTeamName(teamDTO.getTeamName());
-        Optional<User> user =userRepository.findById(teamDTO.getUser().getUser_id());
-        team.setCreator(user.get());
+        Optional<User> u=userRepository.findById(teamDTO.getUser().getUser_id());
+        if(u.isEmpty()){
+            return null;
+        }
+        team.setCreator(u.get());
         return team;
     }
 }

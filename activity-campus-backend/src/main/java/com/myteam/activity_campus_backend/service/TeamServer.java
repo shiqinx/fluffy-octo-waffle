@@ -71,8 +71,7 @@ public class TeamServer {
         UserDTO userDTO = new UserDTO();
         userDTO.setUser_id(user.getId());
         userDTO.setUsername(user.getUserName());
-        TeamDTO teamDTO = new TeamDTO();
-        TeamDTO.copy(team);
+        TeamDTO teamDTO =TeamDTO.copy(team);
         BelongDTO belongDTO = new BelongDTO();
         belongDTO.setTeamdto(teamDTO);
         belongDTO.setUser(userDTO);
