@@ -7,7 +7,7 @@ import com.myteam.activity_campus_backend.entity.Activity;
 
 /**
  * @author sjy15
- * @description: 回复活动主理人的信息
+ * @description: 报名请求传递给活动主理人
  * @date 2025/10/31 23:46
  */
 public class ParticipateInActivityResponse {
