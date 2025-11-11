@@ -1,8 +1,11 @@
 package com.myteam.activity_campus_backend.util;
 
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+@Component
 public class GeoUtil {
     // 地球半径（单位：米，使用BigDecimal确保精度）
     private static final BigDecimal EARTH_RADIUS = new BigDecimal("6371000");
@@ -24,18 +27,12 @@ public class GeoUtil {
      * @param radius     区域半径（米，≥0）
      * @return true：在区域内；false：在区域外
      */
-    public static boolean isInArea(BigDecimal userLat, BigDecimal userLng,
+
+    public boolean isInArea(BigDecimal userLat, BigDecimal userLng,
                                    BigDecimal centerLat, BigDecimal centerLng,
                                    BigDecimal radius) {
-        // 1. 参数校验（合法性与非空判断）
-        if (userLat == null || userLng == null || centerLat == null || centerLng == null || radius == null) {
-            throw new IllegalArgumentException("地理参数不能为null");
-        }
-        if (!isValidLatitude(userLat) || !isValidLongitude(userLng)
-                || !isValidLatitude(centerLat) || !isValidLongitude(centerLng)
-                || radius.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("无效的地理参数：经纬度或半径格式错误");
-        }
+        // 1. 统一参数校验（拆分成独立方法，提前抛异常）
+        validateGeoParameters(userLat, userLng, centerLat, centerLng, radius);
 
         // 2. 计算用户与中心点的球面距离（米）
         BigDecimal distance = calculateDistance(userLat, userLng, centerLat, centerLng);
@@ -45,6 +42,42 @@ public class GeoUtil {
         BigDecimal radiusScaled = radius.setScale(2, RoundingMode.HALF_UP);
         return distanceScaled.compareTo(radiusScaled) <= 0;
     }
+
+    /**
+     * 提取参数校验为独立方法，集中处理非空和有效性判断
+     */
+    private static void validateGeoParameters(BigDecimal userLat, BigDecimal userLng,
+                                              BigDecimal centerLat, BigDecimal centerLng,
+                                              BigDecimal radius) {
+        // 非空校验（合并为一个判断，避免多个if）
+        if (isAnyNull(userLat, userLng, centerLat, centerLng, radius)) {
+            throw new IllegalArgumentException("地理参数不能为null");
+        }
+
+        // 经纬度有效性校验（合并重复逻辑）
+        if (!isValidLatitude(userLat) || !isValidLongitude(userLng)
+                || !isValidLatitude(centerLat) || !isValidLongitude(centerLng)) {
+            throw new IllegalArgumentException("无效的地理参数：经纬度格式错误");
+        }
+
+        // 半径有效性校验
+        if (radius.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("无效的地理参数：半径不能为负数");
+        }
+    }
+
+    /**
+     * 工具方法：判断任意参数是否为null（减少主逻辑中的重复null判断）
+     */
+    private static boolean isAnyNull(BigDecimal... params) {
+        for (BigDecimal param : params) {
+            if (param == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 
     /**

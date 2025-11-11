@@ -1,4 +1,4 @@
-package com.myteam.activity_campus_backend;
+package com.myteam.activity_campus_backend.unitTest;
 
 import com.myteam.activity_campus_backend.dto.BelongDTO;
 import com.myteam.activity_campus_backend.dto.TeamDTO;
@@ -29,7 +29,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.util.AssertionErrors.assertNull;
 
 /**
  * @author sjy15

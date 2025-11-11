@@ -1,4 +1,4 @@
-package com.myteam.activity_campus_backend;
+package com.myteam.activity_campus_backend.unitTest;
 
 import com.myteam.activity_campus_backend.service.PasswordService;
 import org.junit.jupiter.api.Test;

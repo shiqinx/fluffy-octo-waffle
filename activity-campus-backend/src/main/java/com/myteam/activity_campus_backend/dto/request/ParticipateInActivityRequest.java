@@ -8,11 +8,9 @@ package com.myteam.activity_campus_backend.dto.request;
 public class ParticipateInActivityRequest {
     private Integer activityId;
     private Integer userId;
-    private String message;
-    public ParticipateInActivityRequest(Integer activityId, Integer userId, String message) {
+    public ParticipateInActivityRequest(Integer activityId, Integer userId) {
         this.activityId = activityId;
         this.userId = userId;
-        this.message = message;
     }
     public Integer getActivityId() {
         return activityId;
@@ -25,11 +23,5 @@ public class ParticipateInActivityRequest {
     }
     public void setuserId(Integer userId) {
         this.userId = userId;
-    }
-    public String getMessage() {
-        return message;
-    }
-    public void setMessage(String message) {
-        this.message = message;
     }
 }

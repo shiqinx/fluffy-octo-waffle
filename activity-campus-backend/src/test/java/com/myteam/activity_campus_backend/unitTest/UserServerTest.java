@@ -1,7 +1,6 @@
-package com.myteam.activity_campus_backend;
+package com.myteam.activity_campus_backend.unitTest;
 
 import com.myteam.activity_campus_backend.dto.request.ChangePasswordRequest;
-import com.myteam.activity_campus_backend.dto.request.UserBelongRequest;
 import com.myteam.activity_campus_backend.dto.request.UserLoginRequest;
 import com.myteam.activity_campus_backend.dto.request.UserRegisterRequest;
 import com.myteam.activity_campus_backend.dto.response.ChangePasswordResponse;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
