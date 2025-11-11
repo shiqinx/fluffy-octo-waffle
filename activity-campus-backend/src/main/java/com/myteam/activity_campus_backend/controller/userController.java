@@ -9,14 +9,15 @@ import com.myteam.activity_campus_backend.dto.response.UserRegisterResponse;
 import com.myteam.activity_campus_backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+
 
 /**
  * @author sjy15
@@ -30,27 +31,27 @@ public class userController {
 
     @Autowired
     private UserService userService;
-
+    private static final Logger logger = LoggerFactory.getLogger(userController.class);
     /**
      * 用户注册/激活接口
      */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody UserRegisterRequest request) {
+    public ResponseEntity<UserRegisterResponse> register(@Valid @RequestBody UserRegisterRequest request) {
         try {
+            logger.info("用户激活请求：userId={}", request.getUserId());
             UserRegisterResponse response = userService.registration(request);
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", getResponseCode(response.getStatus()));
-            result.put("message", response.getStatus());
-            result.put("userId", response.getUserId());
-            result.put("timestamp", System.currentTimeMillis());
-
-            HttpStatus status = getHttpStatus(response.getStatus());
-            return ResponseEntity.status(status).body(result);
+            HttpStatus status;
+            if(response.getStatus().equals("激活成功")){
+                status=HttpStatus.OK;
+            }else{
+                status=getHttpStatus(response.getStatus());
+            }
+            return ResponseEntity.status(status).body(response);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("系统异常，请稍后重试"));
+            logger.error("用户注册异常: userId={}, error={}", request.getUserId(), e.getMessage());
+            UserRegisterResponse errorResponse = new UserRegisterResponse("系统异常，请稍后重试", request.getUserId());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -58,30 +59,24 @@ public class userController {
      * 用户登录接口
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody UserLoginRequest request) {
+    public ResponseEntity<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
         try {
+            logger.info("用户登录请求：userId={}", request.getUserId());
             UserLoginResponse response = userService.login(request);
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", getResponseCode(response.getMessage()));
-            result.put("message", response.getMessage());
-            result.put("userId", response.getUserId());
-            result.put("timestamp", System.currentTimeMillis());
-
-            // 登录成功时返回令牌信息
-            if ("登录成功".equals(response.getMessage())) {
-                result.put("accessToken", response.getToken());
-                result.put("refreshToken", response.getRefreshToken());
-                result.put("tokenType", "Bearer");
-                result.put("rememberMe", request.isRememberMe());
+            HttpStatus status;
+            if(response.getMessage().equals("登录成功")){
+                status=HttpStatus.OK;
+            }else{
+                status=getHttpStatus(response.getMessage());
             }
 
-            HttpStatus status = getHttpStatus(response.getMessage());
-            return ResponseEntity.status(status).body(result);
+            return ResponseEntity.status(status).body(response);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("登录系统异常，请稍后重试"));
+            logger.error("用户登录异常: userId={}, error={}", request.getUserId(), e.getMessage());
+            UserLoginResponse errorResponse = new UserLoginResponse("系统异常，请稍后重试", request.getUserId());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -89,71 +84,41 @@ public class userController {
      * 修改密码接口
      */
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request,
-                                            HttpServletRequest httpRequest) {
+    public ResponseEntity<ChangePasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest updateRequest,
+                                                                 HttpServletRequest request) {
         try {
+            logger.info("用户修改密码：userId={}", updateRequest.getUserId());
             // 从请求属性中获取当前用户ID（由JWT拦截器设置）
-            Integer currentUserId = (Integer) httpRequest.getAttribute("currentUserId");
-
-            // 安全验证：确保用户只能修改自己的密码
-            if (currentUserId == null || !currentUserId.equals(request.getUserId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(createErrorResponse("无权修改其他用户密码"));
-            }
-
-            ChangePasswordResponse response = userService.changePassword(request);
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", getResponseCode(response.getMessage()));
-            result.put("message", response.getMessage());
-            result.put("userId", response.getUserId());
-            result.put("timestamp", System.currentTimeMillis());
-
-            HttpStatus status = getHttpStatus(response.getMessage());
-            return ResponseEntity.status(status).body(result);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("系统异常，请稍后重试"));
-        }
-    }
-
-
-    /**
-     * 用户登出接口
-     */
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
-        try {
             Integer currentUserId = (Integer) request.getAttribute("currentUserId");
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("code", 200);
-            result.put("message", "登出成功");
-            result.put("userId", currentUserId);
-            result.put("timestamp", System.currentTimeMillis());
+            // 安全验证：确保用户只能修改自己的密码
+            if (currentUserId == null || !currentUserId.equals(updateRequest.getUserId())) {
+                ChangePasswordResponse errorResponse=new ChangePasswordResponse("无权修改其他用户密码", updateRequest.getUserId());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(errorResponse);
+            }
 
-            // 注意：JWT是无状态的，实际登出需要前端删除令牌
-            // 如果需要服务端登出，可以维护一个黑名单
+            ChangePasswordResponse response = userService.changePassword(updateRequest);
 
-            return ResponseEntity.ok(result);
+            HttpStatus status;
+            if(response.getMessage().equals("密码修改成功")){
+                status=HttpStatus.OK;
+            }else{
+                status=getHttpStatus(response.getMessage());
+            }
+            return ResponseEntity.status(status).body(response);
 
         } catch (Exception e) {
+            ChangePasswordResponse errorResponse=new ChangePasswordResponse("系统异常，请稍后重试", updateRequest.getUserId());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("登出失败"));
+                    .body(errorResponse);
         }
     }
-
     /**
      * 根据响应消息确定HTTP状态码
      */
     private HttpStatus getHttpStatus(String message) {
         switch (message) {
-            case "注册成功":
-            case "激活成功":
-            case "登录成功":
-            case "密码修改成功":
-                return HttpStatus.OK;
             case "用户已启用":
             case "用户未激活":
                 return HttpStatus.CONFLICT;
@@ -166,40 +131,5 @@ public class userController {
             default:
                 return HttpStatus.INTERNAL_SERVER_ERROR;
         }
-    }
-
-    /**
-     * 根据响应消息确定业务状态码
-     */
-    private int getResponseCode(String message) {
-        switch (message) {
-            case "注册成功":
-            case "激活成功":
-            case "登录成功":
-            case "密码修改成功":
-                return 200;
-            case "用户已启用":
-            case "用户未激活":
-                return 409;
-            case "用户名错误":
-            case "密码错误":
-            case "原密码错误":
-            case "账号不存在":
-            case "用户不存在":
-                return 400;
-            default:
-                return 500;
-        }
-    }
-
-    /**
-     * 创建错误响应
-     */
-    private Map<String, Object> createErrorResponse(String message) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("code", 500);
-        errorResponse.put("message", message);
-        errorResponse.put("timestamp", System.currentTimeMillis());
-        return errorResponse;
     }
 }

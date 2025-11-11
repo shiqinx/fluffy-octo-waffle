@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 /**
  * @author sjy15
- * @description: 用户注册请求DTO
+ * @description: 用户登录请求DTO
  * @date 2025/10/26 14:05
  */
 public class UserLoginRequest {

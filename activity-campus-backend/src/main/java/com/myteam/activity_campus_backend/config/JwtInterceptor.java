@@ -1,6 +1,7 @@
 package com.myteam.activity_campus_backend.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myteam.activity_campus_backend.entity.User;
 import com.myteam.activity_campus_backend.util.JWTTokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,8 +30,8 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     // 排除路径列表
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
-            "/api/auth/login",
-            "/api/auth/register",
+            "/api/user/login",
+            "/api/user/register",
             "/api/auth/refresh",
             "/api/auth/check",
             "/swagger-ui.html",
