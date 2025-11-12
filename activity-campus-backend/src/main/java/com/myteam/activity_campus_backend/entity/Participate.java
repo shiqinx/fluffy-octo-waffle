@@ -2,12 +2,16 @@ package com.myteam.activity_campus_backend.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @Entity
-@Table(name = "participate", schema = "campus-activity", indexes = {
+@Table(name = "\"participate\"", indexes = {  // 修正：移除schema，使用双引号
         @Index(name = "idx_Participate_Participant_Id", columnList = "participant_Id"),
         @Index(name = "idx_Participate_Activity_Id", columnList = "activity_Id")
 }, uniqueConstraints = {
@@ -22,7 +26,7 @@ public class Participate {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "participant_Id", nullable = false)
-    private com.myteam.activity_campus_backend.entity.User participant;
+    private User participant;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -33,36 +37,7 @@ public class Participate {
     @Column(name = "time", nullable = false)
     private LocalDateTime time;
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public com.myteam.activity_campus_backend.entity.User getParticipant() {
-        return participant;
-    }
-
-    public void setParticipant(com.myteam.activity_campus_backend.entity.User participant) {
-        this.participant = participant;
-    }
-
-    public Activity getActivity() {
-        return activity;
-    }
-
-    public void setActivity(Activity activity) {
-        this.activity = activity;
-    }
-
-    public LocalDateTime getTime() {
-        return time;
-    }
-
-    public void setTime(LocalDateTime time) {
-        this.time = time;
+    public Participate() {
     }
 
 }

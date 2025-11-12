@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "belong", schema = "campus-activity", indexes = {
+@Table(name = "\"belong\"", indexes = {  // 修正：移除schema，使用双引号
         @Index(name = "idx_Belong_Team_Id", columnList = "team_Id"),
         @Index(name = "idx_Belong_User_Id", columnList = "user_Id")
 }, uniqueConstraints = {
@@ -24,17 +24,20 @@ public class Belong {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "team_Id", nullable = false)
-    private com.myteam.activity_campus_backend.entity.Team team;
+    private Team team;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_Id", nullable = false)
-    private com.myteam.activity_campus_backend.entity.User user;
+    private User user;
 
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "join_Time", nullable = false)
     private LocalDateTime joinTime;
+
+    public Belong() {
+    }
 
     public Integer getId() {
         return id;
@@ -44,19 +47,19 @@ public class Belong {
         this.id = id;
     }
 
-    public com.myteam.activity_campus_backend.entity.Team getTeam() {
+    public Team getTeam() {
         return team;
     }
 
-    public void setTeam(com.myteam.activity_campus_backend.entity.Team team) {
+    public void setTeam(Team team) {
         this.team = team;
     }
 
-    public com.myteam.activity_campus_backend.entity.User getUser() {
+    public User getUser() {
         return user;
     }
 
-    public void setUser(com.myteam.activity_campus_backend.entity.User user) {
+    public void setUser(User user) {
         this.user = user;
     }
 

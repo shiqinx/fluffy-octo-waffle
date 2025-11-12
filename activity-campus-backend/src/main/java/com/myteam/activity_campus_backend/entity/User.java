@@ -8,7 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "user", schema = "campus-activity")
+@Table(name = "\"user\"")
 public class User {
     @Id
     @Column(name = "user_Id", nullable = false)
@@ -45,7 +45,7 @@ public class User {
     private Set<Team> teams = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "user")
-    private Set<com.myteam.activity_campus_backend.entity.Userlocation> userlocations = new LinkedHashSet<>();
+    private Set<Userlocation> userlocations = new LinkedHashSet<>();
 
     public User() {}
     public User(Integer id, String userName, String userPassword, String userStatus) {
@@ -127,7 +127,7 @@ public class User {
         this.teams = teams;
     }
 
-    public Set<com.myteam.activity_campus_backend.entity.Userlocation> getUserlocations() {
+    public Set<Userlocation> getUserlocations() {
         return userlocations;
     }
 

@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Entity
-@Table(name = "activity", schema = "campus-activity", indexes = {
+@Table(name = "\"activity\"", indexes = {  // 修正：移除schema，使用双引号
         @Index(name = "idx_Activity_Publisher_Id", columnList = "publisher_Id"),
         @Index(name = "idx_Activity_Location_Id", columnList = "location_Id")
 })
@@ -31,14 +31,14 @@ public class Activity {
     @Column(name = "activity_Name", nullable = false, length = 100)
     private String activityName;
 
-    @Lob
-    @Column(name = "activity_Description")
+    @Size(max = 255)
+    @Column(name = "activity_Description",length=225)
     private String activityDescription;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "location_Id", nullable = false)
-    private com.myteam.activity_campus_backend.entity.Location location;
+    private Location location;
 
     @Size(max = 500)
     @NotNull
@@ -62,18 +62,18 @@ public class Activity {
     private LocalDateTime endTime;
 
     @NotNull
-    @ColumnDefault("1")
     @Column(name = "max_People", nullable = false)
-    private Integer maxPeople;
+    private Integer maxPeople=1;
 
     @NotNull
-    @ColumnDefault("0")
     @Column(name = "current_People", nullable = false)
-    private Integer currentPeople;
+    private Integer currentPeople=0;
 
     @OneToMany(mappedBy = "activity")
-    private Set<com.myteam.activity_campus_backend.entity.Participate> participates = new LinkedHashSet<>();
+    private Set<Participate> participates = new LinkedHashSet<>();
 
+    public Activity() {
+    }
     public Integer getId() {
         return id;
     }
@@ -106,11 +106,11 @@ public class Activity {
         this.activityDescription = activityDescription;
     }
 
-    public com.myteam.activity_campus_backend.entity.Location getLocation() {
+    public Location getLocation() {
         return location;
     }
 
-    public void setLocation(com.myteam.activity_campus_backend.entity.Location location) {
+    public void setLocation(Location location) {
         this.location = location;
     }
 
@@ -170,11 +170,11 @@ public class Activity {
         this.currentPeople = currentPeople;
     }
 
-    public Set<com.myteam.activity_campus_backend.entity.Participate> getParticipates() {
+    public Set<Participate> getParticipates() {
         return participates;
     }
 
-    public void setParticipates(Set<com.myteam.activity_campus_backend.entity.Participate> participates) {
+    public void setParticipates(Set<Participate> participates) {
         this.participates = participates;
     }
 }

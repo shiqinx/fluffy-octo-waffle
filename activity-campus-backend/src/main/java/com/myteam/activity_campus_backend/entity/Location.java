@@ -10,7 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "location", schema = "campus-activity")
+@Table(name = "\"location\"")
 public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,9 +46,8 @@ public class Location {
     private String detailAddress;
 
     @NotNull
-    @ColumnDefault("1")
     @Column(name = "is_Enabled", nullable = false)
-    private Boolean isEnabled = false;
+    private Boolean isEnabled = true;
 
     @NotNull
     @Column(name = "region_Radius", nullable = false, precision = 10, scale = 2)
@@ -56,6 +55,8 @@ public class Location {
 
     @OneToMany(mappedBy = "location")
     private Set<Activity> activities = new LinkedHashSet<>();
+    public Location() {
+    }
 
     public Integer getId() {
         return id;

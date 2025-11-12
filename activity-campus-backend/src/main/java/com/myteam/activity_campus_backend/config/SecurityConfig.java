@@ -19,9 +19,18 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.disable()) // 允许H2控制台iframe嵌入
+                )
                 .authorizeHttpRequests(authz -> authz
+                        // 放行H2控制台相关路径
+                        .requestMatchers("/h2-console/**").permitAll()
+                        // 放行H2控制台的静态资源
+                        .requestMatchers("/h2-console/**/*.css").permitAll()
+                        .requestMatchers("/h2-console/**/*.js").permitAll()
                         // 放行所有Swagger相关路径
                         .requestMatchers(
+                                "/h2-console/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
