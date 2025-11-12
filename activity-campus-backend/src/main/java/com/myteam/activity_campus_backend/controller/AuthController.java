@@ -1,14 +1,17 @@
 package com.myteam.activity_campus_backend.controller;
 
+import com.myteam.activity_campus_backend.dto.response.ErrorResponse;
+import com.myteam.activity_campus_backend.dto.response.RefreshTokenResponse;
+import com.myteam.activity_campus_backend.dto.response.TokenCheckResponse;
 import com.myteam.activity_campus_backend.util.JWTTokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author sjy15
@@ -17,68 +20,81 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/auth")
+@Validated
 public class AuthController {
 
     @Autowired
     private JWTTokenUtil jwtTokenUtil;
+
     /**
      * 刷新令牌接口
      */
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<Object> refreshToken(
+            @RequestHeader("Authorization")
+            @NotBlank(message = "Authorization header不能为空")
+            String authorizationHeader) {
+
         try {
             String refreshToken = jwtTokenUtil.extractTokenFromHeader(authorizationHeader);
 
             if (refreshToken == null || !jwtTokenUtil.validateToken(refreshToken)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "刷新令牌无效或已过期"));
+                ErrorResponse error = new ErrorResponse(
+                        "刷新令牌无效或已过期",
+                        "/api/auth/refresh"
+                );
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
             }
 
-            // 生成新的访问令牌（自动继承记住我状态）
+            // 生成新访问令牌
             String newAccessToken = jwtTokenUtil.refreshAccessToken(refreshToken);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("accessToken", newAccessToken);
-            response.put("tokenType", "Bearer");
-            response.put("expiresIn", jwtTokenUtil.getAccessExpiration() / 1000);
+            RefreshTokenResponse response = new RefreshTokenResponse(
+                    newAccessToken,
+                    "Bearer",
+                    jwtTokenUtil.getAccessExpiration() / 1000
+            );
 
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "令牌刷新失败: " + e.getMessage()));
+            ErrorResponse error = new ErrorResponse(
+                    "令牌刷新失败: " + e.getMessage(),
+                    "/api/auth/refresh"
+            );
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
     }
 
     /**
-     * 检查令牌状态
+     *检查令牌状态
      */
     @GetMapping("/check")
-    public ResponseEntity<?> checkToken(HttpServletRequest request) {
+    public ResponseEntity<TokenCheckResponse> checkToken(HttpServletRequest request) {
         String token = jwtTokenUtil.extractToken(request);
+
         if (token == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("valid", false, "message", "缺少令牌"));
+            TokenCheckResponse response = TokenCheckResponse.error("缺少令牌");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
         try {
             boolean isValid = jwtTokenUtil.validateToken(token);
             boolean isAboutToExpire = jwtTokenUtil.isTokenAboutToExpire(token, 15 * 60 * 1000);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("valid", isValid);
-            response.put("aboutToExpire", isAboutToExpire);
-
+            TokenCheckResponse response;
             if (isValid) {
                 Integer userId = jwtTokenUtil.getUserIdFromToken(token);
-                response.put("userId", userId);
+                response = TokenCheckResponse.success(isValid, isAboutToExpire, userId);
+            } else {
+                response = TokenCheckResponse.error("令牌无效");
             }
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("valid", false, "message", "令牌无效"));
+            TokenCheckResponse response = TokenCheckResponse.error("令牌验证异常");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
 }
