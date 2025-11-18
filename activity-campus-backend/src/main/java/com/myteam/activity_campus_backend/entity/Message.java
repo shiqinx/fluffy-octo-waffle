@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"message\"", indexes = {  // 修正：移除schema，使用双引号
+@Table(name = "app_message", indexes = {  // 修正：移除schema，使用双引号
         @Index(name = "idx_Message_User_Id", columnList = "user_Id"),
         @Index(name = "idx_Message_Receive_Id", columnList = "receive_Id")
 })

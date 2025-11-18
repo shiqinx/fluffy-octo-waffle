@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"userlocation\"",
+@Table(name = "app_userlocation",
         indexes = {
                 @Index(name = "idx_userlocation_user", columnList = "user_Id"),
                 @Index(name = "idx_userlocation_coords", columnList = "latitude,longitude")

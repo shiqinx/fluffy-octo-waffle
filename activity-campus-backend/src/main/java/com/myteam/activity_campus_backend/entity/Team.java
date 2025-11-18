@@ -8,7 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "\"team\"", indexes = {
+@Table(name = "app_team", indexes = {
         @Index(name = "idx_Team_Creator_Id", columnList = "creator_Id")
 })
 public class Team {

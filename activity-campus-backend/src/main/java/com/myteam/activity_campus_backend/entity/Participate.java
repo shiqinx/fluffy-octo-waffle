@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @Entity
-@Table(name = "\"participate\"", indexes = {  // 修正：移除schema，使用双引号
+@Table(name = "app_participate", indexes = {  // 修正：移除schema，使用双引号
         @Index(name = "idx_Participate_Participant_Id", columnList = "participant_Id"),
         @Index(name = "idx_Participate_Activity_Id", columnList = "activity_Id")
 }, uniqueConstraints = {

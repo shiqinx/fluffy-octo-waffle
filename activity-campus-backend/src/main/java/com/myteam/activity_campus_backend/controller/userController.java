@@ -41,10 +41,10 @@ public class userController {
             logger.info("用户激活请求：userId={}", request.getUserId());
             UserRegisterResponse response = userService.registration(request);
             HttpStatus status;
-            if(response.getStatus().equals("激活成功")){
+            if(response.getMessage().equals("激活成功")){
                 status=HttpStatus.OK;
             }else{
-                status=getHttpStatus(response.getStatus());
+                status=getHttpStatus(response.getMessage());
             }
             return ResponseEntity.status(status).body(response);
 
@@ -91,12 +91,22 @@ public class userController {
             // 从请求属性中获取当前用户ID（由JWT拦截器设置）
             Integer currentUserId = (Integer) request.getAttribute("currentUserId");
 
+            logger.info("🔍 从请求属性获取的currentUserId: {}", currentUserId);
+            logger.info("🔍 请求中的目标userId: {}", updateRequest.getUserId());
             // 安全验证：确保用户只能修改自己的密码
-            if (currentUserId == null || !currentUserId.equals(updateRequest.getUserId())) {
-                ChangePasswordResponse errorResponse=new ChangePasswordResponse("无权修改其他用户密码", updateRequest.getUserId());
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(errorResponse);
+            if (currentUserId == null) {
+                logger.error("❌ currentUserId为null，JWT拦截器可能未正确设置");
+                ChangePasswordResponse errorResponse = new ChangePasswordResponse("认证信息缺失", updateRequest.getUserId());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
             }
+
+            if (!currentUserId.equals(updateRequest.getUserId())) {
+                logger.warn("🚫 用户ID不匹配: currentUserId={}, targetUserId={}", currentUserId, updateRequest.getUserId());
+                ChangePasswordResponse errorResponse = new ChangePasswordResponse("无权修改其他用户密码", updateRequest.getUserId());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+            }
+
+            logger.info("✅ 用户ID验证通过，开始修改密码业务逻辑");
 
             ChangePasswordResponse response = userService.changePassword(updateRequest);
 
@@ -109,6 +119,7 @@ public class userController {
             return ResponseEntity.status(status).body(response);
 
         } catch (Exception e) {
+            logger.error("💥 修改密码异常: userId={}, error={}", updateRequest.getUserId(), e.getMessage(), e);
             ChangePasswordResponse errorResponse=new ChangePasswordResponse("系统异常，请稍后重试", updateRequest.getUserId());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorResponse);
@@ -133,3 +144,5 @@ public class userController {
         }
     }
 }
+
+

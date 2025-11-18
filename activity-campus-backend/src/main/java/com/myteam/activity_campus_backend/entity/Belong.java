@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"belong\"", indexes = {  // 修正：移除schema，使用双引号
+@Table(name = "app_belong", indexes = {  // 修正：移除schema，使用双引号
         @Index(name = "idx_Belong_Team_Id", columnList = "team_Id"),
         @Index(name = "idx_Belong_User_Id", columnList = "user_Id")
 }, uniqueConstraints = {

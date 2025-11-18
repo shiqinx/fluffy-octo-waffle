@@ -1,7 +1,5 @@
 package com.myteam.activity_campus_backend.dto.response;
 
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author sjy15
@@ -9,8 +7,6 @@ import lombok.Setter;
  * @date 2025/10/26 14:06
  */
 public class UserRegisterResponse {
-    @Setter
-    @Getter
     private int userId;
     private String message;
     public UserRegisterResponse() {}
@@ -18,11 +14,16 @@ public class UserRegisterResponse {
         this.message = status;
         this.userId = userId;
     }
-    public String getStatus() {
+    public int getUserId() {
+        return userId;
+    }
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+    public String getMessage() {
         return message;
     }
-    public void setStatus(String status) {
-        this.message = status;
+    public void setMessage(String message) {
+        this.message = message;
     }
-
 }

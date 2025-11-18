@@ -1,6 +1,7 @@
 package com.myteam.activity_campus_backend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -12,9 +13,9 @@ import java.time.LocalDateTime;
 public class RecallMessageRequest {
     @NotBlank(message = "消息内容不为空")
     private String message;
-    @NotBlank(message = "操作人不能为空")
+    @NotNull(message = "操作人不能为空")
     private Integer senderId;
-    @NotBlank(message = "接收方不能为空")
+    @NotNull(message = "接收方不能为空")
     private Integer receiverId;
     private LocalDateTime time;
     public String getMessage() {

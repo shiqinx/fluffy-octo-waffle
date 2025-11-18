@@ -13,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 
+
 /**
  * @author sjy15
  * @description: 认证控制器
@@ -98,3 +99,4 @@ public class AuthController {
         }
     }
 }
+

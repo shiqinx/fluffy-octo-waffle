@@ -10,7 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "\"location\"")
+@Table(name = "app_location")
 public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

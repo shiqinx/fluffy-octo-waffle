@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Entity
-@Table(name = "\"activity\"", indexes = {  // 修正：移除schema，使用双引号
+@Table(name = "app_activity", indexes = {  // 修正：移除schema，使用双引号
         @Index(name = "idx_Activity_Publisher_Id", columnList = "publisher_Id"),
         @Index(name = "idx_Activity_Location_Id", columnList = "location_Id")
 })

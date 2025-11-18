@@ -66,13 +66,8 @@
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-		</dependency>
-		<!-- 7. MySQL驱动依赖：提供MySQL数据库连接能力（运行时生效，不参与编译） -->
-		<dependency>
-			<groupId>com.mysql</groupId>
-			<artifactId>mysql-connector-j</artifactId>
-			<version>8.3.0</version>
-			<scope>runtime</scope>
+			<version>2.2.224</version>
+			<scope>compile</scope> <!-- 改为compile，确保编译时能找到类 -->
 		</dependency>
 
 
@@ -212,5 +207,13 @@
 				</executions>
 			</plugin>
 		</plugins>
+		<testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+				<filtering>true</filtering>
+			</testResource>
+		</testResources>
 	</build>
 </project>
+
+
