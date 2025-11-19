@@ -1,6 +1,7 @@
 package com.myteam.activity_campus_backend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -9,7 +10,7 @@ import jakarta.validation.constraints.Size;
  * @date 2025/10/26 14:20
  */
 public class ChangePasswordRequest {
-    @NotBlank(message = "用户ID不能为空")
+    @NotNull(message = "用户ID不能为空")
     private int userId;
     @NotBlank(message = "密码不能为空")
     private String user_OldPassword;

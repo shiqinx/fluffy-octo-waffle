@@ -1,14 +1,15 @@
 package com.myteam.activity_campus_backend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * @author sjy15
- * @description: 用户注册请求DTO
+ * @description: 用户登录请求DTO
  * @date 2025/10/26 14:05
  */
 public class UserLoginRequest {
-    @NotBlank(message = "用户ID不能为空")
+    @NotNull(message = "用户ID不能为空")
     private Integer userId;
     @NotBlank(message = "密码不能为空")
     private String userPassword;

@@ -62,12 +62,12 @@
 		</dependency>
 
 
-		<!-- 7. MySQL驱动依赖：提供MySQL数据库连接能力（运行时生效，不参与编译） -->
+		<!-- H2 数据库（支持文件和内存模式） -->
 		<dependency>
-			<groupId>com.mysql</groupId>
-			<artifactId>mysql-connector-j</artifactId>
-			<version>8.3.0</version>
-			<scope>runtime</scope>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>2.2.224</version>
+			<scope>compile</scope> <!-- 改为compile，确保编译时能找到类 -->
 		</dependency>
 
 
@@ -131,12 +131,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- 3. 内存数据库依赖：测试数据库交互时使用（无需真实MySQL，避免环境依赖） -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>compile</scope>
-		</dependency>
 
 		<!-- 4. JSON日期支持依赖：测试中正确序列化/反序列化LocalDateTime（如活动时间字段） -->
 		<dependency>
@@ -197,6 +191,29 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.8</version>
+				<executions>
+					<execution>
+						<goals><goal>prepare-agent</goal></goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals><goal>report</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
+		<testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+				<filtering>true</filtering>
+			</testResource>
+		</testResources>
 	</build>
 </project>
+
+

@@ -2,10 +2,7 @@ package com.myteam.activity_campus_backend.controller;
 
 import com.myteam.activity_campus_backend.dto.MessageSendDTO;
 import com.myteam.activity_campus_backend.dto.request.*;
-import com.myteam.activity_campus_backend.dto.response.CheckInActivityResponse;
-import com.myteam.activity_campus_backend.dto.response.CheckListActivityResponse;
-import com.myteam.activity_campus_backend.dto.response.ParticipateInActivityResponse;
-import com.myteam.activity_campus_backend.dto.response.simpleActivityResponse;
+import com.myteam.activity_campus_backend.dto.response.*;
 import com.myteam.activity_campus_backend.entity.User;
 import com.myteam.activity_campus_backend.repository.UserRepository;
 import com.myteam.activity_campus_backend.service.ActivityServer;
@@ -14,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 
 /**
  * @author sjy15

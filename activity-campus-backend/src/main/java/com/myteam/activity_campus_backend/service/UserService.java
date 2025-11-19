@@ -15,8 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.myteam.activity_campus_backend.util.BCryptUtil.encrypt;
-import static com.myteam.activity_campus_backend.util.BCryptUtil.matches;
 
 /**
  * @author sjy15

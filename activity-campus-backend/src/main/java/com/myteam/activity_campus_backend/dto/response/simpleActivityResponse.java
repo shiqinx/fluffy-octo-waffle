@@ -2,6 +2,8 @@ package com.myteam.activity_campus_backend.dto.response;
 
 import com.myteam.activity_campus_backend.dto.ActivityDTO;
 import com.myteam.activity_campus_backend.entity.Activity;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  *   @author sjy15
@@ -9,30 +11,23 @@ import com.myteam.activity_campus_backend.entity.Activity;
  *   @date 2025/10/31 15:49
  */
 public class simpleActivityResponse {
-    private ActivityDTO activity;
+    private ActivityDTO activitydto;
+    @Setter
+    @Getter
     private boolean success;
+    @Getter
+    @Setter
     private String message;
-    public simpleActivityResponse(ActivityDTO activity, boolean success, String message) {
-        this.activity=new ActivityDTO();
+    public simpleActivityResponse(ActivityDTO activitydto, boolean success, String message) {
+        this.activitydto=activitydto;
         this.success = success;
         this.message = message;
     }
-    public ActivityDTO getActivity() {
-        return activity;
+    public ActivityDTO getActivityDTO() {
+        return activitydto;
     }
-    public void setActivity(ActivityDTO activity) {
-        this.activity = activity;
+    public void setActivityDTO(ActivityDTO activitydto) {
+        this.activitydto = activitydto;
     }
-    public boolean isSuccess() {
-        return success;
-    }
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
-    public String getMessage() {
-        return message;
-    }
-    public void setMessage(String message) {
-        this.message = message;
-    }
+
 }

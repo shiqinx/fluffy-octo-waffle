@@ -8,9 +8,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "userlocation", schema = "campus-activity", indexes = {
-        @Index(name = "idx_UserLocation_User_Id", columnList = "user_Id")
-})
+@Table(name = "app_userlocation",
+        indexes = {
+                @Index(name = "idx_userlocation_user", columnList = "user_Id"),
+                @Index(name = "idx_userlocation_coords", columnList = "latitude,longitude")
+        })
 public class Userlocation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,8 +33,12 @@ public class Userlocation {
     private BigDecimal latitude;
 
     @NotNull
-    @Column(name = "valid_Time", nullable = false)
+    @Column(name = "valid_time", nullable = false)
     private Long validTime;
+
+    // 建议添加默认构造函数
+    public Userlocation() {
+    }
 
     public Integer getId() {
         return id;

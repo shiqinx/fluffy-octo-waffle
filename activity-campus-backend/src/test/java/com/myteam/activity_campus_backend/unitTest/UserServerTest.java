@@ -1,7 +1,6 @@
-package com.myteam.activity_campus_backend;
+package com.myteam.activity_campus_backend.unitTest;
 
 import com.myteam.activity_campus_backend.dto.request.ChangePasswordRequest;
-import com.myteam.activity_campus_backend.dto.request.UserBelongRequest;
 import com.myteam.activity_campus_backend.dto.request.UserLoginRequest;
 import com.myteam.activity_campus_backend.dto.request.UserRegisterRequest;
 import com.myteam.activity_campus_backend.dto.response.ChangePasswordResponse;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -49,7 +47,7 @@ public class UserServerTest {
         //when
         UserRegisterResponse response=userService.registration(request);
         //Then
-        assertEquals("账号不存在", response.getStatus());
+        assertEquals("账号不存在", response.getMessage());
         assertEquals(userId, response.getUserId());
         verify(userRepository).findById(userId);
     }
@@ -61,7 +59,7 @@ public class UserServerTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         UserRegisterResponse response=userService.registration(request);
         //Then
-        assertEquals("用户已启用", response.getStatus());
+        assertEquals("用户已启用", response.getMessage());
         assertEquals(userId, response.getUserId());
         verify(userRepository,never()).save(any());
     }
@@ -72,7 +70,7 @@ public class UserServerTest {
         UserRegisterRequest request=new UserRegisterRequest(userId,"name","password");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         UserRegisterResponse response=userService.registration(request);
-        assertEquals("用户名错误", response.getStatus());
+        assertEquals("用户名错误", response.getMessage());
         assertEquals(userId, response.getUserId());
         verify(userRepository,never()).save(any());
     }
@@ -84,7 +82,7 @@ public class UserServerTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordService.matches("password", "correctPassword")).thenReturn(false);
         UserRegisterResponse response=userService.registration(request);
-        assertEquals("密码错误", response.getStatus());
+        assertEquals("密码错误", response.getMessage());
         assertEquals(userId, response.getUserId());
         verify(userRepository,never()).save(any());
     }
@@ -98,7 +96,7 @@ public class UserServerTest {
         when(passwordService.matches("password", "password")).thenReturn(true);
         // 需要确保 BCryptUtil.matches 返回 true
         UserRegisterResponse response=userService.registration(request);
-        assertEquals("激活成功", response.getStatus());
+        assertEquals("激活成功", response.getMessage());
         assertEquals("ACTIVE",user.getUserStatus());
         verify(userRepository).save(user);
     }

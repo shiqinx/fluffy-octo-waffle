@@ -113,6 +113,7 @@ public class ActivityDTO {
         dto.setRegistrationTime(activity.getRegistrationTime());
         dto.setRegistrationEndTime(activity.getRegistrationEndTime());
         dto.setStartTime(activity.getStartTime());
+        dto.setEndTime(activity.getEndTime());
         dto.setMaxPeople(activity.getMaxPeople());
         dto.setCurrentPeople(activity.getCurrentPeople());
         return dto;

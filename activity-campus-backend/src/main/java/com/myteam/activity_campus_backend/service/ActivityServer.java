@@ -34,6 +34,8 @@ public class ActivityServer {
     private ParticipateRepository participateRepository;
     @Autowired
     private UserlocationRepository userlocationRepository;
+    @Autowired
+    private GeoUtil geoUtil;
     //创建活动
     public simpleActivityResponse getsimpleActivityResponse(CreateActivityRequest request) {
         //检查时间顺序是否正确
@@ -43,41 +45,43 @@ public class ActivityServer {
         ActivityDTO dto = new ActivityDTO();
         //确保活动名称不会重复
         if(!activityRepository.existsByActivityName(request.getActivityName())){
-            //确保不会撞时间喝地点
+            Location local=locationRepository.findByDetailAddress(request.getLocationDescription());//获得地点id
+            if(local==null){
+                return new simpleActivityResponse(dto,false,"地址不存在");
+            }
+            //确保不会撞时间和地点
             if(!activityRepository.existsConflictActivity(request.getLocationDescription(),request.getStartTime(),request.getEndTime())){
                 UserDTO userdto=new UserDTO();
-                User user=userRepository.findByUserName(request.getPublisherName()).get();//获得主理人id
-                userdto.setUser_id(user.getId());
-                userdto.setUsername(user.getUserName());
-                Location local=locationRepository.findByDetailAddress(request.getLocationDescription());//获得地点id
-                if(userdto!=null){
-                    if(local!=null){
-                        activity.setPublisher(user);
-                        activity.setActivityName(request.getActivityName());
-                        activity.setActivityDescription(request.getActivityDescription());
-                        activity.setLocation(local);
-                        activity.setDetailedAddress(request.getLocationDescription());
-                        activity.setRegistrationTime(request.getRegistrationTime());
-                        activity.setRegistrationEndTime(request.getRegistrationEndTime());
-                        activity.setStartTime(request.getStartTime());
-                        activity.setEndTime(request.getEndTime());
-                        activity.setMaxPeople(request.getMaxPeople());
-                        activityRepository.save(activity);
-                        Integer id=activityRepository.findActivityIdByActivityName(activity.getActivityName());
-                        dto.setId(id);
-                        dto.setActivityName(activity.getActivityName());
-                        dto.setActivityDescription(activity.getActivityDescription());
-                        dto.setLocation(activity.getLocation());
-                        dto.setDetailedAddress(activity.getDetailedAddress());
-                        dto.setRegistrationTime(activity.getRegistrationTime());
-                        dto.setRegistrationEndTime(activity.getRegistrationEndTime());
-                        dto.setStartTime(activity.getStartTime());
-                        dto.setEndTime(activity.getEndTime());
-                        dto.setMaxPeople(activity.getMaxPeople());
-                        return new simpleActivityResponse(dto,true,"活动创建成功");
-                    }else{
-                        return new simpleActivityResponse(dto,false,"地址不存在");
-                    }
+                Optional<User> user1=userRepository.findByUserName(request.getPublisherName());//获得主理人id
+                if(user1.isPresent()){
+                    User user=user1.get();
+                    userdto.setUser_id(user.getId());
+                    userdto.setUsername(user.getUserName());
+                    activity.setPublisher(user);
+                    activity.setActivityName(request.getActivityName());
+                    activity.setActivityDescription(request.getActivityDescription());
+                    activity.setLocation(local);
+                    activity.setDetailedAddress(request.getLocationDescription());
+                    activity.setRegistrationTime(request.getRegistrationTime());
+                    activity.setRegistrationEndTime(request.getRegistrationEndTime());
+                    activity.setStartTime(request.getStartTime());
+                    activity.setEndTime(request.getEndTime());
+                    activity.setMaxPeople(request.getMaxPeople());
+                    activityRepository.save(activity);
+                    Integer id=activityRepository.findActivityIdByActivityName(activity.getActivityName());
+                    dto.setId(id);
+                    dto.setActivityName(activity.getActivityName());
+                    dto.setPublisher(userdto);
+                    dto.setActivityDescription(activity.getActivityDescription());
+                    dto.setLocation(local);
+                    dto.setDetailedAddress(request.getLocationDescription());
+                    dto.setRegistrationTime(request.getRegistrationTime());
+                    dto.setRegistrationEndTime(request.getRegistrationEndTime());
+                    dto.setStartTime(activity.getStartTime());
+                    dto.setEndTime(activity.getEndTime());
+                    dto.setMaxPeople(activity.getMaxPeople());
+                    dto.setCurrentPeople(activity.getCurrentPeople());
+                    return new simpleActivityResponse(dto,true,"活动创建成功");
                 }else{
                     return new simpleActivityResponse(dto,false,"用户不存在");
                 }
@@ -91,31 +95,20 @@ public class ActivityServer {
     //获得活动列表
     public CheckListActivityResponse ActivityListResponse(ActivityListRequest request) {
         List<Activity> activities=activityRepository.findByActivitiesLike(request.getKeyword());
-        if(activities==null){
+        if(activities.isEmpty()){
             return new CheckListActivityResponse(false,null);
         }
-        List<ActivityDTO> dtos=new ArrayList<ActivityDTO>();
-        dtos=activities.stream().map(ActivityDTO::convert).collect(Collectors.toList());
+        List<ActivityDTO> dtos=activities.stream().map(ActivityDTO::convert).collect(Collectors.toList());
         return new CheckListActivityResponse(true,dtos);
     }
     //获得单个活动详情
     public simpleActivityResponse DetailActivityResponse(CheckActivityRequest request){
         Optional<Activity> act=activityRepository.findById(request.getActivityId());
-        Activity activity=act.get();
-        if(activity==null){
+        if(act.isEmpty()){
             return new simpleActivityResponse(null,false,"活动不存在");
         }
-        ActivityDTO dto=new ActivityDTO();
-        dto.setId(activity.getId());
-        dto.setActivityName(activity.getActivityName());
-        dto.setActivityDescription(activity.getActivityDescription());
-        dto.setLocation(activity.getLocation());
-        dto.setDetailedAddress(activity.getDetailedAddress());
-        dto.setRegistrationTime(activity.getRegistrationTime());
-        dto.setRegistrationEndTime(activity.getRegistrationEndTime());
-        dto.setStartTime(activity.getStartTime());
-        dto.setMaxPeople(activity.getMaxPeople());
-        dto.setCurrentPeople(activity.getCurrentPeople());
+        Activity activity=act.get();
+        ActivityDTO dto=ActivityDTO.convert(activity);
         return new simpleActivityResponse(dto,true,"找到活动");
     }
     //参加活动
@@ -125,12 +118,11 @@ public class ActivityServer {
             return new ParticipateInActivityResponse(null,null,"用户不存在");
         }
         Optional<Activity> activity1=activityRepository.findById(request.getActivityId());
-        Activity activity=activity1.get();
-        ActivityDTO dto=new ActivityDTO();
-        dto=ActivityDTO.convert(activity);
-        if(activity==null){
+        if(activity1.isEmpty()){
             return new ParticipateInActivityResponse(null,null,"活动不存在");
         }
+        Activity activity=activity1.get();
+        ActivityDTO dto=ActivityDTO.convert(activity);
         UserDTO participant=new UserDTO();
         participant.setUser_id(request.getuserId());
         participant.setUsername(user.get().getUserName());
@@ -138,27 +130,26 @@ public class ActivityServer {
     }
     //同意活动参与申请
     public ParticipateInActivityResponse publisherAgreement(ParticipateInActivityResponse agreement) {
-        agreement.setMessage("同意");
+        //参与者
+        Optional<User> user1=userRepository.findById(agreement.getParticipant().getUser_id());
+        if(user1.isEmpty()){
+            agreement.setMessage("用户不存在");
+            return agreement;
+        }
+        User user=user1.get();
+        //活动
+        Optional<Activity> activity1=activityRepository.findById(agreement.getActivity().getId());
+        if(activity1.isEmpty()){
+            agreement.setMessage("活动不存在");
+            return agreement;
+        }
+        Activity activity=activity1.get();
         Participate participate=new Participate();
-        Optional<User> user=userRepository.findById(agreement.getParticipant().getUser_id());
-        User user1=user.get();
-        Activity activity=new Activity();
-        activity.setId(agreement.getActivity().getId());
-        activity.setActivityName(agreement.getActivity().getActivityName());
-        activity.setPublisher(user1);
-        activity.setActivityDescription(agreement.getActivity().getActivityDescription());
-        activity.setLocation(agreement.getActivity().getLocation());
-        activity.setDetailedAddress(agreement.getActivity().getDetailedAddress());
-        activity.setRegistrationTime(agreement.getActivity().getRegistrationTime());
-        activity.setRegistrationEndTime(agreement.getActivity().getRegistrationEndTime());
-        activity.setStartTime(agreement.getActivity().getStartTime());
-        activity.setEndTime(agreement.getActivity().getEndTime());
-        activity.setMaxPeople(agreement.getActivity().getMaxPeople());
-        activity.setCurrentPeople(agreement.getActivity().getCurrentPeople());
-        participate.setParticipant(user1);
+        participate.setParticipant(user);
         participate.setActivity(activity);
         participate.setTime(LocalDateTime.now());
         participateRepository.save(participate);
+        agreement.setMessage("同意");
         return agreement;
     }
     //同意后更新活动人数
@@ -174,8 +165,11 @@ public class ActivityServer {
     //活动签到
    public CheckInActivityResponse checkInActivity(CheckInActivityRequest checkInActivityRequest) {
         Optional<Userlocation> userl=userlocationRepository.findByUserId(checkInActivityRequest.getUserId());
+        if(userl.isEmpty()){
+            return new CheckInActivityResponse(checkInActivityRequest,false);
+        }
         Location location= activityRepository.findLocationByActivityId(checkInActivityRequest.getActivityId());
-        boolean result=GeoUtil.isInArea(userl.get().getLatitude(), userl.get().getLongitude(),location.getCenterLatitude(),location.getCenterLongitude(),location.getRegionRadius());
+       boolean result=geoUtil.isInArea(userl.get().getLatitude(), userl.get().getLongitude(),location.getCenterLatitude(),location.getCenterLongitude(),location.getRegionRadius());
         return new CheckInActivityResponse(checkInActivityRequest,result);
    }
 }

@@ -59,20 +59,6 @@ public class BelongController {
         return ResponseEntity.ok(memberList);
     }
 
-    /**
-     * 查询当前登录用户参加的活动列表
-     * @param httpRequest HTTP请求对象（获取当前用户ID，避免手动传递）
-     * @return 用户参加的活动列表响应
-     */
-    @GetMapping("/my-activities")
-    public ResponseEntity<UserPartActivityResponse> getMyActivities(HttpServletRequest httpRequest) {
-        String currentUserId = (String) httpRequest.getAttribute("currentUserId");
-        // 实例化活动查询请求对象（命名区分，避免冲突）
-        UserPartActivity userPartActivity = new UserPartActivity();
-        userPartActivity.setUserId(Integer.valueOf(currentUserId));
-        UserPartActivityResponse response = participateServer.activityList(userPartActivity);
-        return ResponseEntity.ok(response);
-    }
 
     /**
      * 根据活动ID查询活动所有参与者

@@ -8,7 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "team", schema = "campus-activity", indexes = {
+@Table(name = "app_team", indexes = {
         @Index(name = "idx_Team_Creator_Id", columnList = "creator_Id")
 })
 public class Team {
@@ -25,11 +25,13 @@ public class Team {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "creator_Id", nullable = false)
-    private com.myteam.activity_campus_backend.entity.User creator;
+    private User creator;
 
     @OneToMany(mappedBy = "team")
     private Set<Belong> belongs = new LinkedHashSet<>();
 
+    public Team() {
+    }
     public Integer getId() {
         return id;
     }

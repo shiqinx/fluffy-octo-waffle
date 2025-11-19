@@ -2,13 +2,15 @@ package com.myteam.activity_campus_backend.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "message", schema = "campus-activity", indexes = {
-        @Index(name = "idx_Message_User_Id", columnList = "user_Id")
+@Table(name = "app_message", indexes = {  // 修正：移除schema，使用双引号
+        @Index(name = "idx_Message_User_Id", columnList = "user_Id"),
+        @Index(name = "idx_Message_Receive_Id", columnList = "receive_Id")
 })
 public class Message {
     @Id
@@ -23,17 +25,19 @@ public class Message {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_Id", nullable = false)
-    private com.myteam.activity_campus_backend.entity.User user;
+    private User user;
 
     @NotNull
-    @Lob
-    @Column(name = "content", nullable = false)
+    @Size(max = 255)
+    @Column(name = "content", nullable = false, length = 255)
     private String content;
 
     @NotNull
     @Column(name = "send_Time", nullable = false)
     private LocalDateTime sendTime;
 
+    public Message() {
+    }
     public Integer getId() {
         return id;
     }
@@ -50,11 +54,11 @@ public class Message {
         this.receiveId = receiveId;
     }
 
-    public com.myteam.activity_campus_backend.entity.User getUser() {
+    public User getUser() {
         return user;
     }
 
-    public void setUser(com.myteam.activity_campus_backend.entity.User user) {
+    public void setUser(User user) {
         this.user = user;
     }
 

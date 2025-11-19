@@ -1,7 +1,7 @@
 package com.myteam.activity_campus_backend.service;
 
 import com.myteam.activity_campus_backend.dto.MessageSendDTO;
-import com.myteam.activity_campus_backend.dto.request.ListMessageHistory;
+import com.myteam.activity_campus_backend.dto.response.ListMessageHistory;
 import com.myteam.activity_campus_backend.dto.request.MessageHistoryRequest;
 import com.myteam.activity_campus_backend.dto.request.RecallMessageRequest;
 import com.myteam.activity_campus_backend.dto.response.MessageHistoryResponse;
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +29,7 @@ public class MessageServer {
     private UserRepository userRepository;
     //撤回消息
     public String recallMessage(RecallMessageRequest recall) {
-        Message message=MessageRepository.findByContentAndSenderAndReceiverAndTime(recall.getMessage(), recall.getSenderid(), recall.getReceiverId(),recall.getTime());
+        Message message=MessageRepository.findByContentAndSenderAndReceiverAndTime(recall.getMessage(), recall.getSenderId(), recall.getReceiverId(),recall.getTime());
         if(message==null){
             return "消息不存在";
         }
@@ -38,13 +37,16 @@ public class MessageServer {
         return "撤回成功";
     }
     //发送信息
-    public String sendMessage(MessageSendDTO savedmessage) {
+    public String sendMessage(MessageSendDTO savedMessage) {
         Message message=new Message();
-        Optional<User> sender=userRepository.findById(savedmessage.getSenderId());
+        Optional<User> sender=userRepository.findById(savedMessage.getSenderId());
+        if(sender.isEmpty()){
+            return "发送者不存在";
+        }
         User user=sender.get();
         message.setUser(user);
-        message.setReceiveId(savedmessage.getReceiverId());//活动id
-        message.setContent(savedmessage.getMessage());
+        message.setReceiveId(savedMessage.getReceiverId());//活动id
+        message.setContent(savedMessage.getMessage());
         message.setSendTime(LocalDateTime.now());
         MessageRepository.save(message);
         return "发送成功";

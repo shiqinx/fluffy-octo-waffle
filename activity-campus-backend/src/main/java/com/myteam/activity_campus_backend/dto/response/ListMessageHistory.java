@@ -1,7 +1,4 @@
-package com.myteam.activity_campus_backend.dto.request;
-
-import com.myteam.activity_campus_backend.dto.MessageSendDTO;
-import com.myteam.activity_campus_backend.dto.response.MessageHistoryResponse;
+package com.myteam.activity_campus_backend.dto.response;
 
 import java.util.List;
 

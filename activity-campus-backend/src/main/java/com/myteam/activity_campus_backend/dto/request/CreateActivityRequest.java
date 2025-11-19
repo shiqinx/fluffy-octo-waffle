@@ -1,6 +1,7 @@
 package com.myteam.activity_campus_backend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -17,15 +18,15 @@ public class CreateActivityRequest {
     private String activityDescription;
     @NotBlank(message="活动详细地址不能为空")
     private String locationDescription;
-    @NotBlank(message="活动报名时间不能为空")
+    @NotNull(message="活动报名时间不能为空")
     private LocalDateTime registrationTime;
-    @NotBlank(message="活动报名截止时间不能为空")
+    @NotNull(message="活动报名截止时间不能为空")
     private LocalDateTime registrationEndTime;
-    @NotBlank(message="活动时间不能为空")
+    @NotNull(message="活动时间不能为空")
     private LocalDateTime startTime;
-    @NotBlank(message="活动截止时间不能为空")
+    @NotNull(message="活动截止时间不能为空")
     private LocalDateTime endTime;
-    @NotBlank(message = "活动最大人数不能为空")
+    @NotNull(message = "活动最大人数不能为空")
     private Integer maxPeople;
     public String getPublisherName() {
         return publisherName;

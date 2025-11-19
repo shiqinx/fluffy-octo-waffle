@@ -24,15 +24,13 @@ public class BelongServer {
     //用户找参与团队
     public UserBelongResponse getUserBelong(UserBelongRequest userBelongRequest) {
         List<Belong> belongs=belongRepository.findByUser_IdOrTeam_Id(userBelongRequest.getUserId());
-        List<BelongDTO> belongDTOS=new ArrayList<>();
-        belongDTOS=belongs.stream().map(BelongDTO::toBelongDTO).collect(Collectors.toList());
+        List<BelongDTO> belongDTOS=belongs.stream().map(BelongDTO::toBelongDTO).collect(Collectors.toList());
         return new UserBelongResponse(belongDTOS);
     }
     //团队找成员
     public List<BelongDTO> listBelongs(Integer teamId) {
         List<Belong> belongs=belongRepository.findByUser_IdOrTeam_Id(teamId);
-        List<BelongDTO> belongDTOS=new ArrayList<>();
-        belongDTOS=belongs.stream().map(BelongDTO::toBelongDTO).collect(Collectors.toList());
+        List<BelongDTO> belongDTOS=belongs.stream().map(BelongDTO::toBelongDTO).collect(Collectors.toList());
         return belongDTOS;
     }
 }

@@ -1,7 +1,7 @@
 package com.myteam.activity_campus_backend.controller;
 
 import com.myteam.activity_campus_backend.dto.MessageSendDTO;
-import com.myteam.activity_campus_backend.dto.request.ListMessageHistory;
+import com.myteam.activity_campus_backend.dto.response.ListMessageHistory;
 import com.myteam.activity_campus_backend.dto.request.MessageHistoryRequest;
 import com.myteam.activity_campus_backend.dto.request.RecallMessageRequest;
 import com.myteam.activity_campus_backend.service.MessageServer;
