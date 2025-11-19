@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试登录</title>
+</head>
+<body>
+    <h1>测试登录脚本</h1>
+    <button onclick="simulateLogin()">模拟登录</button>
+    <button onclick="checkAuth()">检查认证状态</button>
+    <button onclick="goToChangePassword()">去修改密码</button>
+    
+    <script>
+        function simulateLogin() {
+            // 模拟登录数据
+            const mockToken = 'mock-jwt-token-' + Date.now();
+            const mockUser = {
+                id: 1,
+                studentId: '2021001',
+                name: '测试用户',
+                email: 'test@example.com'
+            };
+            
+            // 存储到localStorage
+            localStorage.setItem('token', mockToken);
+            localStorage.setItem('user', JSON.stringify(mockUser));
+            localStorage.setItem('loginTime', Date.now().toString());
+            
+            console.log('✅ 模拟登录成功');
+            console.log('Token:', mockToken);
+            console.log('User:', mockUser);
+            alert('模拟登录成功！');
+        }
+        
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            const loginTime = localStorage.getItem('loginTime');
+            
+            console.log('📊 认证状态检查:');
+            console.log('Token:', token);
+            console.log('User:', user);
+            console.log('LoginTime:', loginTime);
+            
+            if (token && user && loginTime) {
+                const currentTime = Date.now();
+                const loginTimestamp = parseInt(loginTime);
+                const fourHours = 4 * 60 * 60 * 1000;
+                
+                if (currentTime - loginTimestamp > fourHours) {
+                    alert('Token已过期');
+                } else {
+                    alert('用户已登录');
+                }
+            } else {
+                alert('用户未登录');
+            }
+        }
+        
+        function goToChangePassword() {
+            window.location.href = '/change-password';
+        }
+    </script>
+</body>
+</html>

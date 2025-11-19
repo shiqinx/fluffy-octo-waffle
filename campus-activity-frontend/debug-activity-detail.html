@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+            background-color: #ffe6e6;
+        }
+        .success {
+            color: green;
+            background-color: #e6ffe6;
+        }
+        .warning {
+            color: orange;
+            background-color: #fff3cd;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动详情页面调试工具</h1>
+    
+    <div class="section">
+        <h2>1. 检查localStorage数据</h2>
+        <button onclick="checkLocalStorage()">检查localStorage</button>
+        <div id="localStorage-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. 创建测试活动数据</h2>
+        <button onclick="createTestActivities()">创建测试活动</button>
+        <div id="create-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. 测试API调用</h2>
+        <input type="number" id="activityId" placeholder="活动ID" value="1" style="width: 100px; padding: 5px;">
+        <button onclick="testActivityDetailAPI()">测试活动详情API</button>
+        <div id="api-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. 模拟路由跳转</h2>
+        <button onclick="simulateNavigation()">模拟导航到活动详情</button>
+        <div id="navigation-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>5. 检查页面模板逻辑</h2>
+        <button onclick="checkTemplateLogic()">检查模板条件</button>
+        <div id="template-result"></div>
+    </div>
+
+    <script>
+        // 模拟全局数据管理器
+        const globalDataManager = {
+            activities: [],
+            getActivities() {
+                return this.activities;
+            },
+            addActivity(activity) {
+                this.activities.push(activity);
+            }
+        };
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            console.log(`[${timestamp}] ${message}`);
+            return { timestamp, message, type };
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            const className = result.type === 'error' ? 'error' : 
+                           result.type === 'success' ? 'success' : 
+                           result.type === 'warning' ? 'warning' : '';
+            
+            element.innerHTML = `
+                <div class="test-result ${className}">
+                    <strong>[${result.timestamp}]</strong> ${result.message}
+                    ${result.data ? `<pre>${JSON.stringify(result.data, null, 2)}</pre>` : ''}
+                </div>
+            `;
+        }
+
+        function checkLocalStorage() {
+            try {
+                const activities = localStorage.getItem('campus_activities');
+                if (activities) {
+                    const parsed = JSON.parse(activities);
+                    displayResult('localStorage-result', log(`localStorage中有 ${parsed.length} 个活动数据`, 'success'));
+                    displayResult('localStorage-result', log(`活动数据: ${JSON.stringify(parsed, null, 2)}`, 'info'));
+                } else {
+                    displayResult('localStorage-result', log('localStorage中没有活动数据', 'warning'));
+                }
+            } catch (error) {
+                displayResult('localStorage-result', log(`localStorage读取失败: ${error.message}`, 'error'));
+            }
+        }
+
+        function createTestActivities() {
+            try {
+                const testActivities = [
+                    {
+                        id: 1,
+                        title: '篮球友谊赛',
+                        category: 'sports',
+                        description: '周末篮球友谊赛，欢迎所有篮球爱好者参加，一起享受运动的快乐！',
+                        status: 'recruiting',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000).toISOString(),
+                        enrollStartTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        enrollEndTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                        location: {
+                            name: '学校篮球场',
+                            address: '广东药科大学云浮校区篮球场'
+                        },
+                        coords: [113.123456, 23.123456],
+                        organizer: {
+                            id: 1,
+                            name: '张三',
+                            avatar: '/default-avatar.png',
+                            role: '组织者',
+                            creditScore: 95
+                        },
+                        currentParticipants: 8,
+                        maxParticipants: 10,
+                        participants: [
+                            {
+                                id: 1,
+                                userId: 1,
+                                name: '孙金瑶',
+                                avatar: '/default-avatar.png',
+                                creditScore: 88,
+                                checkedIn: true,
+                                status: 'approved'
+                            }
+                        ],
+                        enrollments: []
+                    },
+                    {
+                        id: 2,
+                        title: '中医养生讲座',
+                        category: 'lecture',
+                        description: '邀请中医专家讲解中医养生知识，了解传统中医文化，学习健康养生方法。',
+                        status: 'recruiting',
+                        startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                        enrollStartTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        enrollEndTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                        location: {
+                            name: '教学楼A101',
+                            address: '广东药科大学云浮校区教学楼A101'
+                        },
+                        coords: [113.123456, 23.123456],
+                        organizer: {
+                            id: 1,
+                            name: '张三',
+                            avatar: '/default-avatar.png',
+                            role: '组织者',
+                            creditScore: 95
+                        },
+                        currentParticipants: 25,
+                        maxParticipants: 50,
+                        participants: [
+                            {
+                                id: 1,
+                                userId: 1,
+                                name: '孙金瑶',
+                                avatar: '/default-avatar.png',
+                                creditScore: 88,
+                                checkedIn: false,
+                                status: 'approved'
+                            }
+                        ],
+                        enrollments: []
+                    }
+                ];
+
+                localStorage.setItem('campus_activities', JSON.stringify(testActivities));
+                
+                // 同时添加到全局数据管理器
+                testActivities.forEach(activity => {
+                    globalDataManager.addActivity(activity);
+                });
+
+                displayResult('create-result', log(`成功创建 ${testActivities.length} 个测试活动`, 'success'));
+            } catch (error) {
+                displayResult('create-result', log(`创建测试活动失败: ${error.message}`, 'error'));
+            }
+        }
+
+        function testActivityDetailAPI() {
+            const activityId = document.getElementById('activityId').value;
+            
+            try {
+                // 模拟API调用逻辑
+                let activities = [];
+                
+                // 优先从localStorage获取
+                try {
+                    const stored = localStorage.getItem('campus_activities');
+                    if (stored) {
+                        activities = JSON.parse(stored);
+                        console.log('从localStorage获取活动数据');
+                    }
+                } catch (error) {
+                    console.warn('从localStorage读取失败，使用全局数据管理器');
+                    activities = globalDataManager.getActivities();
+                }
+
+                // 如果localStorage没有数据，使用全局数据管理器
+                if (activities.length === 0) {
+                    activities = globalDataManager.getActivities();
+                }
+
+                // 查找指定ID的活动
+                const activity = activities.find(a => a.id === parseInt(activityId));
+                
+                if (activity) {
+                    const response = {
+                        success: true,
+                        data: activity,
+                        message: '获取活动详情成功'
+                    };
+                    displayResult('api-result', log(`API调用成功，找到活动: ${activity.title}`, 'success'));
+                    displayResult('api-result', log(`API响应: ${JSON.stringify(response, null, 2)}`, 'info'));
+                } else {
+                    displayResult('api-result', log(`未找到ID为 ${activityId} 的活动`, 'warning'));
+                    displayResult('api-result', log(`现有活动ID: ${activities.map(a => a.id).join(', ')}`, 'info'));
+                }
+            } catch (error) {
+                displayResult('api-result', log(`API调用失败: ${error.message}`, 'error'));
+            }
+        }
+
+        function simulateNavigation() {
+            const activityId = document.getElementById('activityId').value;
+            
+            try {
+                // 模拟Vue Router的route.params.id
+                const mockRoute = {
+                    params: {
+                        id: activityId
+                    }
+                };
+
+                displayResult('navigation-result', log(`模拟导航到活动详情页面，活动ID: ${mockRoute.params.id}`, 'info'));
+                
+                // 检查路由参数是否正确
+                if (!mockRoute.params.id) {
+                    displayResult('navigation-result', log('路由参数中没有活动ID', 'error'));
+                } else {
+                    displayResult('navigation-result', log(`路由参数正确，活动ID: ${mockRoute.params.id}`, 'success'));
+                }
+
+                // 模拟跳转链接
+                const detailUrl = `/activity/${activityId}`;
+                displayResult('navigation-result', log(`详情页面URL: ${detailUrl}`, 'info'));
+                displayResult('navigation-result', log(`<a href="${detailUrl}" target="_blank">点击这里跳转到活动详情页面</a>`, 'info'));
+            } catch (error) {
+                displayResult('navigation-result', log(`模拟导航失败: ${error.message}`, 'error'));
+            }
+        }
+
+        function checkTemplateLogic() {
+            const activityId = document.getElementById('activityId').value;
+            
+            try {
+                // 模拟Vue组件的响应式数据
+                const mockActivity = {
+                    value: null
+                };
+                const loading = { value: false };
+
+                // 模拟获取活动数据
+                let activities = [];
+                try {
+                    const stored = localStorage.getItem('campus_activities');
+                    if (stored) {
+                        activities = JSON.parse(stored);
+                    }
+                } catch (error) {
+                    console.warn('读取localStorage失败');
+                }
+
+                const activity = activities.find(a => a.id === parseInt(activityId));
+                
+                if (activity) {
+                    mockActivity.value = activity;
+                } else {
+                    // 使用回退数据
+                    mockActivity.value = {
+                        id: parseInt(activityId),
+                        title: `活动 ${activityId}`,
+                        description: '这是一个默认活动描述',
+                        status: 'recruiting',
+                        location: { name: '默认地点' },
+                        organizer: { name: '默认组织者' }
+                    };
+                }
+
+                // 检查模板条件
+                const checks = [
+                    {
+                        condition: loading.value,
+                        description: 'loading状态',
+                        result: loading.value ? '显示加载中' : '不显示加载中'
+                    },
+                    {
+                        condition: !mockActivity.value,
+                        description: '活动数据不存在',
+                        result: !mockActivity.value ? '显示无数据提示' : '显示活动内容'
+                    },
+                    {
+                        condition: mockActivity.value && mockActivity.value.title,
+                        description: '活动标题存在',
+                        result: mockActivity.value?.title ? `显示标题: ${mockActivity.value.title}` : '不显示标题'
+                    },
+                    {
+                        condition: mockActivity.value && mockActivity.value.description,
+                        description: '活动描述存在',
+                        result: mockActivity.value?.description ? `显示描述: ${mockActivity.value.description.substring(0, 50)}...` : '不显示描述'
+                    }
+                ];
+
+                let resultHtml = '<h4>模板条件检查结果:</h4>';
+                checks.forEach(check => {
+                    resultHtml += `<p><strong>${check.description}:</strong> ${check.result}</p>`;
+                });
+
+                resultHtml += `<h4>最终活动数据:</h4><pre>${JSON.stringify(mockActivity.value, null, 2)}</pre>`;
+                
+                document.getElementById('template-result').innerHTML = resultHtml;
+                
+            } catch (error) {
+                displayResult('template-result', log(`模板逻辑检查失败: ${error.message}`, 'error'));
+            }
+        }
+
+        // 页面加载时自动检查localStorage
+        window.onload = function() {
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

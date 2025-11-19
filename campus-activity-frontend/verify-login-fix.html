@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录功能验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 登录功能验证测试</h1>
+    
+    <div class="test-container">
+        <h2>测试状态</h2>
+        <div id="testStatus" class="test-result info">
+            准备开始测试...
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>测试用例</h2>
+        <button onclick="runAllTests()">🚀 运行所有测试</button>
+        <button onclick="runTest('validStudentId')">✅ 有效学号登录</button>
+        <button onclick="runTest('validUsername')">✅ 有效用户名登录</button>
+        <button onclick="runTest('emptyStudentId')">❌ 空学号测试</button>
+        <button onclick="runTest('emptyPassword')">❌ 空密码测试</button>
+        <button onclick="runTest('invalidFormat')">❌ 格式错误测试</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>手动测试</h2>
+        <div>
+            <label>学号/用户名:</label>
+            <input type="text" id="manualUsername" value="20210001" style="margin: 5px; padding: 5px;">
+            <label>密码:</label>
+            <input type="password" id="manualPassword" value="123456" style="margin: 5px; padding: 5px;">
+            <button onclick="manualTest()">🔍 手动测试</button>
+        </div>
+        <div id="manualResult"></div>
+    </div>
+
+    <script type="module">
+        // 导入验证函数
+        import { validateLoginParams } from './src/utils/validation.js'
+        
+        window.validateLoginParams = validateLoginParams
+        
+        // 测试用例
+        const testCases = {
+            validStudentId: {
+                name: "有效学号登录",
+                data: { studentId: "20210001", password: "123456" },
+                expected: "success"
+            },
+            validUsername: {
+                name: "有效用户名登录", 
+                data: { username: "admin", password: "123456" },
+                expected: "success"
+            },
+            emptyStudentId: {
+                name: "空学号测试",
+                data: { studentId: "", password: "123456" },
+                expected: "error"
+            },
+            emptyPassword: {
+                name: "空密码测试",
+                data: { studentId: "20210001", password: "" },
+                expected: "error"
+            },
+            invalidFormat: {
+                name: "格式错误测试",
+                data: { studentId: "ab", password: "123" },
+                expected: "error"
+            }
+        }
+
+        window.runTest = async function(testName) {
+            const testCase = testCases[testName]
+            if (!testCase) {
+                console.error('测试用例不存在:', testName)
+                return
+            }
+
+            const resultDiv = document.getElementById('testResults')
+            const testResult = document.createElement('div')
+            testResult.className = 'test-result info'
+            testResult.innerHTML = `<strong>🔄 ${testCase.name}</strong> - 测试进行中...`
+            resultDiv.appendChild(testResult)
+
+            try {
+                const result = await validateLoginParams(testCase.data)
+                
+                if (testCase.expected === 'success') {
+                    testResult.className = 'test-result success'
+                    testResult.innerHTML = `<strong>✅ ${testCase.name}</strong> - 测试通过<br>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>`
+                } else {
+                    testResult.className = 'test-result error'
+                    testResult.innerHTML = `<strong>❌ ${testCase.name}</strong> - 应该失败但成功了<br>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>`
+                }
+            } catch (error) {
+                if (testCase.expected === 'error') {
+                    testResult.className = 'test-result success'
+                    testResult.innerHTML = `<strong>✅ ${testCase.name}</strong> - 正确捕获错误<br>
+                        <pre>${error.message}</pre>`
+                } else {
+                    testResult.className = 'test-result error'
+                    testResult.innerHTML = `<strong>❌ ${testCase.name}</strong> - 意外错误<br>
+                        <pre>${error.message}</pre>`
+                }
+            }
+        }
+
+        window.runAllTests = async function() {
+            const resultDiv = document.getElementById('testResults')
+            resultDiv.innerHTML = ''
+            
+            for (const testName of Object.keys(testCases)) {
+                await runTest(testName)
+                await new Promise(resolve => setTimeout(resolve, 500)) // 延迟500ms
+            }
+            
+            updateStatus('所有测试完成！')
+        }
+
+        window.manualTest = async function() {
+            const username = document.getElementById('manualUsername').value
+            const password = document.getElementById('manualPassword').value
+            const resultDiv = document.getElementById('manualResult')
+            
+            resultDiv.innerHTML = '<div class="test-result info">测试进行中...</div>'
+            
+            try {
+                const data = { studentId: username, password }
+                const result = await validateLoginParams(data)
+                
+                resultDiv.innerHTML = `<div class="test-result success">
+                    <strong>✅ 验证成功</strong><br>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">
+                    <strong>❌ 验证失败</strong><br>
+                    <pre>${error.message}</pre>
+                </div>`
+            }
+        }
+
+        function updateStatus(message) {
+            const statusDiv = document.getElementById('testStatus')
+            statusDiv.innerHTML = `<strong>📊 状态:</strong> ${message}`
+            statusDiv.className = 'test-result info'
+        }
+
+        // 页面加载完成后初始化
+        updateStatus('测试页面已加载，可以开始测试')
+    </script>
+</body>
+</html>

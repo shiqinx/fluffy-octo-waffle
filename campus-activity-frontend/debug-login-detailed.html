@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录详细调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔍 登录详细调试</h2>
+        
+        <div class="form-group">
+            <label for="studentId">学号:</label>
+            <input type="text" id="studentId" value="2330502143" placeholder="请输入学号">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" value="123456" placeholder="请输入密码">
+        </div>
+        
+        <button onclick="debugLogin()">🔍 详细调试登录</button>
+        <button onclick="clearLog()">🧹 清除日志</button>
+        
+        <div class="test-info">
+            <h3>测试账号信息：</h3>
+            <p>有效账号：2330502143 / 123456 (孙金瑶)</p>
+            <p>有效账号：2330502134 / 123456 (卢敏婷)</p>
+            <p>无效组合：任意错误密码</p>
+        </div>
+        
+        <div id="log" class="log">等待调试开始...\n</div>
+    </div>
+
+    <script type="module">
+        // 设置环境变量使用Mock API
+        window.VITE_USE_MOCK = 'true';
+        
+        // 导入必要的模块
+        import { validateLoginParams } from './src/utils/validation.js';
+        import { login } from './src/api/auth.js';
+        
+        let logElement = null;
+        
+        function log(message, type = 'info') {
+            if (!logElement) {
+                logElement = document.getElementById('log');
+            }
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        window.debugLogin = async function() {
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+            
+            log('🚀 开始详细调试登录流程', 'info');
+            log(`📝 输入参数: studentId="${studentId}", password="${password}"`, 'info');
+            
+            try {
+                // 步骤1: 参数验证
+                log('\n📋 步骤1: 验证登录参数', 'info');
+                const validatedCredentials = validateLoginParams({ studentId, password });
+                log(`✅ 参数验证成功: ${JSON.stringify(validatedCredentials, null, 2)}`, 'success');
+                
+                // 步骤2: 调用登录API
+                log('\n🔐 步骤2: 调用登录API', 'info');
+                log('📡 发送请求到 mockLogin...', 'info');
+                
+                const response = await login(validatedCredentials);
+                log(`📞 API响应: ${JSON.stringify(response, null, 2)}`, 'success');
+                
+                // 步骤3: 分析响应
+                log('\n🔍 步骤3: 分析响应结果', 'info');
+                if (response.success) {
+                    log('✅ 登录成功!', 'success');
+                    if (response.data) {
+                        log(`👤 用户信息: ${JSON.stringify(response.data.user, null, 2)}`, 'success');
+                        log(`🔑 Token: ${response.data.token.substring(0, 50)}...`, 'success');
+                    } else {
+                        log('⚠️ 警告: 响应缺少data字段', 'error');
+                    }
+                } else {
+                    log(`❌ 登录失败: ${response.message}`, 'error');
+                    if (response.error) {
+                        log(`🔧 错误详情: ${JSON.stringify(response.error, null, 2)}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log('\n💥 捕获到异常!', 'error');
+                log(`❌ 错误类型: ${typeof error}`, 'error');
+                log(`❌ 错误消息: ${error.message}`, 'error');
+                log(`🔧 错误详情: ${JSON.stringify(error, null, 2)}`, 'error');
+                
+                // 检查错误对象的属性
+                log('\n🔍 错误对象属性分析:', 'info');
+                for (let prop in error) {
+                    log(`  - ${prop}: ${error[prop]}`, 'info');
+                }
+            }
+            
+            log('\n🏁 调试完成', 'info');
+        };
+        
+        window.clearLog = function() {
+            const logElement = document.getElementById('log');
+            logElement.innerHTML = '日志已清除...\n';
+        };
+        
+        // 页面加载完成
+        log('🔧 登录调试页面已加载', 'info');
+        log('💡 点击"详细调试登录"按钮开始调试', 'info');
+    </script>
+</body>
+</html>

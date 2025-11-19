@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据流测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动创建数据流测试</h1>
+    
+    <div class="section">
+        <h3>1. 检查数据状态</h3>
+        <button onclick="checkDataStatus()">检查当前数据状态</button>
+        <div id="data-status" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h3>2. 创建测试活动</h3>
+        <button onclick="createTestActivity()">创建测试活动</button>
+        <div id="create-result" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h3>3. 验证数据同步</h3>
+        <button onclick="checkDataSync()">检查数据同步状态</button>
+        <div id="sync-status" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h3>4. 模拟页面刷新</h3>
+        <button onclick="simulatePageRefresh()">模拟页面刷新数据加载</button>
+        <div id="refresh-result" class="log"></div>
+    </div>
+
+    <script type="module">
+        // 导入需要的模块
+        import { globalDataManager } from './src/api/global-data.js';
+        import { mockCreateActivity, mockGetActivityList } from './src/api/mock.js';
+        
+        // 日志输出函数
+        function logToElement(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            element.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            element.scrollTop = element.scrollHeight;
+        }
+        
+        // 检查数据状态
+        window.checkDataStatus = function() {
+            const statusEl = document.getElementById('data-status');
+            statusEl.innerHTML = '';
+            
+            try {
+                // 检查全局数据管理器
+                const globalActivities = globalDataManager.getActivities();
+                logToElement('data-status', `全局数据管理器中的活动数量: ${globalActivities.length}`, 'success');
+                
+                globalActivities.forEach(activity => {
+                    logToElement('data-status', `  - ${activity.title} (ID: ${activity.id})`);
+                });
+                
+                // 检查localStorage
+                const localStorageData = localStorage.getItem('campus_activities');
+                if (localStorageData) {
+                    const localActivities = JSON.parse(localStorageData);
+                    logToElement('data-status', `localStorage中的活动数量: ${localActivities.length}`, 'success');
+                    
+                    localActivities.forEach(activity => {
+                        logToElement('data-status', `  - ${activity.title} (ID: ${activity.id})`);
+                    });
+                } else {
+                    logToElement('data-status', 'localStorage中没有活动数据', 'error');
+                }
+                
+            } catch (error) {
+                logToElement('data-status', `检查数据状态失败: ${error.message}`, 'error');
+            }
+        };
+        
+        // 创建测试活动
+        window.createTestActivity = async function() {
+            const resultEl = document.getElementById('create-result');
+            resultEl.innerHTML = '';
+            
+            try {
+                logToElement('create-result', '开始创建测试活动...');
+                
+                const testActivityData = {
+                    title: '测试活动-' + Date.now(),
+                    description: '这是一个测试活动，用于验证数据流',
+                    category: 'test',
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                    location: {
+                        name: '测试地点',
+                        address: '测试地址'
+                    },
+                    maxParticipants: 50
+                };
+                
+                logToElement('create-result', '活动数据准备完成');
+                logToElement('create-result', `活动标题: ${testActivityData.title}`);
+                
+                const result = await mockCreateActivity(testActivityData);
+                
+                if (result.success) {
+                    logToElement('create-result', `活动创建成功! ID: ${result.data.id}`, 'success');
+                    logToElement('create-result', `活动标题: ${result.data.title}`);
+                } else {
+                    logToElement('create-result', `活动创建失败: ${result.message}`, 'error');
+                }
+                
+            } catch (error) {
+                logToElement('create-result', `创建活动异常: ${error.message}`, 'error');
+            }
+        };
+        
+        // 检查数据同步
+        window.checkDataSync = function() {
+            const syncEl = document.getElementById('sync-status');
+            syncEl.innerHTML = '';
+            
+            try {
+                // 检查全局数据管理器
+                const globalActivities = globalDataManager.getActivities();
+                logToElement('sync-status', `全局数据管理器活动数量: ${globalActivities.length}`);
+                
+                // 检查localStorage
+                const localStorageData = localStorage.getItem('campus_activities');
+                if (localStorageData) {
+                    const localActivities = JSON.parse(localStorageData);
+                    logToElement('sync-status', `localStorage活动数量: ${localActivities.length}`);
+                    
+                    // 比较数据一致性
+                    if (globalActivities.length === localActivities.length) {
+                        logToElement('sync-status', '数据同步状态: 一致', 'success');
+                    } else {
+                        logToElement('sync-status', '数据同步状态: 不一致!', 'error');
+                        logToElement('sync-status', `差异: 全局${globalActivities.length} vs 本地${localActivities.length}`);
+                    }
+                    
+                    // 检查最新的活动
+                    const latestGlobal = globalActivities[globalActivities.length - 1];
+                    const latestLocal = localActivities[localActivities.length - 1];
+                    
+                    if (latestGlobal && latestLocal) {
+                        logToElement('sync-status', `最新全局活动: ${latestGlobal.title} (ID: ${latestGlobal.id})`);
+                        logToElement('sync-status', `最新本地活动: ${latestLocal.title} (ID: ${latestLocal.id})`);
+                    }
+                } else {
+                    logToElement('sync-status', 'localStorage为空，数据同步失败', 'error');
+                }
+                
+            } catch (error) {
+                logToElement('sync-status', `检查数据同步失败: ${error.message}`, 'error');
+            }
+        };
+        
+        // 模拟页面刷新
+        window.simulatePageRefresh = async function() {
+            const refreshEl = document.getElementById('refresh-result');
+            refreshEl.innerHTML = '';
+            
+            try {
+                logToElement('refresh-result', '模拟页面刷新，重新加载数据...');
+                
+                // 清空当前内存中的活动数据（模拟页面刷新）
+                const currentGlobalData = globalDataManager.getData();
+                const originalActivities = [...currentGlobalData.mockActivities];
+                
+                // 模拟从localStorage重新加载
+                const localStorageData = localStorage.getItem('campus_activities');
+                if (localStorageData) {
+                    const localActivities = JSON.parse(localStorageData);
+                    logToElement('refresh-result', `从localStorage加载到 ${localActivities.length} 个活动`);
+                    
+                    // 检查是否包含最新创建的活动
+                    const testActivities = localActivities.filter(a => a.title.includes('测试活动'));
+                    if (testActivities.length > 0) {
+                        logToElement('refresh-result', `找到 ${testActivities.length} 个测试活动:`, 'success');
+                        testActivities.forEach(activity => {
+                            logToElement('refresh-result', `  - ${activity.title} (ID: ${activity.id})`);
+                        });
+                    } else {
+                        logToElement('refresh-result', '未找到测试活动，可能数据未正确保存', 'error');
+                    }
+                } else {
+                    logToElement('refresh-result', 'localStorage为空，无法重新加载数据', 'error');
+                }
+                
+                // 调用API获取活动列表（模拟应用启动时的数据加载）
+                const apiResult = await mockGetActivityList();
+                if (apiResult.success) {
+                    logToElement('refresh-result', `API返回活动数量: ${apiResult.data.list.length}`);
+                    
+                    const apiTestActivities = apiResult.data.list.filter(a => a.title.includes('测试活动'));
+                    if (apiTestActivities.length > 0) {
+                        logToElement('refresh-result', `API返回 ${apiTestActivities.length} 个测试活动:`, 'success');
+                        apiTestActivities.forEach(activity => {
+                            logToElement('refresh-result', `  - ${activity.title} (ID: ${activity.id})`);
+                        });
+                    } else {
+                        logToElement('refresh-result', 'API未返回测试活动', 'error');
+                    }
+                }
+                
+            } catch (error) {
+                logToElement('refresh-result', `模拟页面刷新失败: ${error.message}`, 'error');
+            }
+        };
+        
+        // 页面加载时自动检查数据状态
+        window.addEventListener('load', () => {
+            logToElement('data-status', '页面加载完成，准备进行数据流测试');
+        });
+    </script>
+</body>
+</html>

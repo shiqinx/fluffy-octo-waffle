@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团队管理测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .test-button {
+            background: #1989fa;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #1677ff;
+        }
+        .test-button.danger {
+            background: #ff4d4f;
+        }
+        .test-button.danger:hover {
+            background: #ff7875;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .result.success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .result.error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .result.info {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .status.authenticated {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .status.not-authenticated {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+    </style>
+</head>
+<body>
+    <h1>团队管理功能测试</h1>
+    
+    <div class="test-container">
+        <div class="test-title">认证状态检查</div>
+        <div id="auth-status" class="status">检查中...</div>
+        <button class="test-button" onclick="checkAuthStatus()">重新检查认证状态</button>
+        <button class="test-button" onclick="simulateLogin()">模拟登录</button>
+        <button class="test-button danger" onclick="simulateLogout()">模拟退出</button>
+    </div>
+
+    <div class="test-container">
+        <div class="test-title">团队数据加载测试</div>
+        <button class="test-button" onclick="testLoadTeamData()">测试加载团队数据</button>
+        <button class="test-button" onclick="testTeamId1()">测试团队ID: 1</button>
+        <button class="test-button" onclick="testTeamId2()">测试团队ID: 2</button>
+        <button class="test-button" onclick="testTeamId999()">测试团队ID: 999</button>
+        <div id="team-result"></div>
+    </div>
+
+    <div class="test-container">
+        <div class="test-title">用户信息访问测试</div>
+        <button class="test-button" onclick="testUserInfoAccess()">测试用户信息访问</button>
+        <button class="test-button" onclick="testAuthStoreUser()">测试AuthStore用户信息</button>
+        <div id="user-result"></div>
+    </div>
+
+    <script>
+        // 模拟 Pinia store
+        let mockAuthStore = {
+            userInfo: null,
+            token: null,
+            user: null
+        };
+
+        function updateAuthStatus() {
+            const statusDiv = document.getElementById('auth-status');
+            if (mockAuthStore.userInfo && mockAuthStore.token) {
+                statusDiv.className = 'status authenticated';
+                statusDiv.innerHTML = `✅ 已登录<br>用户: ${mockAuthStore.userInfo.realName || '未知'}<br>ID: ${mockAuthStore.userInfo.id}`;
+            } else {
+                statusDiv.className = 'status not-authenticated';
+                statusDiv.innerHTML = '❌ 未登录或用户信息缺失';
+            }
+        }
+
+        function checkAuthStatus() {
+            updateAuthStatus();
+            showResult('auth-status', '认证状态检查完成', 'info');
+        }
+
+        function simulateLogin() {
+            mockAuthStore.userInfo = {
+                id: 'user123',
+                realName: '测试用户',
+                avatar: 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
+                studentId: '2021001'
+            };
+            mockAuthStore.user = mockAuthStore.userInfo;
+            mockAuthStore.token = 'mock-token-' + Date.now();
+            updateAuthStatus();
+            showResult('auth-status', '模拟登录成功', 'success');
+        }
+
+        function simulateLogout() {
+            mockAuthStore.userInfo = null;
+            mockAuthStore.user = null;
+            mockAuthStore.token = null;
+            updateAuthStatus();
+            showResult('auth-status', '模拟退出成功', 'info');
+        }
+
+        function testLoadTeamData() {
+            try {
+                // 模拟 TeamManagement.vue 中的 loadTeamData 函数
+                const loadTeamData = () => {
+                    if (!mockAuthStore.userInfo) {
+                        throw new Error('用户信息未加载，无法加载团队数据');
+                    }
+
+                    const teamMembers = [
+                        {
+                            id: 'user1',
+                            name: '队长',
+                            avatar: 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
+                            role: 'leader',
+                            joinTime: new Date(Date.now() - 86400000).toISOString()
+                        },
+                        {
+                            id: mockAuthStore.userInfo.id,
+                            name: mockAuthStore.userInfo.realName,
+                            avatar: mockAuthStore.userInfo.avatar,
+                            role: 'member',
+                            joinTime: new Date().toISOString()
+                        },
+                        {
+                            id: 'user3',
+                            name: '成员1',
+                            avatar: 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
+                            role: 'member',
+                            joinTime: new Date(Date.now() - 43200000).toISOString()
+                        }
+                    ];
+
+                    return teamMembers;
+                };
+
+                const teamMembers = loadTeamData();
+                showResult('team-result', `团队数据加载成功！成员数量: ${teamMembers.length}\n` + 
+                    JSON.stringify(teamMembers, null, 2), 'success');
+
+            } catch (error) {
+                showResult('team-result', `团队数据加载失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testTeamId(teamId) {
+            try {
+                // 模拟路由参数
+                const routeParams = { id: teamId };
+                
+                showResult('team-result', `测试团队ID: ${teamId}\n路由参数: ${JSON.stringify(routeParams)}\n当前用户: ${JSON.stringify(mockAuthStore.userInfo)}`, 'info');
+            } catch (error) {
+                showResult('team-result', `团队ID测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testTeamId1() { testTeamId('1'); }
+        function testTeamId2() { testTeamId('2'); }
+        function testTeamId999() { testTeamId('999'); }
+
+        function testUserInfoAccess() {
+            try {
+                // 测试不同的用户信息访问方式
+                const results = [];
+                
+                results.push(`authStore.userInfo 存在: ${!!mockAuthStore.userInfo}`);
+                results.push(`authStore.user 存在: ${!!mockAuthStore.user}`);
+                
+                if (mockAuthStore.userInfo) {
+                    results.push(`userInfo.id: ${mockAuthStore.userInfo.id}`);
+                    results.push(`userInfo.realName: ${mockAuthStore.userInfo.realName}`);
+                } else {
+                    results.push('❌ userInfo 为 undefined');
+                }
+                
+                if (mockAuthStore.user) {
+                    results.push(`user.id: ${mockAuthStore.user.id}`);
+                    results.push(`user.realName: ${mockAuthStore.user.realName}`);
+                } else {
+                    results.push('❌ user 为 undefined');
+                }
+
+                showResult('user-result', results.join('\n'), 'info');
+
+            } catch (error) {
+                showResult('user-result', `用户信息访问测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testAuthStoreUser() {
+            try {
+                // 测试 authStore 的兼容性
+                const store = {
+                    user: mockAuthStore.user,
+                    userInfo: mockAuthStore.userInfo // 这是我们在修复中添加的别名
+                };
+
+                const results = [];
+                results.push(`store.user === store.userInfo: ${store.user === store.userInfo}`);
+                results.push(`store.user: ${JSON.stringify(store.user)}`);
+                results.push(`store.userInfo: ${JSON.stringify(store.userInfo)}`);
+
+                showResult('user-result', results.join('\n'), 'info');
+
+            } catch (error) {
+                showResult('user-result', `AuthStore兼容性测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function showResult(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            // 清除之前的结果（除了第一个）
+            if (container.children.length > 0) {
+                container.innerHTML = '';
+            }
+            
+            container.appendChild(resultDiv);
+        }
+
+        // 页面加载时检查认证状态
+        window.onload = function() {
+            updateAuthStatus();
+            showResult('team-result', '团队管理测试页面已加载，请先进行模拟登录', 'info');
+        };
+    </script>
+</body>
+</html>

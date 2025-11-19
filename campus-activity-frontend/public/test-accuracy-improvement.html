@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定位精度测试 - 校园活动应用</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .accuracy-level {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .accuracy-high { background: #4CAF50; color: white; }
+        .accuracy-medium { background: #FF9800; color: white; }
+        .accuracy-low { background: #f44336; color: white; }
+
+        .location-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #2196F3;
+        }
+
+        .btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover { background: #1976D2; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+
+        .improvement { color: #4CAF50; font-weight: bold; }
+        .degradation { color: #f44336; font-weight: bold; }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-success { background: #e8f5e8; color: #2e7d32; }
+        .status-warning { background: #fff3e0; color: #f57c00; }
+        .status-error { background: #ffebee; color: #c62828; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .log-container {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-item {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+
+        .log-info { color: #2196F3; }
+        .log-warn { color: #FF9800; }
+        .log-error { color: #f44336; }
+        .log-success { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 定位精度测试</h1>
+            <p>测试定位精度优化效果，验证改进后的定位准确性</p>
+        </div>
+
+        <div class="content">
+            <!-- 精度指标概览 -->
+            <div class="test-section">
+                <h3>📊 精度指标概览</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="currentAccuracy">--</div>
+                        <div class="metric-label">当前精度(米)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="targetAccuracy">300</div>
+                        <div class="metric-label">目标精度(米)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="improvementRate">--</div>
+                        <div class="metric-label">改进率</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="successRate">--</div>
+                        <div class="metric-label">成功率</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实时定位测试 -->
+            <div class="test-section">
+                <h3>📍 实时定位测试</h3>
+                <button class="btn" onclick="testHighAccuracy()">高精度定位测试</button>
+                <button class="btn" onclick="testStandardAccuracy()">标准精度定位测试</button>
+                <button class="btn" onclick="testMultipleAttempts()">多次重试测试</button>
+                <button class="btn" onclick="clearResults()">清除结果</button>
+                
+                <div id="currentLocation" class="location-info" style="display: none;">
+                    <h4>当前位置信息</h4>
+                    <p><strong>纬度:</strong> <span id="latitude">--</span></p>
+                    <p><strong>经度:</strong> <span id="longitude">--</span></p>
+                    <p><strong>精度:</strong> <span id="accuracy">--</span>米 
+                       <span id="accuracyLevel" class="accuracy-level"></span></p>
+                    <p><strong>获取时间:</strong> <span id="timestamp">--</span></p>
+                    <p><strong>校准状态:</strong> <span id="calibrated">--</span></p>
+                    <p><strong>验证状态:</strong> <span id="validated">--</span></p>
+                </div>
+            </div>
+
+            <!-- 改进前后对比 -->
+            <div class="test-section">
+                <h3>📈 改进前后对比</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>配置项</th>
+                            <th>改进前</th>
+                            <th>改进后</th>
+                            <th>效果</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>最大允许精度</td>
+                            <td>2000米</td>
+                            <td>300米</td>
+                            <td class="improvement">✓ 精度提升85%</td>
+                        </tr>
+                        <tr>
+                            <td>默认精度要求</td>
+                            <td>5000米</td>
+                            <td>500米</td>
+                            <td class="improvement">✓ 精度提升90%</td>
+                        </tr>
+                        <tr>
+                            <td>位置校准范围</td>
+                            <td>≤100米</td>
+                            <td>≤300米</td>
+                            <td class="improvement">✓ 覆盖范围扩大3倍</td>
+                        </tr>
+                        <tr>
+                            <td>缓存精度要求</td>
+                            <td>≤100米</td>
+                            <td>≤300米</td>
+                            <td class="improvement">✓ 缓存利用率提升</td>
+                        </tr>
+                        <tr>
+                            <td>验证策略</td>
+                            <td>宽松(允许低精度)</td>
+                            <td>严格(拒绝超精度)</td>
+                            <td class="improvement">✓ 质量控制加强</td>
+                        </tr>
+                        <tr>
+                            <td>重试策略</td>
+                            <td>固定降级</td>
+                            <td>智能分级降级</td>
+                            <td class="improvement">✓ 成功率提升</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 测试结果统计 -->
+            <div class="test-section">
+                <h3>📋 测试结果统计</h3>
+                <div id="testResults">
+                    <p>点击上方按钮开始测试...</p>
+                </div>
+                
+                <h4>测试日志</h4>
+                <div class="log-container" id="testLog">
+                    <div class="log-item log-info">等待测试开始...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入定位相关函数
+        import { 
+            getCurrentLocation, 
+            DEFAULT_VALIDATION_CONFIG,
+            validateLocation,
+            smartLocationCalibration
+        } from './src/utils/location.js';
+
+        // 测试统计
+        let testStats = {
+            total: 0,
+            success: 0,
+            highAccuracy: 0,
+            mediumAccuracy: 0,
+            lowAccuracy: 0,
+            calibrated: 0,
+            avgAccuracy: 0
+        };
+
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('testLog');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item log-${type}`;
+            logItem.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logItem);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 更新位置显示
+        function updateLocationDisplay(location) {
+            document.getElementById('currentLocation').style.display = 'block';
+            document.getElementById('latitude').textContent = location.latitude?.toFixed(6) || '--';
+            document.getElementById('longitude').textContent = location.longitude?.toFixed(6) || '--';
+            document.getElementById('accuracy').textContent = location.accuracy?.toFixed(0) || '--';
+            document.getElementById('timestamp').textContent = new Date(location.timestamp || Date.now()).toLocaleString();
+            
+            // 精度等级
+            const accuracy = location.accuracy;
+            let accuracyLevel = '';
+            if (accuracy <= 100) {
+                accuracyLevel = '<span class="accuracy-level accuracy-high">高精度</span>';
+            } else if (accuracy <= 300) {
+                accuracyLevel = '<span class="accuracy-level accuracy-medium">中等精度</span>';
+            } else {
+                accuracyLevel = '<span class="accuracy-level accuracy-low">低精度</span>';
+            }
+            document.getElementById('accuracyLevel').innerHTML = accuracyLevel;
+            
+            // 校准状态
+            document.getElementById('calibrated').innerHTML = location.calibrated ? 
+                '<span class="status status-success">已校准</span>' : 
+                '<span class="status status-warning">未校准</span>';
+            
+            // 验证状态
+            document.getElementById('validated').innerHTML = location.isValidated !== false ? 
+                '<span class="status status-success">验证通过</span>' : 
+                '<span class="status status-error">验证失败</span>';
+            
+            // 更新指标
+            document.getElementById('currentAccuracy').textContent = accuracy?.toFixed(0) || '--';
+            updateMetrics();
+        }
+
+        // 更新统计指标
+        function updateMetrics() {
+            const successRate = testStats.total > 0 ? (testStats.success / testStats.total * 100).toFixed(1) : '--';
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            if (testStats.avgAccuracy > 0) {
+                const improvement = Math.max(0, ((500 - testStats.avgAccuracy) / 500 * 100)).toFixed(1);
+                document.getElementById('improvementRate').textContent = improvement + '%';
+            }
+        }
+
+        // 高精度定位测试
+        window.testHighAccuracy = async function() {
+            addLog('开始高精度定位测试...', 'info');
+            try {
+                const location = await getCurrentLocation({
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    validationConfig: { maxAccuracy: 100 }
+                });
+                addLog(`高精度定位成功: ${location.accuracy.toFixed(0)}米`, 'success');
+                updateLocationDisplay(location);
+                updateTestStats(location);
+            } catch (error) {
+                addLog(`高精度定位失败: ${error.message}`, 'error');
+            }
+        };
+
+        // 标准精度定位测试
+        window.testStandardAccuracy = async function() {
+            addLog('开始标准精度定位测试...', 'info');
+            try {
+                const location = await getCurrentLocation({
+                    enableHighAccuracy: false,
+                    timeout: 15000,
+                    validationConfig: { maxAccuracy: 300 }
+                });
+                addLog(`标准精度定位成功: ${location.accuracy.toFixed(0)}米`, 'success');
+                updateLocationDisplay(location);
+                updateTestStats(location);
+            } catch (error) {
+                addLog(`标准精度定位失败: ${error.message}`, 'error');
+            }
+        };
+
+        // 多次重试测试
+        window.testMultipleAttempts = async function() {
+            addLog('开始多次重试测试...', 'info');
+            let successCount = 0;
+            let totalAccuracy = 0;
+            
+            for (let i = 1; i <= 5; i++) {
+                addLog(`第${i}次尝试...`, 'info');
+                try {
+                    const location = await getCurrentLocation({
+                        enableHighAccuracy: i <= 2,
+                        timeout: 10000,
+                        retryCount: 3,
+                        validationConfig: { maxAccuracy: 300 }
+                    });
+                    successCount++;
+                    totalAccuracy += location.accuracy;
+                    addLog(`第${i}次成功: ${location.accuracy.toFixed(0)}米`, 'success');
+                    updateTestStats(location);
+                } catch (error) {
+                    addLog(`第${i}次失败: ${error.message}`, 'error');
+                }
+                
+                // 等待1秒再进行下一次测试
+                if (i < 5) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            const avgAccuracy = successCount > 0 ? (totalAccuracy / successCount).toFixed(0) : '--';
+            addLog(`多次测试完成: 成功${successCount}/5次, 平均精度${avgAccuracy}米`, 'info');
+        };
+
+        // 更新测试统计
+        function updateTestStats(location) {
+            testStats.total++;
+            testStats.success++;
+            testStats.avgAccuracy = (testStats.avgAccuracy * (testStats.success - 1) + location.accuracy) / testStats.success;
+            
+            if (location.accuracy <= 100) {
+                testStats.highAccuracy++;
+            } else if (location.accuracy <= 300) {
+                testStats.mediumAccuracy++;
+            } else {
+                testStats.lowAccuracy++;
+            }
+            
+            if (location.calibrated) {
+                testStats.calibrated++;
+            }
+            
+            updateTestResultsDisplay();
+        }
+
+        // 更新测试结果显示
+        function updateTestResultsDisplay() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = `
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${testStats.total}</div>
+                        <div class="metric-label">总测试次数</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${testStats.success}</div>
+                        <div class="metric-label">成功次数</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${testStats.highAccuracy}</div>
+                        <div class="metric-label">高精度次数(≤100m)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${testStats.mediumAccuracy}</div>
+                        <div class="metric-label">中等精度次数(≤300m)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${testStats.calibrated}</div>
+                        <div class="metric-label">校准次数</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${testStats.avgAccuracy.toFixed(0)}</div>
+                        <div class="metric-label">平均精度(米)</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 清除结果
+        window.clearResults = function() {
+            testStats = {
+                total: 0,
+                success: 0,
+                highAccuracy: 0,
+                mediumAccuracy: 0,
+                lowAccuracy: 0,
+                calibrated: 0,
+                avgAccuracy: 0
+            };
+            
+            document.getElementById('currentLocation').style.display = 'none';
+            document.getElementById('testResults').innerHTML = '<p>点击上方按钮开始测试...</p>';
+            document.getElementById('testLog').innerHTML = '<div class="log-item log-info">等待测试开始...</div>';
+            document.getElementById('currentAccuracy').textContent = '--';
+            document.getElementById('improvementRate').textContent = '--';
+            document.getElementById('successRate').textContent = '--';
+            
+            addLog('测试结果已清除', 'info');
+        };
+
+        // 页面加载完成后的初始化
+        addLog('定位精度测试页面已加载', 'success');
+        addLog('改进内容: 精度要求从2000米收紧到300米', 'info');
+        addLog('改进内容: 扩大位置校准范围到300米内', 'info');
+        addLog('改进内容: 智能分级重试策略', 'info');
+    </script>
+</body>
+</html>

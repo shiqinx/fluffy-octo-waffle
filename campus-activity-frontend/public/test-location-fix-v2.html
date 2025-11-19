@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定位修复测试 - 校园定位系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4f46e5;
+        }
+        
+        .status-card h3 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .location-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-size: 16px;
+            color: #1e293b;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .campus-map {
+            background: #f1f5f9;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .reference-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .point-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        
+        .point-item.library {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        
+        .point-item.dormitory {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        
+        .accuracy-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .accuracy-excellent {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .accuracy-good {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .accuracy-poor {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .log-container {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-entry.info {
+            color: #60a5fa;
+        }
+        
+        .log-entry.success {
+            color: #34d399;
+        }
+        
+        .log-entry.warning {
+            color: #fbbf24;
+        }
+        
+        .log-entry.error {
+            color: #f87171;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .comparison-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .improvement {
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .degradation {
+            color: #dc2626;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 定位修复测试</h1>
+            <p>验证校园定位系统的坐标修复和精度改进效果</p>
+        </div>
+        
+        <div class="content">
+            <div class="status-card">
+                <h3>📍 当前定位状态</h3>
+                <div id="currentStatus">
+                    <p>点击下方按钮开始定位测试...</p>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="testCurrentLocation()">
+                <span id="testBtn">🧪 测试当前定位</span>
+            </button>
+            
+            <button class="btn btn-secondary" onclick="testCalibration()">
+                🎯 测试位置校准功能
+            </button>
+            
+            <button class="btn btn-warning" onclick="clearCache()">
+                🗑️ 清除定位缓存
+            </button>
+            
+            <div class="status-card">
+                <h3>📊 定位信息详情</h3>
+                <div class="location-info" id="locationInfo">
+                    <div class="info-item">
+                        <div class="info-label">纬度</div>
+                        <div class="info-value" id="latitude">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">经度</div>
+                        <div class="info-value" id="longitude">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">精度</div>
+                        <div class="info-value" id="accuracy">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">校准状态</div>
+                        <div class="info-value" id="calibrated">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">最近建筑</div>
+                        <div class="info-value" id="nearestBuilding">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">距离</div>
+                        <div class="info-value" id="distance">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="campus-map">
+                <h3>🏫 校园参考点</h3>
+                <div class="reference-points">
+                    <div class="point-item library">
+                        <strong>📚 图书馆</strong><br>
+                        [23.0419, 113.4016]<br>
+                        半径: 150m
+                    </div>
+                    <div class="point-item dormitory">
+                        <strong>🏠 4栋宿舍</strong><br>
+                        [23.0415, 113.4020]<br>
+                        半径: 100m
+                    </div>
+                    <div class="point-item">
+                        <strong>🏫 教学楼A栋</strong><br>
+                        [23.0422, 113.4012]<br>
+                        半径: 120m
+                    </div>
+                    <div class="point-item">
+                        <strong>🏃 体育馆</strong><br>
+                        [23.0410, 113.4018]<br>
+                        半径: 150m
+                    </div>
+                    <div class="point-item">
+                        <strong>🍽️ 食堂</strong><br>
+                        [23.0425, 113.4010]<br>
+                        半径: 120m
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-card">
+                <h3>📈 修复前后对比</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>项目</th>
+                            <th>修复前</th>
+                            <th>修复后</th>
+                            <th>改进</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>默认位置</td>
+                            <td>[23.0292, 112.1849]</td>
+                            <td>[23.0419, 113.4016]</td>
+                            <td class="improvement">✅ 正确校园坐标</td>
+                        </tr>
+                        <tr>
+                            <td>图书馆坐标</td>
+                            <td>[23.0292, 112.1849]</td>
+                            <td>[23.0419, 113.4016]</td>
+                            <td class="improvement">✅ 广州大学城</td>
+                        </tr>
+                        <tr>
+                            <td>校准范围</td>
+                            <td>50米</td>
+                            <td>100米</td>
+                            <td class="improvement">✅ 覆盖更广</td>
+                        </tr>
+                        <tr>
+                            <td>参考点数量</td>
+                            <td>3个</td>
+                            <td>5个</td>
+                            <td class="improvement">✅ 更精确</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="log-container" id="logContainer">
+                <div class="log-entry info">📋 定位测试日志已准备就绪...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入定位工具函数
+        import { 
+            getCurrentLocation, 
+            smartLocationCalibration,
+            calculateDistance,
+            DEFAULT_LOCATION,
+            formatUserFriendlyError
+        } from '../src/utils/location.js';
+        
+        let testResults = [];
+        
+        // 日志记录函数
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // 更新定位信息显示
+        function updateLocationDisplay(locationData) {
+            document.getElementById('latitude').textContent = locationData.latitude?.toFixed(6) || '--';
+            document.getElementById('longitude').textContent = locationData.longitude?.toFixed(6) || '--';
+            document.getElementById('accuracy').textContent = locationData.accuracy ? `${locationData.accuracy.toFixed(0)}m` : '--';
+            
+            const calibratedEl = document.getElementById('calibrated');
+            if (locationData.calibrated) {
+                calibratedEl.innerHTML = '<span class="accuracy-indicator accuracy-excellent">已校准</span>';
+                calibratedEl.querySelector('.accuracy-indicator').textContent += ` (${locationData.calibrationSource})`;
+            } else {
+                calibratedEl.innerHTML = '<span class="accuracy-indicator accuracy-poor">未校准</span>';
+            }
+            
+            document.getElementById('nearestBuilding').textContent = locationData.calibrationSource || '--';
+            document.getElementById('distance').textContent = locationData.originalDistance ? `${locationData.originalDistance.toFixed(0)}m` : '--';
+            
+            // 更新状态显示
+            const statusEl = document.getElementById('currentStatus');
+            if (locationData.calibrated) {
+                statusEl.innerHTML = `
+                    <p style="color: #059669; font-weight: 600;">✅ 定位成功并已校准</p>
+                    <p>校准来源: ${locationData.calibrationSource}</p>
+                    <p>原始距离: ${locationData.originalDistance?.toFixed(0)}m | 新精度: ${locationData.accuracy?.toFixed(0)}m</p>
+                `;
+            } else {
+                statusEl.innerHTML = `
+                    <p style="color: #d97706; font-weight: 600;">⚠️ 定位成功但未校准</p>
+                    <p>可能原因: 距离参考点太远或精度不足</p>
+                    <p>当前精度: ${locationData.accuracy?.toFixed(0)}m</p>
+                `;
+            }
+        }
+        
+        // 测试当前定位
+        window.testCurrentLocation = async function() {
+            const btn = document.getElementById('testBtn');
+            btn.innerHTML = '<span class="loading"></span>正在定位...';
+            btn.disabled = true;
+            
+            addLog('🚀 开始测试当前定位...', 'info');
+            
+            try {
+                const location = await getCurrentLocation({
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                });
+                
+                addLog(`✅ 定位成功: [${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}]`, 'success');
+                addLog(`📏 定位精度: ${location.accuracy.toFixed(0)}m`, 'info');
+                
+                // 测试校准
+                const calibratedLocation = smartLocationCalibration(location);
+                
+                if (calibratedLocation.calibrated) {
+                    addLog(`🎯 校准成功: ${calibratedLocation.calibrationSource}`, 'success');
+                    addLog(`📐 原始距离: ${calibratedLocation.originalDistance?.toFixed(0)}m`, 'info');
+                } else {
+                    addLog(`⚠️ 校准失败: ${calibratedLocation.calibrationReason || '未知原因'}`, 'warning');
+                }
+                
+                updateLocationDisplay(calibratedLocation);
+                testResults.push({
+                    timestamp: new Date().toISOString(),
+                    location: calibratedLocation,
+                    success: true
+                });
+                
+            } catch (error) {
+                const friendlyError = formatUserFriendlyError(error);
+                addLog(`❌ 定位失败: ${friendlyError.message}`, 'error');
+                addLog(`💡 建议: ${friendlyError.suggestion}`, 'warning');
+                
+                document.getElementById('currentStatus').innerHTML = `
+                    <p style="color: #dc2626; font-weight: 600;">❌ 定位失败</p>
+                    <p>${friendlyError.message}</p>
+                    <p style="font-size: 14px; color: #64748b;">${friendlyError.suggestion}</p>
+                `;
+                
+                testResults.push({
+                    timestamp: new Date().toISOString(),
+                    error: friendlyError,
+                    success: false
+                });
+            } finally {
+                btn.innerHTML = '🧪 测试当前定位';
+                btn.disabled = false;
+            }
+        };
+        
+        // 测试校准功能
+        window.testCalibration = function() {
+            addLog('🧪 开始测试位置校准功能...', 'info');
+            
+            // 测试不同位置的校准效果
+            const testLocations = [
+                { name: '图书馆附近', latitude: 23.0419, longitude: 113.4016, accuracy: 50 },
+                { name: '4栋宿舍附近', latitude: 23.0415, longitude: 113.4020, accuracy: 50 },
+                { name: '校园外', latitude: 23.0500, longitude: 113.4100, accuracy: 100 }
+            ];
+            
+            testLocations.forEach((testLoc, index) => {
+                setTimeout(() => {
+                    addLog(`📍 测试位置: ${testLoc.name}`, 'info');
+                    const calibrated = smartLocationCalibration(testLoc);
+                    
+                    if (calibratedLocation.calibrated) {
+                        addLog(`✅ ${testLoc.name} 校准成功: ${calibratedLocation.calibrationSource}`, 'success');
+                    } else {
+                        addLog(`⚠️ ${testLoc.name} 校准失败`, 'warning');
+                    }
+                }, index * 1000);
+            });
+        };
+        
+        // 清除缓存
+        window.clearCache = function() {
+            if ('localStorage' in window) {
+                const keys = Object.keys(localStorage).filter(key => key.startsWith('location_'));
+                keys.forEach(key => localStorage.removeItem(key));
+                addLog(`🗑️ 已清除 ${keys.length} 个定位缓存`, 'success');
+            }
+        };
+        
+        // 初始化
+        addLog('🎯 定位修复测试页面已加载', 'success');
+        addLog('📍 修复内容: 校园坐标、校准范围、参考点数量', 'info');
+    </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据污染清理工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .info { background: #e3f2fd; color: #1976d2; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .warning { background: #fff3e0; color: #f57c00; }
+        .error { background: #ffebee; color: #c62828; }
+        .button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        .button:hover { background: #1565c0; }
+        .button.danger { background: #d32f2f; }
+        .button.danger:hover { background: #c62828; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .activity-list {
+            margin: 20px 0;
+        }
+        .activity-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 活动数据污染清理工具</h1>
+        
+        <div class="status info">
+            <strong>问题诊断：</strong>如果所有活动都显示为"中医养生讲座"，说明localStorage中的数据被污染或重复了。
+        </div>
+
+        <div class="button-group">
+            <button class="button" onclick="checkCurrentData()">📊 检查当前数据</button>
+            <button class="button danger" onclick="clearPollution()">🗑️ 清理数据污染</button>
+            <button class="button" onclick="reloadPage()">🔄 刷新页面</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="activityList" class="activity-list"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function checkCurrentData() {
+            log('开始检查当前数据...');
+            
+            const keysToCheck = [
+                'campus_activities',
+                'activities', 
+                'activity_data',
+                'user_activities',
+                'enrollments'
+            ];
+            
+            let totalActivities = [];
+            
+            keysToCheck.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        log(`📁 ${key}: ${Array.isArray(parsed) ? parsed.length : '非数组'} 条数据`);
+                        
+                        if (Array.isArray(parsed)) {
+                            totalActivities = totalActivities.concat(parsed);
+                            
+                            // 检查标题重复情况
+                            const titles = parsed.map(item => item.title || item.name || '未知');
+                            const uniqueTitles = [...new Set(titles)];
+                            
+                            if (uniqueTitles.length === 1 && uniqueTitles[0] === '中医养生讲座') {
+                                log(`⚠️ ${key} 中所有项目都是"中医养生讲座"`);
+                            }
+                        }
+                    } catch (error) {
+                        log(`❌ ${key} 数据解析失败: ${error.message}`);
+                    }
+                } else {
+                    log(`📁 ${key}: 无数据`);
+                }
+            });
+            
+            // 显示活动列表
+            displayActivities(totalActivities);
+            
+            // 分析数据
+            const allTitles = totalActivities.map(item => item.title || item.name || '未知');
+            const uniqueTitles = [...new Set(allTitles)];
+            
+            if (uniqueTitles.length === 1 && uniqueTitles[0] === '中医养生讲座') {
+                showStatus('❌ 检测到数据污染！所有活动都显示为"中医养生讲座"', 'error');
+            } else if (uniqueTitles.length === 0) {
+                showStatus('📭 暂无活动数据', 'info');
+            } else {
+                showStatus(`✅ 数据正常，共 ${totalActivities.length} 个活动，${uniqueTitles.length} 个不同标题`, 'success');
+            }
+        }
+
+        function displayActivities(activities) {
+            const listDiv = document.getElementById('activityList');
+            
+            if (activities.length === 0) {
+                listDiv.innerHTML = '<p>暂无活动数据</p>';
+                return;
+            }
+            
+            const titles = activities.map(item => item.title || item.name || '未知');
+            const titleCounts = {};
+            titles.forEach(title => {
+                titleCounts[title] = (titleCounts[title] || 0) + 1;
+            });
+            
+            const html = Object.entries(titleCounts).map(([title, count]) => `
+                <div class="activity-item">
+                    <strong>${title}</strong> - ${count} 个
+                </div>
+            `).join('');
+            
+            listDiv.innerHTML = `<h3>活动标题统计：</h3>${html}`;
+        }
+
+        function clearPollution() {
+            log('开始清理数据污染...');
+            
+            const keysToCheck = [
+                'campus_activities',
+                'activities',
+                'activity_data', 
+                'user_activities',
+                'enrollments'
+            ];
+            
+            let clearedCount = 0;
+            
+            keysToCheck.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (Array.isArray(parsed)) {
+                            // 检查是否所有活动都是同一个标题
+                            const titles = parsed.map(item => item.title || item.name || '未知');
+                            const uniqueTitles = [...new Set(titles)];
+                            
+                            if (uniqueTitles.length === 1 && uniqueTitles[0] === '中医养生讲座') {
+                                log(`🗑️ 清理 ${key} 中的污染数据...`);
+                                localStorage.removeItem(key);
+                                clearedCount++;
+                                log(`✅ 已清理 ${key}`);
+                            } else {
+                                log(`✅ ${key} 数据正常，保留`);
+                            }
+                        }
+                    } catch (error) {
+                        log(`🗑️ ${key} 数据格式异常，清理中...`);
+                        localStorage.removeItem(key);
+                        clearedCount++;
+                    }
+                }
+            });
+            
+            if (clearedCount > 0) {
+                showStatus(`✅ 成功清理 ${clearedCount} 个污染的数据项！请刷新页面查看效果。`, 'success');
+                log('🎉 清理完成！建议刷新页面以重新加载数据。');
+            } else {
+                showStatus('ℹ️ 未发现需要清理的数据', 'info');
+                log('ℹ️ 未发现数据污染问题');
+            }
+        }
+
+        function reloadPage() {
+            log('重新加载页面...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkCurrentData();
+        };
+    </script>
+</body>
+</html>

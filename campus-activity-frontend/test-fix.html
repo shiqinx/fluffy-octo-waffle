@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情修复验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .activity-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .activity-card {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .activity-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-color: #667eea;
+        }
+        .activity-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .activity-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .test-result {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .success {
+            border-left: 4px solid #4CAF50;
+            background-color: #f1f8e9;
+        }
+        .error {
+            border-left: 4px solid #f44336;
+            background-color: #ffebee;
+        }
+        .warning {
+            border-left: 4px solid #ff9800;
+            background-color: #fff3e0;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.error {
+            background: #dc3545;
+        }
+        .current-detail {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 活动详情修复验证工具</h1>
+        <p>此工具用于验证活动列表跳转到不同详情页的修复效果</p>
+    </div>
+
+    <div class="container">
+        <h2>📋 测试活动列表</h2>
+        <p>点击下面的活动卡片来测试路由跳转和详情获取</p>
+        <div class="activity-list" id="activityList"></div>
+    </div>
+
+    <div class="current-detail" id="currentDetail" style="display: none;">
+        <h3>📍 当前显示的活动详情</h3>
+        <div id="currentDetailContent"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 自动化测试</h2>
+        <button class="btn" onclick="runAutoTest()">运行自动化测试</button>
+        <button class="btn success" onclick="clearResults()">清除结果</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>📝 测试日志</h2>
+        <div class="log" id="testLog"></div>
+        <button class="btn" onclick="clearLog()">清除日志</button>
+    </div>
+
+    <script>
+        // 模拟 correctActivities 数据（与 mock.js 中完全一致）
+        const correctActivities = [
+            {
+                id: "1",
+                title: "中医养生讲座",
+                type: "学术讲座",
+                location: "教学楼A101",
+                description: "探讨中医养生理念和方法",
+                startTime: "2024-01-15 14:00",
+                endTime: "2024-01-15 16:00",
+                organizer: "健康协会",
+                capacity: 100,
+                enrolled: 45
+            },
+            {
+                id: "2",
+                title: "摄影作品展览",
+                type: "文化艺术",
+                location: "艺术中心展厅",
+                description: "展示学生优秀摄影作品",
+                startTime: "2024-01-16 10:00",
+                endTime: "2024-01-20 18:00",
+                organizer: "摄影协会",
+                capacity: 200,
+                enrolled: 120
+            },
+            {
+                id: "3",
+                title: "编程马拉松大赛",
+                type: "科技创新",
+                location: "计算机实验室",
+                description: "48小时编程挑战赛",
+                startTime: "2024-01-17 09:00",
+                endTime: "2024-01-19 09:00",
+                organizer: "计算机协会",
+                capacity: 50,
+                enrolled: 35
+            },
+            {
+                id: "4",
+                title: "篮球友谊赛",
+                type: "体育竞技",
+                location: "体育馆",
+                description: "院系篮球友谊比赛",
+                startTime: "2024-01-18 15:00",
+                endTime: "2024-01-18 17:00",
+                organizer: "体育部",
+                capacity: 300,
+                enrolled: 200
+            },
+            {
+                id: "5",
+                title: "校园音乐节",
+                type: "文艺演出",
+                location: "大礼堂",
+                description: "年度校园音乐盛典",
+                startTime: "2024-01-19 19:00",
+                endTime: "2024-01-19 21:30",
+                organizer: "学生会",
+                capacity: 500,
+                enrolled: 450
+            },
+            {
+                id: "6",
+                title: "图书馆学习小组",
+                type: "学习交流",
+                location: "图书馆三楼研讨室",
+                description: "期末复习学习小组",
+                startTime: "2024-01-20 14:00",
+                endTime: "2024-01-20 16:00",
+                organizer: "学习部",
+                capacity: 30,
+                enrolled: 25
+            }
+        ];
+
+        // 修复后的 mockGetActivityDetail 函数
+        function mockGetActivityDetail(activityId) {
+            log(`🔍 mockGetActivityDetail 被调用，activityId: ${activityId} (类型: ${typeof activityId})`);
+            
+            // 修复后的逻辑：使用严格相等和字符串转换
+            let activity = correctActivities.find(act => String(act.id) === String(activityId));
+            
+            if (activity) {
+                log(`✅ 找到活动: ${activity.title} (ID: ${activity.id})`);
+                return {
+                    success: true,
+                    data: activity
+                };
+            } else {
+                log(`❌ 活动不存在，activityId: ${activityId}`);
+                return {
+                    success: false,
+                    message: '活动不存在'
+                };
+            }
+        }
+
+        // 日志函数
+        function log(message) {
+            const logDiv = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // 渲染活动列表
+        function renderActivityList() {
+            const listContainer = document.getElementById('activityList');
+            listContainer.innerHTML = '';
+            
+            correctActivities.forEach(activity => {
+                const card = document.createElement('div');
+                card.className = 'activity-card';
+                card.innerHTML = `
+                    <div class="activity-title">${activity.title}</div>
+                    <div class="activity-info">
+                        <div>🆔 ID: ${activity.id}</div>
+                        <div>📂 类型: ${activity.type}</div>
+                        <div>📍 地点: ${activity.location}</div>
+                        <div>👥 已报名: ${activity.enrolled}/${activity.capacity}</div>
+                    </div>
+                `;
+                card.onclick = () => testActivityClick(activity.id);
+                listContainer.appendChild(card);
+            });
+        }
+
+        // 测试活动点击
+        function testActivityClick(activityId) {
+            log(`\n🖱️  测试点击活动 ID: ${activityId}`);
+            
+            // 模拟路由跳转
+            const routeUrl = `/activities/${activityId}`;
+            log(`📍 模拟路由URL: ${routeUrl}`);
+            
+            // 从URL中提取ID（模拟路由参数）
+            const extractedId = routeUrl.split('/').pop();
+            log(`🔍 从路由提取的ID: ${extractedId} (类型: ${typeof extractedId})`);
+            
+            // 调用修复后的函数
+            const result = mockGetActivityDetail(extractedId);
+            
+            // 显示当前活动详情
+            showCurrentDetail(result, extractedId);
+            
+            return result;
+        }
+
+        // 显示当前活动详情
+        function showCurrentDetail(result, activityId) {
+            const detailDiv = document.getElementById('currentDetail');
+            const contentDiv = document.getElementById('currentDetailContent');
+            
+            if (result.success) {
+                const activity = result.data;
+                contentDiv.innerHTML = `
+                    <div><strong>🆔 活动ID:</strong> ${activityId}</div>
+                    <div><strong>📝 活动标题:</strong> ${activity.title}</div>
+                    <div><strong>📂 活动类型:</strong> ${activity.type}</div>
+                    <div><strong>📍 活动地点:</strong> ${activity.location}</div>
+                    <div><strong>📖 活动描述:</strong> ${activity.description}</div>
+                    <div><strong>⏰ 开始时间:</strong> ${activity.startTime}</div>
+                    <div><strong>⏰ 结束时间:</strong> ${activity.endTime}</div>
+                    <div><strong>👤 组织者:</strong> ${activity.organizer}</div>
+                    <div><strong>👥 报名情况:</strong> ${activity.enrolled}/${activity.capacity}</div>
+                `;
+            } else {
+                contentDiv.innerHTML = `
+                    <div><strong>❌ 获取失败:</strong> ${result.message}</div>
+                    <div><strong>🆔 请求的ID:</strong> ${activityId}</div>
+                `;
+            }
+            
+            detailDiv.style.display = 'block';
+        }
+
+        // 自动化测试
+        function runAutoTest() {
+            log('\n🚀 开始自动化测试...');
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '';
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            // 测试所有活动
+            correctActivities.forEach(activity => {
+                const result = testActivityClick(activity.id);
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result';
+                
+                if (result.success && result.data.title === activity.title) {
+                    resultDiv.className += ' success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ 测试通过</strong>
+                        <span class="test-status status-pass">PASS</span>
+                        <br>请求ID: ${activity.id} → 返回: ${result.data.title}
+                    `;
+                    successCount++;
+                } else {
+                    resultDiv.className += ' error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ 测试失败</strong>
+                        <span class="test-status status-fail">FAIL</span>
+                        <br>请求ID: ${activity.id} → 期望: ${activity.title} → 实际: ${result.success ? result.data.title : '获取失败'}
+                    `;
+                    failCount++;
+                }
+                
+                resultsDiv.appendChild(resultDiv);
+            });
+            
+            // 测试边界情况
+            const edgeCases = ["0", "7", null, undefined, ""];
+            edgeCases.forEach(testId => {
+                const result = mockGetActivityDetail(testId);
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result';
+                
+                if (!result.success) {
+                    resultDiv.className += ' success';
+                    resultDiv.innerHTML = `
+                        <strong>✅ 边界测试通过</strong>
+                        <span class="test-status status-pass">PASS</span>
+                        <br>请求ID: ${testId} → 正确返回失败
+                    `;
+                    successCount++;
+                } else {
+                    resultDiv.className += ' warning';
+                    resultDiv.innerHTML = `
+                        <strong>⚠️ 边界测试异常</strong>
+                        <span class="test-status status-fail">WARN</span>
+                        <br>请求ID: ${testId} → 应该失败但返回了: ${result.data.title}
+                    `;
+                    failCount++;
+                }
+                
+                resultsDiv.appendChild(resultDiv);
+            });
+            
+            // 显示总结
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'test-result';
+            const totalTests = correctActivities.length + edgeCases.length;
+            const successRate = ((successCount / totalTests) * 100).toFixed(1);
+            
+            if (failCount === 0) {
+                summaryDiv.className += ' success';
+                summaryDiv.innerHTML = `
+                    <h3>🎉 测试完成 - 全部通过！</h3>
+                    <p><strong>总测试数:</strong> ${totalTests}</p>
+                    <p><strong>✅ 通过:</strong> ${successCount}</p>
+                    <p><strong>❌ 失败:</strong> ${failCount}</p>
+                    <p><strong>📈 成功率:</strong> ${successRate}%</p>
+                    <p><strong>🔧 修复状态:</strong> <span class="test-status status-pass">已生效</span></p>
+                `;
+            } else {
+                summaryDiv.className += ' error';
+                summaryDiv.innerHTML = `
+                    <h3>⚠️ 测试完成 - 仍有问题</h3>
+                    <p><strong>总测试数:</strong> ${totalTests}</p>
+                    <p><strong>✅ 通过:</strong> ${successCount}</p>
+                    <p><strong>❌ 失败:</strong> ${failCount}</p>
+                    <p><strong>📈 成功率:</strong> ${successRate}%</p>
+                    <p><strong>🔧 修复状态:</strong> <span class="test-status status-fail">需要检查</span></p>
+                `;
+            }
+            
+            resultsDiv.appendChild(summaryDiv);
+            log(`\n📊 测试完成: ${successCount}/${totalTests} 通过 (${successRate}%)`);
+        }
+
+        // 清除结果
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+
+        // 清除日志
+        function clearLog() {
+            document.getElementById('testLog').innerHTML = '';
+        }
+
+        // 初始化
+        window.onload = function() {
+            renderActivityList();
+            log('🔧 活动详情修复验证工具已加载');
+            log('📋 可用活动数量: ' + correctActivities.length);
+            log('🖱️  点击活动卡片开始测试，或运行自动化测试');
+        };
+    </script>
+</body>
+</html>

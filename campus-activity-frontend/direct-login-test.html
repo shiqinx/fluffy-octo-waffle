@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>直接登录测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        input { margin: 5px; padding: 5px; width: 200px; }
+        button { padding: 10px 15px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔐 直接登录测试</h1>
+    
+    <div class="test-section">
+        <h2>使用 authStore.loginUser</h2>
+        <input type="text" id="studentId" value="20210001" placeholder="学号">
+        <input type="password" id="password" value="123456" placeholder="密码">
+        <button onclick="testAuthStoreLogin()">测试 authStore 登录</button>
+        <div id="authStoreResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>直接调用 API</h2>
+        <button onclick="testDirectAPI()">测试直接 API 调用</button>
+        <div id="directAPIResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试空学号</h2>
+        <button onclick="testEmptyStudentId()">测试空学号登录</button>
+        <div id="emptyResult"></div>
+    </div>
+
+    <script type="module">
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { login } from './src/api/auth.js'
+        import { validatedApi } from './src/api/index.js'
+        
+        window.testAuthStoreLogin = async function() {
+            const studentId = document.getElementById('studentId').value
+            const password = document.getElementById('password').value
+            const resultDiv = document.getElementById('authStoreResult')
+            
+            resultDiv.innerHTML = '<div class="result">模拟 authStore 登录中...</div>'
+            
+            try {
+                console.log('🔐 开始模拟 authStore.loginUser')
+                console.log('📝 参数:', { studentId, password })
+                
+                // 模拟 authStore.loginUser 的逻辑
+                const credentials = { studentId, password, rememberMe: false }
+                console.log('📝 构造的登录凭据:', credentials)
+                
+                const response = await validatedApi.login(credentials)
+                console.log('✅ 模拟 authStore 登录成功:', response)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>模拟 authStore 登录成功!</strong><br>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ 模拟 authStore 登录失败:', error)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>模拟 authStore 登录失败!</strong><br>
+                    <pre>错误: ${error.message || error}
+错误详情: ${error.stack || '无堆栈信息'}</pre>
+                </div>`
+            }
+        }
+        
+        window.testDirectAPI = async function() {
+            const studentId = document.getElementById('studentId').value
+            const password = document.getElementById('password').value
+            const resultDiv = document.getElementById('directAPIResult')
+            
+            resultDiv.innerHTML = '<div class="result">直接调用 API 中...</div>'
+            
+            try {
+                console.log('🔐 开始测试直接 API 调用')
+                
+                // 步骤1: 验证参数
+                const credentials = { studentId, password, rememberMe: false }
+                console.log('📝 登录凭据:', credentials)
+                
+                const validatedCredentials = await validateLoginParams(credentials)
+                console.log('✅ 验证后的凭据:', validatedCredentials)
+                
+                // 步骤2: 调用登录API
+                const result = await login(validatedCredentials)
+                console.log('✅ 直接 API 调用成功:', result)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>直接 API 调用成功!</strong><br>
+                    <pre>验证后凭据: ${JSON.stringify(validatedCredentials, null, 2)}
+登录结果: ${JSON.stringify(result, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ 直接 API 调用失败:', error)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>直接 API 调用失败!</strong><br>
+                    <pre>错误: ${error.message || error}
+错误详情: ${error.stack || '无堆栈信息'}</pre>
+                </div>`
+            }
+        }
+        
+        window.testEmptyStudentId = async function() {
+            const resultDiv = document.getElementById('emptyResult')
+            
+            resultDiv.innerHTML = '<div class="result">测试空学号登录...</div>'
+            
+            try {
+                console.log('🔐 开始测试空学号登录')
+                
+                const credentials = { studentId: '', password: '123456', rememberMe: false }
+                console.log('📝 空学号登录凭据:', credentials)
+                
+                const validatedCredentials = await validateLoginParams(credentials)
+                console.log('✅ 验证通过 (不应该发生):', validatedCredentials)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>意外: 空学号验证通过了!</strong><br>
+                    <pre>${JSON.stringify(validatedCredentials, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ 空学号验证失败 (预期行为):', error)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>空学号正确被拒绝 (预期行为)</strong><br>
+                    <pre>错误: ${error.message || error}</pre>
+                </div>`
+            }
+        }
+    </script>
+</body>
+</html>

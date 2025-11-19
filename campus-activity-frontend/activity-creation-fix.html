@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建问题修复</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 活动创建问题修复工具</h1>
+    
+    <div class="container">
+        <h2>📊 问题诊断</h2>
+        <button onclick="diagnoseProblem()">诊断问题</button>
+        <div id="diagnosis"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔧 修复方案</h2>
+        <button onclick="fixIdTypeIssue()">修复ID类型问题</button>
+        <button onclick="testFix()">测试修复效果</button>
+        <div id="fixResult"></div>
+    </div>
+
+    <script type="module">
+        // 模拟全局数据管理器（简化版）
+        class SimpleGlobalDataManager {
+            constructor() {
+                this.activities = [];
+                this.users = [];
+                this.initializeData();
+            }
+
+            initializeData() {
+                // 初始化默认用户
+                this.users = [
+                    { id: "1", realName: "测试用户", studentId: "2023001" }
+                ];
+            }
+
+            getActivities() {
+                return this.activities;
+            }
+
+            addActivity(activity) {
+                this.activities.push(activity);
+            }
+
+            setActivities(activities) {
+                this.activities = activities;
+            }
+
+            getUsers() {
+                return this.users;
+            }
+        }
+
+        const globalDataManager = new SimpleGlobalDataManager();
+
+        // 暴露函数到全局
+        window.diagnoseProblem = diagnoseProblem;
+        window.fixIdTypeIssue = fixIdTypeIssue;
+        window.testFix = testFix;
+
+        function log(message, type = 'info', containerId = 'diagnosis') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            console.log(logEntry);
+            
+            const container = document.getElementById(containerId);
+            if (container) {
+                const statusDiv = document.createElement('div');
+                statusDiv.className = `status ${type}`;
+                statusDiv.textContent = logEntry;
+                container.appendChild(statusDiv);
+            }
+        }
+
+        function diagnoseProblem() {
+            const container = document.getElementById('diagnosis');
+            container.innerHTML = '';
+            
+            log('🔍 开始诊断活动创建问题...', 'info');
+
+            // 检查localStorage中的数据
+            try {
+                const localStorageData = localStorage.getItem('campus_activities');
+                if (localStorageData) {
+                    const activities = JSON.parse(localStorageData);
+                    log(`✅ localStorage中有 ${activities.length} 个活动`, 'success');
+                    
+                    // 检查ID类型一致性
+                    const idTypes = activities.map(act => typeof act.id);
+                    const uniqueTypes = [...new Set(idTypes)];
+                    
+                    if (uniqueTypes.length > 1) {
+                        log(`❌ 发现ID类型不一致: ${uniqueTypes.join(', ')}`, 'error');
+                        log('这可能导致活动创建后不显示的问题', 'warning');
+                    } else {
+                        log(`✅ ID类型一致: ${uniqueTypes[0]}`, 'success');
+                    }
+                    
+                    // 显示活动详情
+                    activities.forEach((act, index) => {
+                        log(`活动${index + 1}: ID=${act.id} (${typeof act.id}), 标题=${act.title}`, 'info');
+                    });
+                } else {
+                    log('⚠️ localStorage中没有活动数据', 'warning');
+                }
+            } catch (error) {
+                log(`❌ 读取localStorage失败: ${error.message}`, 'error');
+            }
+        }
+
+        function fixIdTypeIssue() {
+            const container = document.getElementById('fixResult');
+            container.innerHTML = '';
+            
+            log('🔧 开始修复ID类型问题...', 'info', 'fixResult');
+
+            try {
+                // 1. 清理现有数据
+                localStorage.removeItem('campus_activities');
+                log('🗑️ 已清理localStorage中的活动数据', 'info', 'fixResult');
+
+                // 2. 重新创建标准化的默认活动
+                const defaultActivities = [
+                    {
+                        id: "1",
+                        title: "中医养生讲座",
+                        type: "学术讲座",
+                        category: "study",
+                        description: "传统中医养生文化讲座，邀请知名中医专家分享养生知识",
+                        location: "教学楼A101",
+                        startTime: "2024-01-15T14:00:00",
+                        endTime: "2024-01-15T16:00:00",
+                        maxParticipants: 100,
+                        organizerId: "1",
+                        organizerName: "张教授",
+                        status: "ongoing",
+                        tags: ["学术", "健康", "养生"],
+                        createdAt: "2024-01-10T10:00:00"
+                    },
+                    {
+                        id: "2",
+                        title: "摄影作品展览",
+                        type: "文化艺术",
+                        category: "culture",
+                        description: "校园摄影爱好者作品展示，展现校园生活的美好瞬间",
+                        location: "艺术中心展厅",
+                        startTime: "2024-01-16T10:00:00",
+                        endTime: "2024-01-18T18:00:00",
+                        maxParticipants: 200,
+                        organizerId: "2",
+                        organizerName: "李老师",
+                        status: "ongoing",
+                        tags: ["艺术", "摄影", "展览"],
+                        createdAt: "2024-01-11T09:00:00"
+                    },
+                    {
+                        id: "3",
+                        title: "编程马拉松大赛",
+                        type: "科技创新",
+                        category: "tech",
+                        description: "48小时编程挑战赛，展现编程技能和创新能力",
+                        location: "计算机实验室",
+                        startTime: "2024-01-20T09:00:00",
+                        endTime: "2024-01-22T09:00:00",
+                        maxParticipants: 50,
+                        organizerId: "3",
+                        organizerName: "王教授",
+                        status: "recruiting",
+                        tags: ["编程", "科技", "竞赛"],
+                        createdAt: "2024-01-12T14:00:00"
+                    },
+                    {
+                        id: "4",
+                        title: "篮球友谊赛",
+                        type: "体育竞技",
+                        category: "sports",
+                        description: "院系篮球友谊赛，增进友谊，锻炼身体",
+                        location: "体育馆",
+                        startTime: "2024-01-17T15:00:00",
+                        endTime: "2024-01-17T17:00:00",
+                        maxParticipants: 40,
+                        organizerId: "4",
+                        organizerName: "赵教练",
+                        status: "recruiting",
+                        tags: ["体育", "篮球", "竞技"],
+                        createdAt: "2024-01-13T11:00:00"
+                    },
+                    {
+                        id: "5",
+                        title: "校园音乐节",
+                        type: "文艺演出",
+                        category: "culture",
+                        description: "校园音乐节，展现学生音乐才华，享受音乐盛宴",
+                        location: "大礼堂",
+                        startTime: "2024-01-25T19:00:00",
+                        endTime: "2024-01-25T21:30:00",
+                        maxParticipants: 500,
+                        organizerId: "5",
+                        organizerName: "陈老师",
+                        status: "recruiting",
+                        tags: ["音乐", "演出", "文艺"],
+                        createdAt: "2024-01-14T16:00:00"
+                    },
+                    {
+                        id: "6",
+                        title: "图书馆学习小组",
+                        type: "学习交流",
+                        category: "study",
+                        description: "图书馆学习小组，共同学习，互相进步",
+                        location: "图书馆三楼研讨室",
+                        startTime: "2024-01-18T14:00:00",
+                        endTime: "2024-01-18T16:00:00",
+                        maxParticipants: 20,
+                        organizerId: "6",
+                        organizerName: "刘老师",
+                        status: "recruiting",
+                        tags: ["学习", "交流", "图书馆"],
+                        createdAt: "2024-01-15T13:00:00"
+                    }
+                ];
+
+                // 3. 保存标准化数据到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(defaultActivities));
+                log(`✅ 已保存 ${defaultActivities.length} 个标准化活动到localStorage`, 'success', 'fixResult');
+
+                // 4. 更新全局数据管理器
+                globalDataManager.setActivities(defaultActivities);
+                log(`✅ 已更新全局数据管理器`, 'success', 'fixResult');
+
+                log('🎉 ID类型问题修复完成！', 'success', 'fixResult');
+                log('现在所有活动ID都是字符串类型，确保一致性', 'info', 'fixResult');
+
+            } catch (error) {
+                log(`❌ 修复过程中发生错误: ${error.message}`, 'error', 'fixResult');
+            }
+        }
+
+        function testFix() {
+            const container = document.getElementById('fixResult');
+            
+            log('🧪 测试修复效果...', 'info', 'fixResult');
+
+            // 模拟创建活动（使用字符串ID）
+            const newActivity = {
+                id: String(Date.now()), // 确保ID是字符串
+                title: `修复测试活动_${new Date().toLocaleTimeString()}`,
+                type: "修复测试",
+                category: "fix_test",
+                description: "用于验证修复效果的测试活动",
+                location: "测试地点",
+                startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+                maxParticipants: 25,
+                organizerId: "1",
+                organizerName: "测试用户",
+                status: "recruiting",
+                tags: ["修复", "测试"],
+                currentParticipants: 1,
+                enrollStartTime: new Date().toISOString(),
+                enrollEndTime: new Date(Date.now() + 24 * 60 * 60 * 1000 - 60 * 60 * 1000).toISOString(),
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                // 添加到全局数据管理器
+                globalDataManager.addActivity(newActivity);
+                log(`✅ 测试活动创建成功，ID: ${newActivity.id} (${typeof newActivity.id})`, 'success', 'fixResult');
+
+                // 同步到localStorage
+                const allActivities = globalDataManager.getActivities();
+                localStorage.setItem('campus_activities', JSON.stringify(allActivities));
+                log(`✅ 数据已同步到localStorage，总活动数: ${allActivities.length}`, 'success', 'fixResult');
+
+                // 验证数据一致性
+                const localStorageData = JSON.parse(localStorage.getItem('campus_activities'));
+                const foundActivity = localStorageData.find(act => act.id === newActivity.id);
+                
+                if (foundActivity) {
+                    log(`✅ 新活动在localStorage中找到，数据一致`, 'success', 'fixResult');
+                    log(`🎉 修复验证成功！活动创建后应该能正常显示`, 'success', 'fixResult');
+                } else {
+                    log(`❌ 新活动未在localStorage中找到，数据不一致`, 'error', 'fixResult');
+                }
+
+            } catch (error) {
+                log(`❌ 测试过程中发生错误: ${error.message}`, 'error', 'fixResult');
+            }
+        }
+
+        // 页面加载时自动诊断
+        window.addEventListener('load', () => {
+            log('🚀 活动创建问题修复工具已加载', 'info');
+            diagnoseProblem();
+        });
+    </script>
+</body>
+</html>

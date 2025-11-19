@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .activity-list {
+            margin-top: 30px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+        .activity-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动创建测试</h1>
+    
+    <form id="activityForm">
+        <div class="form-group">
+            <label for="title">活动标题:</label>
+            <input type="text" id="title" name="title" value="测试活动" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">活动描述:</label>
+            <textarea id="description" name="description" rows="3">这是一个测试活动</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="startTime">开始时间:</label>
+            <input type="datetime-local" id="startTime" name="startTime" value="2024-12-25T10:00">
+        </div>
+        
+        <div class="form-group">
+            <label for="endTime">结束时间:</label>
+            <input type="datetime-local" id="endTime" name="endTime" value="2024-12-25T12:00">
+        </div>
+        
+        <div class="form-group">
+            <label for="locationName">活动地点:</label>
+            <input type="text" id="locationName" name="locationName" value="测试地点">
+        </div>
+        
+        <div class="form-group">
+            <label for="maxParticipants">最大参与人数:</label>
+            <input type="number" id="maxParticipants" name="maxParticipants" value="10" min="1">
+        </div>
+        
+        <div class="form-group">
+            <label for="tags">标签 (用逗号分隔):</label>
+            <input type="text" id="tags" name="tags" value="测试,活动">
+        </div>
+        
+        <button type="submit">创建活动</button>
+        <button type="button" onclick="loadActivities()">刷新活动列表</button>
+    </form>
+    
+    <div class="log" id="log"></div>
+    
+    <div class="activity-list">
+        <h2>当前活动列表</h2>
+        <div id="activityList"></div>
+    </div>
+
+    <script type="module">
+        // 导入API函数
+        import { createActivity, getActivityList } from './src/api/activity.js';
+        
+        // 日志函数
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // 创建活动
+        window.createActivityHandler = async function(formData) {
+            try {
+                log('开始创建活动...');
+                
+                const activityData = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    startTime: formData.get('startTime'),
+                    endTime: formData.get('endTime'),
+                    locationName: formData.get('locationName'),
+                    maxParticipants: parseInt(formData.get('maxParticipants')),
+                    tags: formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag),
+                    coverImage: '',
+                    status: 'recruiting'
+                };
+                
+                log('活动数据: ' + JSON.stringify(activityData, null, 2));
+                
+                const result = await createActivity(activityData);
+                log('创建结果: ' + JSON.stringify(result, null, 2));
+                
+                if (result.success) {
+                    log('活动创建成功！');
+                    // 清空表单
+                    document.getElementById('activityForm').reset();
+                    // 刷新列表
+                    setTimeout(loadActivities, 500);
+                } else {
+                    log('活动创建失败: ' + result.message);
+                }
+            } catch (error) {
+                log('创建活动出错: ' + error.message);
+            }
+        };
+        
+        // 加载活动列表
+        window.loadActivities = async function() {
+            try {
+                log('开始加载活动列表...');
+                const result = await getActivityList();
+                log('获取到活动列表: ' + JSON.stringify(result, null, 2));
+                
+                const listDiv = document.getElementById('activityList');
+                listDiv.innerHTML = '';
+                
+                if (result.success && result.data.list) {
+                    result.data.list.forEach(activity => {
+                        const activityDiv = document.createElement('div');
+                        activityDiv.className = 'activity-item';
+                        activityDiv.innerHTML = `
+                            <h3>${activity.title} (ID: ${activity.id})</h3>
+                            <p><strong>描述:</strong> ${activity.description}</p>
+                            <p><strong>地点:</strong> ${activity.locationName || activity.location || '未设置'}</p>
+                            <p><strong>时间:</strong> ${activity.startTime} - ${activity.endTime}</p>
+                            <p><strong>参与人数:</strong> ${activity.currentParticipants}/${activity.maxParticipants}</p>
+                            <p><strong>状态:</strong> ${activity.status}</p>
+                            <p><strong>创建时间:</strong> ${activity.createdAt}</p>
+                        `;
+                        listDiv.appendChild(activityDiv);
+                    });
+                    log(`显示 ${result.data.list.length} 个活动`);
+                } else {
+                    listDiv.innerHTML = '<p>没有找到活动</p>';
+                }
+            } catch (error) {
+                log('加载活动列表出错: ' + error.message);
+            }
+        };
+        
+        // 表单提交处理
+        document.getElementById('activityForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            createActivityHandler(formData);
+        });
+        
+        // 页面加载时自动加载活动列表
+        window.addEventListener('load', function() {
+            log('页面加载完成，开始初始化...');
+            loadActivities();
+        });
+        
+        // 暴露到全局作用域
+        window.createActivityHandler = createActivityHandler;
+        window.loadActivities = loadActivities;
+    </script>
+</body>
+</html>

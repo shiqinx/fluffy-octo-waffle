@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建和显示测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .activity { background: #f5f5f5; margin: 10px 0; padding: 10px; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>活动创建和显示功能测试</h1>
+    
+    <div class="section">
+        <h2>1. localStorage数据检查</h2>
+        <button onclick="checkLocalStorage()">检查localStorage中的活动数据</button>
+        <div id="localStorage-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. 创建测试活动</h2>
+        <button onclick="createTestActivity()">创建测试活动</button>
+        <div id="create-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. 获取活动列表</h2>
+        <button onclick="getActivityList()">获取活动列表</button>
+        <div id="list-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. 数据同步检查</h2>
+        <button onclick="checkDataSync()">检查数据同步状态</button>
+        <div id="sync-result"></div>
+    </div>
+
+    <script>
+        // 模拟全局数据管理器
+        const globalDataManager = {
+            activities: [],
+            
+            addActivity(activity) {
+                this.activities.push(activity);
+                console.log('活动已添加到全局数据管理器:', activity);
+            },
+            
+            getActivities() {
+                return this.activities;
+            },
+            
+            getActivityParticipants(activityId) {
+                // 模拟参与者数据
+                return [
+                    { userId: '1', status: 'approved' },
+                    { userId: '2', status: 'pending' }
+                ];
+            }
+        };
+
+        // 模拟工具函数
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function generateActivityId() {
+            return 'activity_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function calculateActivityStatus(activity) {
+            const now = new Date();
+            const startTime = new Date(activity.startTime);
+            const endTime = new Date(activity.endTime);
+            
+            if (now < startTime) return 'recruiting';
+            if (now >= startTime && now <= endTime) return 'ongoing';
+            return 'completed';
+        }
+
+        // 模拟活动创建函数（修复后的版本）
+        async function mockCreateActivity(activityData) {
+            console.log('mockCreateActivity 被调用，活动数据:', activityData);
+            
+            await delay(800);
+            
+            const newActivity = {
+                id: generateActivityId(),
+                title: activityData.title,
+                type: activityData.type,
+                category: activityData.category || 'other',
+                description: activityData.description,
+                // 统一地点格式，同时支持对象和字符串
+                location: typeof activityData.location === 'object' ? activityData.location : { name: activityData.location },
+                locationName: typeof activityData.location === 'object' ? activityData.location.name : activityData.location,
+                startTime: activityData.startTime,
+                endTime: activityData.endTime,
+                maxParticipants: activityData.maxParticipants,
+                creatorId: activityData.creatorId || '1',
+                creatorName: activityData.creatorName || '当前用户',
+                organizerId: activityData.organizerId || activityData.creatorId || '1',
+                organizerName: activityData.organizerName || activityData.creatorName || '当前用户',
+                status: calculateActivityStatus(activityData),
+                tags: activityData.tags || [],
+                coverImage: activityData.coverImage || `https://picsum.photos/seed/${Date.now()}/400/300.jpg`,
+                createdAt: new Date().toISOString(),
+                // 添加列表页面需要的字段
+                isEnrolled: false,
+                isCreator: true,
+                isApproved: false,
+                distance: Math.floor(Math.random() * 5000) + 100,
+                participants: 0
+            };
+            
+            globalDataManager.addActivity(newActivity);
+            
+            // 同步到localStorage
+            try {
+                const existingActivities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                existingActivities.push(newActivity);
+                localStorage.setItem('campus_activities', JSON.stringify(existingActivities));
+                console.log('新活动已同步到localStorage，当前活动总数:', existingActivities.length);
+            } catch (error) {
+                console.error('同步活动数据到localStorage失败:', error);
+            }
+            
+            return {
+                success: true,
+                data: newActivity,
+                message: '活动创建成功'
+            };
+        }
+
+        // 模拟活动列表获取函数（修复后的版本）
+        async function mockGetActivityList(params = {}) {
+            console.log('mockGetActivityList 调用参数:', params);
+            
+            await delay(600);
+            
+            // 优先从localStorage获取最新数据
+            let currentActivities = [];
+            
+            try {
+                const localStorageData = localStorage.getItem('campus_activities');
+                if (localStorageData) {
+                    currentActivities = JSON.parse(localStorageData);
+                    console.log('从localStorage获取活动数据:', currentActivities.length, '个活动');
+                }
+            } catch (error) {
+                console.warn('从localStorage读取活动数据失败:', error);
+            }
+            
+            // 如果localStorage中没有数据，则从全局数据管理器获取
+            if (!currentActivities || currentActivities.length === 0) {
+                currentActivities = globalDataManager.getActivities();
+                console.log('从全局数据管理器获取活动数据:', currentActivities.length, '个活动');
+            }
+            
+            let filteredActivities = [...currentActivities];
+            
+            // 应用筛选条件
+            if (params.status && params.status !== 'all') {
+                filteredActivities = filteredActivities.filter(act => act.status === params.status);
+            }
+            
+            // 关键词搜索
+            if (params.keyword && params.keyword.trim()) {
+                const keyword = params.keyword.toLowerCase().trim();
+                filteredActivities = filteredActivities.filter(act => 
+                    act.title.toLowerCase().includes(keyword) ||
+                    act.description.toLowerCase().includes(keyword) ||
+                    act.type.toLowerCase().includes(keyword) ||
+                    (act.locationName || act.location).toLowerCase().includes(keyword)
+                );
+            }
+            
+            console.log('筛选后的活动数量:', filteredActivities.length);
+            
+            // 为每个活动动态计算状态并添加列表页面所需的字段
+            const activitiesWithStatus = filteredActivities.map(activity => {
+                const currentUserId = localStorage.getItem('currentUserId') || '1';
+                const participants = globalDataManager.getActivityParticipants(activity.id) || [];
+                
+                return {
+                    ...activity,
+                    // 确保地点字段格式一致
+                    locationName: typeof activity.location === 'object' ? activity.location.name : activity.location,
+                    location: typeof activity.location === 'object' ? activity.location : { name: activity.location },
+                    // 动态计算状态
+                    status: calculateActivityStatus(activity),
+                    // 添加列表页面需要的字段
+                    isEnrolled: participants.some(p => p.userId === currentUserId),
+                    isCreator: activity.organizerId === currentUserId || activity.creatorId === currentUserId,
+                    isApproved: participants.some(p => p.userId === currentUserId && p.status === 'approved'),
+                    distance: Math.floor(Math.random() * 5000) + 100,
+                    participants: participants.length,
+                    // 确保必要字段存在
+                    coverImage: activity.coverImage || `https://picsum.photos/seed/${activity.id}/400/300.jpg`,
+                    tags: activity.tags || [],
+                    category: activity.category || 'other'
+                };
+            });
+            
+            // 分页
+            const page = parseInt(params.page) || 1;
+            const pageSize = parseInt(params.pageSize) || 10;
+            const startIndex = (page - 1) * pageSize;
+            const paginatedActivities = activitiesWithStatus.slice(startIndex, startIndex + pageSize);
+            
+            return {
+                success: true,
+                data: {
+                    list: paginatedActivities,
+                    total: filteredActivities.length,
+                    page,
+                    pageSize
+                },
+                message: '获取活动列表成功'
+            };
+        }
+
+        // 测试函数
+        async function checkLocalStorage() {
+            const resultDiv = document.getElementById('localStorage-result');
+            
+            try {
+                const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                resultDiv.innerHTML = `
+                    <div class="success">localStorage中有 ${activities.length} 个活动</div>
+                    <pre>${JSON.stringify(activities, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">读取localStorage失败: ${error.message}</div>`;
+            }
+        }
+
+        async function createTestActivity() {
+            const resultDiv = document.getElementById('create-result');
+            
+            const testActivity = {
+                title: '测试活动 - ' + new Date().toLocaleTimeString(),
+                type: '测试类型',
+                category: 'test',
+                description: '这是一个测试活动，用于验证活动创建功能',
+                location: '测试地点',
+                startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                maxParticipants: 50,
+                tags: ['测试', '验证']
+            };
+            
+            try {
+                const result = await mockCreateActivity(testActivity);
+                resultDiv.innerHTML = `
+                    <div class="success">${result.message}</div>
+                    <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                `;
+                
+                // 创建后自动检查列表
+                setTimeout(() => getActivityList(), 1000);
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">创建活动失败: ${error.message}</div>`;
+            }
+        }
+
+        async function getActivityList() {
+            const resultDiv = document.getElementById('list-result');
+            
+            try {
+                const result = await mockGetActivityList();
+                
+                let html = `
+                    <div class="success">${result.message} - 共找到 ${result.data.total} 个活动</div>
+                `;
+                
+                if (result.data.list.length > 0) {
+                    html += '<div class="activities">';
+                    result.data.list.forEach(activity => {
+                        html += `
+                            <div class="activity">
+                                <h4>${activity.title}</h4>
+                                <p><strong>类型:</strong> ${activity.type}</p>
+                                <p><strong>地点:</strong> ${activity.locationName || activity.location}</p>
+                                <p><strong>状态:</strong> ${activity.status}</p>
+                                <p><strong>创建者:</strong> ${activity.creatorName || activity.organizerName}</p>
+                                <p><strong>是否创建者:</strong> ${activity.isCreator ? '是' : '否'}</p>
+                                <p><strong>是否已报名:</strong> ${activity.isEnrolled ? '是' : '否'}</p>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div class="error">没有找到活动</div>';
+                }
+                
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">获取活动列表失败: ${error.message}</div>`;
+            }
+        }
+
+        async function checkDataSync() {
+            const resultDiv = document.getElementById('sync-result');
+            
+            try {
+                // 检查localStorage中的数据
+                const localStorageData = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                
+                // 检查全局数据管理器中的数据
+                const globalData = globalDataManager.getActivities();
+                
+                // 获取最新的活动列表
+                const listResult = await mockGetActivityList();
+                
+                const html = `
+                    <h3>数据同步状态检查</h3>
+                    <p><strong>localStorage中的活动数量:</strong> ${localStorageData.length}</p>
+                    <p><strong>全局数据管理器中的活动数量:</strong> ${globalData.length}</p>
+                    <p><strong>API返回的活动数量:</strong> ${listResult.data.total}</p>
+                    
+                    <h4>数据一致性检查:</h4>
+                    <p><strong>localStorage与API一致:</strong> ${localStorageData.length === listResult.data.total ? '✅ 是' : '❌ 否'}</p>
+                    <p><strong>全局数据与API一致:</strong> ${globalData.length === listResult.data.total ? '✅ 是' : '❌ 否'}</p>
+                    
+                    <h4>最新活动详情:</h4>
+                    <pre>${JSON.stringify(listResult.data.list.slice(-1), null, 2)}</pre>
+                `;
+                
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">数据同步检查失败: ${error.message}</div>`;
+            }
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkLocalStorage();
+            getActivityList();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>API功能测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 登录测试</h2>
+        <button onclick="testLogin()">测试登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 获取活动列表</h2>
+        <button onclick="testGetActivities()">获取所有活动</button>
+        <button onclick="testGetActivitiesWithFilter()">获取筛选活动</button>
+        <div id="activitiesResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 创建活动测试</h2>
+        <button onclick="testCreateActivity()">创建新活动</button>
+        <div id="createResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 活动详情测试</h2>
+        <button onclick="testGetActivityDetail()">获取活动详情</button>
+        <div id="detailResult" class="result"></div>
+    </div>
+
+    <script type="module">
+        // 导入mock API
+        import { 
+            mockLogin, 
+            mockGetActivityList, 
+            mockCreateActivity, 
+            mockGetActivityDetail,
+            globalDataManager
+        } from './src/api/mock.js';
+        
+        // 将函数暴露到全局作用域
+        window.mockLogin = mockLogin;
+        window.mockGetActivityList = mockGetActivityList;
+        window.mockCreateActivity = mockCreateActivity;
+        window.mockGetActivityDetail = mockGetActivityDetail;
+        window.globalDataManager = globalDataManager;
+        
+        let currentToken = null;
+        
+        window.testLogin = async function() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.textContent = '正在测试登录...';
+            
+            try {
+                const result = await mockLogin({
+                    studentId: '2330502143',
+                    password: '123456'
+                });
+                
+                currentToken = result.data.token;
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `登录成功！\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `登录失败：\n${JSON.stringify(error, null, 2)}`;
+            }
+        };
+        
+        window.testGetActivities = async function() {
+            const resultDiv = document.getElementById('activitiesResult');
+            resultDiv.textContent = '正在获取活动列表...';
+            
+            try {
+                const result = await mockGetActivityList();
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `获取成功！共${result.data.total}个活动\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `获取失败：\n${JSON.stringify(error, null, 2)}`;
+            }
+        };
+        
+        window.testGetActivitiesWithFilter = async function() {
+            const resultDiv = document.getElementById('activitiesResult');
+            resultDiv.textContent = '正在获取筛选活动...';
+            
+            try {
+                const result = await mockGetActivityList({
+                    status: 'recruiting',
+                    tags: ['运动']
+                });
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `筛选成功！共${result.data.total}个活动\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `筛选失败：\n${JSON.stringify(error, null, 2)}`;
+            }
+        };
+        
+        window.testCreateActivity = async function() {
+            const resultDiv = document.getElementById('createResult');
+            resultDiv.textContent = '正在创建活动...';
+            
+            try {
+                const result = await mockCreateActivity({
+                    title: '测试活动-' + Date.now(),
+                    description: '这是一个测试创建的活动',
+                    startTime: new Date(Date.now() + 86400000).toISOString(),
+                    endTime: new Date(Date.now() + 86400000 + 7200000).toISOString(),
+                    location: '测试地点',
+                    maxParticipants: 20,
+                    tags: ['测试', 'API']
+                });
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `创建成功！\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `创建失败：\n${JSON.stringify(error, null, 2)}`;
+            }
+        };
+        
+        window.testGetActivityDetail = async function() {
+            const resultDiv = document.getElementById('detailResult');
+            resultDiv.textContent = '正在获取活动详情...';
+            
+            try {
+                const result = await mockGetActivityDetail(1);
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `获取成功！\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `获取失败：\n${JSON.stringify(error, null, 2)}`;
+            }
+        };
+        
+        // 页面加载时显示全局数据状态
+        window.addEventListener('load', () => {
+            console.log('全局数据管理器状态:', globalDataManager.getData());
+            console.log('活动数量:', globalDataManager.getActivities().length);
+        });
+    </script>
+</body>
+</html>

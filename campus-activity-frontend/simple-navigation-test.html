@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最简单的导航测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .nav-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #0056b3;
+        }
+        .nav-button.success {
+            background-color: #28a745;
+        }
+        .nav-button.success:hover {
+            background-color: #218838;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 最简单的导航测试</h1>
+        <p>这个页面用于测试最基本的导航功能</p>
+        
+        <div class="status info">
+            <strong>当前页面:</strong> <span id="currentPath">simple-navigation-test.html</span>
+        </div>
+        
+        <div class="status info">
+            <strong>测试时间:</strong> <span id="testTime"></span>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔗 基础导航测试</h2>
+        <p>点击以下链接，看是否能正常跳转：</p>
+        
+        <a href="/home" class="nav-button" onclick="logNavigation('home')">🏠 首页 (/home)</a>
+        <a href="/activities-teams" class="nav-button" onclick="logNavigation('activities-teams')">👥 活动/团队 (/activities-teams)</a>
+        <a href="/messages" class="nav-button" onclick="logNavigation('messages')">💬 消息 (/messages)</a>
+        <a href="/profile" class="nav-button" onclick="logNavigation('profile')">👤 个人中心 (/profile)</a>
+        <a href="/login" class="nav-button success" onclick="logNavigation('login')">🔐 登录页 (/login)</a>
+        <a href="/register" class="nav-button success" onclick="logNavigation('register')">📝 注册页 (/register)</a>
+    </div>
+
+    <div class="test-container">
+        <h2>📊 测试结果</h2>
+        <button onclick="runTest()">开始自动测试</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>📝 测试日志</h2>
+        <button onclick="clearLog()">清除日志</button>
+        <div id="logContainer" class="log"></div>
+    </div>
+
+    <script>
+        let logContainer = document.getElementById('logContainer');
+        let testResults = document.getElementById('testResults');
+        let navigationAttempts = 0;
+        let navigationSuccesses = 0;
+        
+        // 更新时间
+        function updateTime() {
+            document.getElementById('testTime').textContent = new Date().toLocaleString();
+        }
+        
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logContainer.textContent += logEntry;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(`[导航测试] ${message}`);
+        }
+        
+        // 清除日志
+        function clearLog() {
+            logContainer.textContent = '';
+            navigationAttempts = 0;
+            navigationSuccesses = 0;
+        }
+        
+        // 记录导航尝试
+        function logNavigation(path) {
+            navigationAttempts++;
+            addLog(`尝试导航到: ${path}`);
+            
+            // 设置一个超时来检查导航是否成功
+            setTimeout(() => {
+                const currentPath = window.location.pathname;
+                if (currentPath.includes(path) || (path === 'home' && currentPath === '/')) {
+                    navigationSuccesses++;
+                    addLog(`✅ 导航成功: ${path}`);
+                } else {
+                    addLog(`❌ 导航可能失败: ${path} (当前在: ${currentPath})`);
+                }
+                updateTestResults();
+            }, 2000);
+        }
+        
+        // 更新测试结果
+        function updateTestResults() {
+            const successRate = navigationAttempts > 0 ? 
+                Math.round((navigationSuccesses / navigationAttempts) * 100) : 0;
+            
+            testResults.innerHTML = `
+                <div class="status ${successRate === 100 ? 'success' : 'info'}">
+                    <strong>导航统计:</strong><br>
+                    尝试次数: ${navigationAttempts}<br>
+                    成功次数: ${navigationSuccesses}<br>
+                    成功率: ${successRate}%
+                </div>
+            `;
+        }
+        
+        // 自动测试
+        function runTest() {
+            addLog('开始自动导航测试...');
+            
+            const testPaths = ['home', 'activities-teams', 'messages', 'profile'];
+            let currentIndex = 0;
+            
+            function testNext() {
+                if (currentIndex < testPaths.length) {
+                    const path = testPaths[currentIndex];
+                    addLog(`自动测试导航到: ${path}`);
+                    
+                    // 创建一个链接并点击
+                    const link = document.createElement('a');
+                    link.href = `/${path}`;
+                    link.target = '_self'; // 在同一窗口中打开
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    currentIndex++;
+                    
+                    // 等待3秒后测试下一个
+                    setTimeout(testNext, 3000);
+                } else {
+                    addLog('自动测试完成');
+                    updateTestResults();
+                }
+            }
+            
+            testNext();
+        }
+        
+        // 监听页面加载
+        window.addEventListener('load', function() {
+            updateTime();
+            addLog('页面加载完成');
+            
+            // 更新当前路径
+            document.getElementById('currentPath').textContent = window.location.pathname;
+            
+            // 每秒更新时间
+            setInterval(updateTime, 1000);
+            
+            // 监听路由变化
+            let currentPath = window.location.pathname;
+            setInterval(() => {
+                const newPath = window.location.pathname;
+                if (newPath !== currentPath) {
+                    addLog(`检测到路由变化: ${currentPath} -> ${newPath}`);
+                    currentPath = newPath;
+                    document.getElementById('currentPath').textContent = newPath;
+                }
+            }, 100);
+        });
+        
+        // 监听错误
+        window.addEventListener('error', function(event) {
+            addLog(`页面错误: ${event.error.message}`, 'error');
+        });
+        
+        // 监听未处理的Promise拒绝
+        window.addEventListener('unhandledrejection', function(event) {
+            addLog(`未处理的Promise拒绝: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>

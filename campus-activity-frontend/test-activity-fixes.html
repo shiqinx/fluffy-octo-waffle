@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建和显示修复测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .activity-data {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动创建和显示修复测试</h1>
+    
+    <div class="test-section">
+        <div class="test-title">1. 测试活动创建功能</div>
+        <button onclick="testCreateActivity()">创建测试活动</button>
+        <div id="createResult" class="test-result info">点击按钮测试活动创建功能</div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">2. 测试活动状态计算</div>
+        <button onclick="testActivityStatus()">测试状态计算</button>
+        <div id="statusResult" class="test-result info">点击按钮测试活动状态动态计算</div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">3. 测试地图位置信息</div>
+        <button onclick="testLocationInfo()">测试位置信息</button>
+        <div id="locationResult" class="test-result info">点击按钮测试地图位置信息保存</div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">4. 测试活动列表获取</div>
+        <button onclick="testActivityList()">获取活动列表</button>
+        <div id="listResult" class="test-result info">点击按钮测试活动列表和状态显示</div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { globalDataManager } from './src/api/global-data.js';
+        import { mockCreateActivity, mockGetActivityList, mockGetActivityDetail } from './src/api/mock.js';
+        import { campusBuildings } from './src/config/map.js';
+
+        // 测试数据
+        const testActivityData = {
+            title: '测试活动-' + Date.now(),
+            category: 'sports',
+            description: '这是一个测试活动，用于验证修复后的功能',
+            startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+            location: {
+                name: '篮球场1',
+                address: '广东药科大学云浮校区篮球场1'
+            },
+            coords: campusBuildings.basketballCourt1.coords,
+            maxParticipants: 20,
+            tags: ['测试', '体育'],
+            coverImage: ''
+        };
+
+        // 等待函数
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // 测试活动创建
+        window.testCreateActivity = async function() {
+            const resultDiv = document.getElementById('createResult');
+            try {
+                resultDiv.innerHTML = '正在创建活动...';
+                resultDiv.className = 'test-result info';
+                
+                const response = await mockCreateActivity(testActivityData);
+                
+                if (response.success) {
+                    resultDiv.innerHTML = `✅ 活动创建成功！<br>活动ID: ${response.data.id}<br>活动标题: ${response.data.title}<div class="activity-data">${JSON.stringify(response.data, null, 2)}</div>`;
+                    resultDiv.className = 'test-result success';
+                    
+                    // 保存活动ID用于后续测试
+                    window.testActivityId = response.data.id;
+                } else {
+                    resultDiv.innerHTML = `❌ 活动创建失败: ${response.message}`;
+                    resultDiv.className = 'test-result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 创建活动时发生错误: ${error.message}`;
+                resultDiv.className = 'test-result error';
+            }
+        };
+
+        // 测试活动状态计算
+        window.testActivityStatus = async function() {
+            const resultDiv = document.getElementById('statusResult');
+            try {
+                resultDiv.innerHTML = '正在测试活动状态计算...';
+                resultDiv.className = 'test-result info';
+                
+                if (!window.testActivityId) {
+                    resultDiv.innerHTML = '⚠️ 请先创建一个测试活动';
+                    resultDiv.className = 'test-result error';
+                    return;
+                }
+                
+                const response = await mockGetActivityDetail(window.testActivityId);
+                
+                if (response.success) {
+                    const activity = response.data;
+                    const statusInfo = `
+                        📊 活动状态信息:<br>
+                        • 活动标题: ${activity.title}<br>
+                        • 计算状态: ${activity.status}<br>
+                        • 开始时间: ${new Date(activity.startTime).toLocaleString()}<br>
+                        • 结束时间: ${new Date(activity.endTime).toLocaleString()}<br>
+                        • 报名开始: ${activity.enrollStartTime ? new Date(activity.enrollStartTime).toLocaleString() : '未设置'}<br>
+                        • 报名结束: ${activity.enrollEndTime ? new Date(activity.enrollEndTime).toLocaleString() : '未设置'}<br>
+                        • 当前时间: ${new Date().toLocaleString()}
+                    `;
+                    resultDiv.innerHTML = statusInfo;
+                    resultDiv.className = 'test-result success';
+                } else {
+                    resultDiv.innerHTML = `❌ 获取活动详情失败: ${response.message}`;
+                    resultDiv.className = 'test-result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 测试状态计算时发生错误: ${error.message}`;
+                resultDiv.className = 'test-result error';
+            }
+        };
+
+        // 测试位置信息
+        window.testLocationInfo = async function() {
+            const resultDiv = document.getElementById('locationResult');
+            try {
+                resultDiv.innerHTML = '正在测试位置信息...';
+                resultDiv.className = 'test-result info';
+                
+                if (!window.testActivityId) {
+                    resultDiv.innerHTML = '⚠️ 请先创建一个测试活动';
+                    resultDiv.className = 'test-result error';
+                    return;
+                }
+                
+                const response = await mockGetActivityDetail(window.testActivityId);
+                
+                if (response.success) {
+                    const activity = response.data;
+                    const hasCoords = activity.coords && Array.isArray(activity.coords) && activity.coords.length === 2;
+                    const hasLocation = activity.location && activity.location.name;
+                    
+                    const locationInfo = `
+                        📍 位置信息检查:<br>
+                        • 有坐标数据: ${hasCoords ? '✅ 是' : '❌ 否'}<br>
+                        • 坐标值: ${hasCoords ? `[${activity.coords[0]}, ${activity.coords[1]}]` : '无'}<br>
+                        • 有位置信息: ${hasLocation ? '✅ 是' : '❌ 否'}<br>
+                        • 位置名称: ${activity.location?.name || '无'}<br>
+                        • 位置地址: ${activity.location?.address || '无'}<br>
+                        • 地图显示条件: ${hasCoords ? '✅ 满足' : '❌ 不满足'}
+                    `;
+                    resultDiv.innerHTML = locationInfo;
+                    resultDiv.className = hasCoords && hasLocation ? 'test-result success' : 'test-result error';
+                } else {
+                    resultDiv.innerHTML = `❌ 获取活动详情失败: ${response.message}`;
+                    resultDiv.className = 'test-result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 测试位置信息时发生错误: ${error.message}`;
+                resultDiv.className = 'test-result error';
+            }
+        };
+
+        // 测试活动列表
+        window.testActivityList = async function() {
+            const resultDiv = document.getElementById('listResult');
+            try {
+                resultDiv.innerHTML = '正在获取活动列表...';
+                resultDiv.className = 'test-result info';
+                
+                const response = await mockGetActivityList();
+                
+                if (response.success) {
+                    const activities = response.data.list;
+                    const listInfo = `
+                        📋 活动列表信息:<br>
+                        • 总活动数: ${response.data.total}<br>
+                        • 当前页活动数: ${activities.length}<br>
+                        • 活动状态分布:<br>
+                        ${activities.map(act => `  - ${act.title}: ${act.status}`).join('<br>')}
+                        <div class="activity-data">${JSON.stringify(activities.slice(0, 3), null, 2)}</div>
+                    `;
+                    resultDiv.innerHTML = listInfo;
+                    resultDiv.className = 'test-result success';
+                } else {
+                    resultDiv.innerHTML = `❌ 获取活动列表失败: ${response.message}`;
+                    resultDiv.className = 'test-result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 测试活动列表时发生错误: ${error.message}`;
+                resultDiv.className = 'test-result error';
+            }
+        };
+
+        // 页面加载完成后的初始化
+        console.log('活动创建和显示修复测试页面已加载');
+        console.log('测试数据:', testActivityData);
+    </script>
+</body>
+</html>

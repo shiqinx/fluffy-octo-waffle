@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情路由问题修复工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 28px;
+        }
+        .header p {
+            color: #666;
+            margin: 10px 0 0 0;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .activity-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .activity-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .activity-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .activity-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .activity-id {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .activity-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #888;
+        }
+        .test-button {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        }
+        .test-button.success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+        .test-button.warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+        }
+        .test-button.danger {
+            background: linear-gradient(45deg, #dc3545, #e83e8c);
+        }
+        .log-section {
+            background: #2d3748;
+            color: #e2e8f0;
+            border: 1px solid #4a5568;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+        .status-info { background: #17a2b8; }
+        .fix-result {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .error-result {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 活动详情路由问题修复工具</h1>
+            <p>诊断和修复活动列表跳转到同一详情页的问题</p>
+        </div>
+
+        <div class="section">
+            <h3><span class="status-indicator status-info"></span>问题诊断</h3>
+            <div id="diagnosisResult"></div>
+            <button class="test-button" onclick="runDiagnosis()">开始诊断</button>
+        </div>
+
+        <div class="section">
+            <h3><span class="status-indicator status-warning"></span>模拟活动列表</h3>
+            <div class="activity-demo" id="activityDemo"></div>
+        </div>
+
+        <div class="section">
+            <h3><span class="status-indicator status-success"></span>修复操作</h3>
+            <div class="button-group">
+                <button class="test-button success" onclick="fixMockData()">修复Mock数据</button>
+                <button class="test-button warning" onclick="clearLocalStorage()">清理缓存</button>
+                <button class="test-button danger" onclick="resetAllData()">重置所有数据</button>
+            </div>
+            <div id="fixResult"></div>
+        </div>
+
+        <div class="section">
+            <h3><span class="status-indicator status-info"></span>测试日志</h3>
+            <div id="testLog" class="log-section"></div>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+    </div>
+
+    <script>
+        // 正确的活动数据
+        const correctActivities = [
+            {
+                id: 1,
+                title: "中医养生讲座",
+                type: "lecture",
+                category: "lecture",
+                location: { name: "教学楼A101", address: "主教学楼A栋101室" },
+                startTime: "2024-01-15T14:00:00",
+                endTime: "2024-01-15T16:00:00",
+                currentParticipants: 25,
+                maxParticipants: 100,
+                description: "传统中医养生知识讲座，邀请资深中医师讲解养生之道"
+            },
+            {
+                id: 2,
+                title: "摄影作品展览",
+                type: "exhibition",
+                category: "other",
+                location: { name: "艺术馆二楼", address: "学校艺术馆二楼展厅" },
+                startTime: "2024-01-16T10:00:00",
+                endTime: "2024-01-16T17:00:00",
+                currentParticipants: 30,
+                maxParticipants: 80,
+                description: "学生优秀摄影作品展览，展现校园生活之美"
+            },
+            {
+                id: 3,
+                title: "编程马拉松大赛",
+                type: "competition",
+                category: "study",
+                location: { name: "计算机实验室", address: "计算机学院实验楼302" },
+                startTime: "2024-01-17T09:00:00",
+                endTime: "2024-01-17T21:00:00",
+                currentParticipants: 15,
+                maxParticipants: 50,
+                description: "24小时编程挑战赛，展示编程技能和团队协作"
+            },
+            {
+                id: 4,
+                title: "篮球友谊赛",
+                type: "sports",
+                category: "sports",
+                location: { name: "体育馆", address: "学校体育馆主场地" },
+                startTime: "2024-01-18T16:00:00",
+                endTime: "2024-01-18T18:00:00",
+                currentParticipants: 20,
+                maxParticipants: 40,
+                description: "院系篮球友谊赛，增进友谊，锻炼身体"
+            },
+            {
+                id: 5,
+                title: "校园音乐节",
+                type: "entertainment",
+                category: "other",
+                location: { name: "大礼堂", address: "学校大礼堂" },
+                startTime: "2024-01-19T19:00:00",
+                endTime: "2024-01-19T21:30:00",
+                currentParticipants: 150,
+                maxParticipants: 300,
+                description: "年度校园音乐节，展现学生音乐才华"
+            },
+            {
+                id: 6,
+                title: "图书馆学习小组",
+                type: "study",
+                category: "study",
+                location: { name: "图书馆三楼", address: "图书馆三楼研讨室" },
+                startTime: "2024-01-20T14:00:00",
+                endTime: "2024-01-20T16:00:00",
+                currentParticipants: 12,
+                maxParticipants: 25,
+                description: "学术学习小组活动，共同探讨专业问题"
+            }
+        ];
+
+        let testLog = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const statusIcons = {
+                info: 'ℹ️',
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+            testLog.push(`[${timestamp}] ${statusIcons[type]} ${message}`);
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            document.getElementById('testLog').textContent = testLog.join('\n');
+        }
+
+        function clearLog() {
+            testLog = [];
+            updateLogDisplay();
+        }
+
+        function renderActivityDemo() {
+            const demoContainer = document.getElementById('activityDemo');
+            demoContainer.innerHTML = '';
+
+            correctActivities.forEach(activity => {
+                const card = document.createElement('div');
+                card.className = 'activity-card';
+                card.innerHTML = `
+                    <div class="activity-title">${activity.title}</div>
+                    <div class="activity-id">ID: ${activity.id}</div>
+                    <div class="activity-meta">
+                        <span>📍 ${activity.location.name}</span>
+                        <span>👥 ${activity.currentParticipants}/${activity.maxParticipants}</span>
+                    </div>
+                `;
+                card.onclick = () => testActivityNavigation(activity);
+                demoContainer.appendChild(card);
+            });
+        }
+
+        function testActivityNavigation(activity) {
+            log(`👆 测试点击活动: ${activity.title} (ID: ${activity.id})`);
+            
+            // 模拟路由生成
+            const routePath = `/activities/${activity.id}`;
+            log(`🛣️ 生成路由: ${routePath}`);
+            
+            // 模拟路由参数解析
+            const params = extractRouteParams(routePath);
+            log(`📋 解析参数: ${JSON.stringify(params)}`);
+            
+            // 模拟API调用
+            const result = simulateGetActivityDetail(params.id);
+            if (result.success) {
+                log(`✅ API返回正确: ${result.data.title}`);
+            } else {
+                log(`❌ API返回错误: ${result.error}`);
+            }
+        }
+
+        function extractRouteParams(routePath) {
+            const match = routePath.match(/\/activities\/(\d+)/);
+            return match ? { id: match[1] } : null;
+        }
+
+        function simulateGetActivityDetail(activityId) {
+            const activity = correctActivities.find(a => a.id == activityId);
+            if (activity) {
+                return { success: true, data: activity };
+            } else {
+                return { success: false, error: `未找到ID为 ${activityId} 的活动` };
+            }
+        }
+
+        function runDiagnosis() {
+            const diagnosisResult = document.getElementById('diagnosisResult');
+            let issues = [];
+            let suggestions = [];
+
+            log('🔍 开始诊断活动详情路由问题...');
+
+            // 检查localStorage
+            const cachedActivities = localStorage.getItem('campus_activities');
+            if (cachedActivities) {
+                try {
+                    const parsed = JSON.parse(cachedActivities);
+                    if (Array.isArray(parsed)) {
+                        log(`📦 发现缓存数据: ${parsed.length} 个活动`);
+                        
+                        // 检查数据是否重复
+                        const titles = parsed.map(a => a.title);
+                        const uniqueTitles = [...new Set(titles)];
+                        if (titles.length !== uniqueTitles.length) {
+                            issues.push('缓存中存在重复的活动标题');
+                            suggestions.push('清理localStorage缓存');
+                        }
+                    }
+                } catch (e) {
+                    issues.push('localStorage数据解析失败');
+                    suggestions.push('清理损坏的缓存数据');
+                }
+            }
+
+            // 检查路由参数解析
+            const testRoutes = ['/activities/1', '/activities/2', '/activities/3'];
+            let routeIssues = 0;
+            testRoutes.forEach(route => {
+                const params = extractRouteParams(route);
+                if (!params || !params.id) {
+                    routeIssues++;
+                }
+            });
+
+            if (routeIssues > 0) {
+                issues.push('路由参数解析存在问题');
+                suggestions.push('检查路由配置');
+            }
+
+            // 显示诊断结果
+            let html = '';
+            if (issues.length === 0) {
+                html = '<div class="fix-result">✅ 未发现明显问题，系统运行正常</div>';
+            } else {
+                html = '<div class="error-result">';
+                html += '<h4>🔍 发现的问题：</h4><ul>';
+                issues.forEach(issue => html += `<li>${issue}</li>`);
+                html += '</ul>';
+                html += '<h4>💡 建议的解决方案：</h4><ul>';
+                suggestions.forEach(suggestion => html += `<li>${suggestion}</li>`);
+                html += '</ul></div>';
+            }
+
+            diagnosisResult.innerHTML = html;
+            log(`🎯 诊断完成: 发现 ${issues.length} 个问题`);
+        }
+
+        function fixMockData() {
+            log('🔧 开始修复Mock数据...');
+            
+            try {
+                // 更新localStorage中的活动数据
+                localStorage.setItem('campus_activities', JSON.stringify(correctActivities));
+                localStorage.setItem('activity_detail_cache', JSON.stringify({}));
+                
+                log('✅ Mock数据修复完成');
+                document.getElementById('fixResult').innerHTML = 
+                    '<div class="fix-result">✅ Mock数据修复成功！活动数据已更新为正确的6个不同活动</div>';
+            } catch (error) {
+                log(`❌ 修复失败: ${error.message}`);
+                document.getElementById('fixResult').innerHTML = 
+                    `<div class="error-result">❌ 修复失败: ${error.message}</div>`;
+            }
+        }
+
+        function clearLocalStorage() {
+            log('🗑️ 清理localStorage缓存...');
+            
+            const keysToRemove = ['campus_activities', 'activity_detail_cache', 'user_activities'];
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                log(`🗑️ 已清理: ${key}`);
+            });
+            
+            document.getElementById('fixResult').innerHTML = 
+                '<div class="fix-result">✅ 缓存清理完成！localStorage已清空</div>';
+        }
+
+        function resetAllData() {
+            log('🔄 重置所有数据...');
+            
+            // 清理所有相关数据
+            clearLocalStorage();
+            
+            // 重新设置正确的数据
+            setTimeout(() => {
+                fixMockData();
+                log('🔄 数据重置完成');
+            }, 100);
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 活动详情路由问题修复工具初始化完成');
+            renderActivityDemo();
+            log('📋 活动列表已渲染，可以点击测试');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建功能最终测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .activity-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动创建功能最终测试</h1>
+    
+    <div class="container">
+        <h2>数据状态检查</h2>
+        <button onclick="checkDataStatus()">检查数据状态</button>
+        <div id="dataStatus"></div>
+    </div>
+
+    <div class="container">
+        <h2>创建测试活动</h2>
+        <button onclick="createTestActivity()">创建测试活动</button>
+        <div id="createResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>当前活动列表</h2>
+        <button onclick="loadActivityList()">刷新活动列表</button>
+        <div id="activityList"></div>
+    </div>
+
+    <script type="module">
+        // 导入Mock API
+        import { mockApi } from './src/utils/mock.js'
+
+        window.checkDataStatus = function() {
+            const statusDiv = document.getElementById('dataStatus')
+            let html = '<h3>数据状态检查结果:</h3>'
+            
+            try {
+                // 检查localStorage
+                const localStorageData = localStorage.getItem('campus_activities')
+                const localStorageCount = localStorageData ? JSON.parse(localStorageData).length : 0
+                
+                html += `<div class="info">localStorage活动数量: ${localStorageCount}</div>`
+                
+                if (localStorageData) {
+                    const activities = JSON.parse(localStorageData)
+                    html += '<h4>localStorage中的活动:</h4>'
+                    activities.forEach((activity, index) => {
+                        html += `<div class="activity-item">
+                            <strong>${index + 1}. ${activity.title}</strong> (ID: ${activity.id})<br>
+                            类型: ${activity.type} | 地点: ${activity.location}<br>
+                            状态: ${activity.status}
+                        </div>`
+                    })
+                }
+                
+            } catch (error) {
+                html += `<div class="error">检查过程中出错: ${error.message}</div>`
+            }
+            
+            statusDiv.innerHTML = html
+        }
+
+        window.createTestActivity = async function() {
+            const resultDiv = document.getElementById('createResult')
+            resultDiv.innerHTML = '<div class="info">正在创建测试活动...</div>'
+            
+            try {
+                const testActivity = {
+                    title: "测试活动-" + Date.now(),
+                    type: "测试类型",
+                    category: "test",
+                    description: "这是一个测试活动，用于验证创建功能",
+                    location: "测试地点",
+                    startTime: new Date(Date.now() + 86400000).toISOString(),
+                    endTime: new Date(Date.now() + 172800000).toISOString(),
+                    maxParticipants: 50,
+                    tags: ["测试", "验证"]
+                }
+                
+                console.log('创建测试活动:', testActivity)
+                
+                // 使用Mock API创建活动
+                const result = await mockApi.createActivity(testActivity)
+                console.log('创建结果:', result)
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ 活动创建成功！</div>
+                        <div class="info">活动ID: ${result.data.id}</div>
+                        <div class="info">活动标题: ${result.data.title}</div>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    `
+                    
+                    // 创建成功后自动刷新数据状态和活动列表
+                    setTimeout(() => {
+                        checkDataStatus()
+                        loadActivityList()
+                    }, 1000)
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 活动创建失败: ${result.message}</div>`
+                }
+                
+            } catch (error) {
+                console.error('创建活动出错:', error)
+                resultDiv.innerHTML = `<div class="error">❌ 创建过程中出错: ${error.message}</div>`
+            }
+        }
+
+        window.loadActivityList = async function() {
+            const listDiv = document.getElementById('activityList')
+            listDiv.innerHTML = '<div class="info">正在加载活动列表...</div>'
+            
+            try {
+                console.log('开始加载活动列表...')
+                
+                // 使用Mock API获取活动列表
+                const result = await mockApi.getActivities({ page: 1, pageSize: 10 })
+                console.log('活动列表结果:', result)
+                
+                if (result.success && result.data.list) {
+                    let html = `<h3>活动列表 (共${result.data.total}个活动):</h3>`
+                    
+                    result.data.list.forEach(activity => {
+                        html += `
+                            <div class="activity-item">
+                                <h4>${activity.title} (ID: ${activity.id})</h4>
+                                <p><strong>类型:</strong> ${activity.type}</p>
+                                <p><strong>地点:</strong> ${activity.location}</p>
+                                <p><strong>时间:</strong> ${activity.startTime} - ${activity.endTime}</p>
+                                <p><strong>状态:</strong> ${activity.status}</p>
+                                <p><strong>描述:</strong> ${activity.description}</p>
+                            </div>
+                        `
+                    })
+                    
+                    listDiv.innerHTML = html
+                } else {
+                    listDiv.innerHTML = `<div class="error">❌ 加载活动列表失败: ${result.message}</div>`
+                }
+                
+            } catch (error) {
+                console.error('加载活动列表出错:', error)
+                listDiv.innerHTML = `<div class="error">❌ 加载过程中出错: ${error.message}</div>`
+            }
+        }
+
+        // 页面加载时自动检查数据状态
+        window.addEventListener('load', function() {
+            checkDataStatus()
+            loadActivityList()
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        .nav-test {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 应用导航和状态测试</h1>
+    
+    <div class="test-section">
+        <h2>📊 当前状态检查</h2>
+        <div id="status-check">检查中...</div>
+        <button onclick="checkStatus()">重新检查</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 用户认证测试</h2>
+        <div id="auth-status">检查中...</div>
+        <div>
+            <button onclick="testLogin()">测试登录</button>
+            <button onclick="testLogout()">测试退出</button>
+            <button onclick="checkAuthStatus()">检查认证状态</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧭 路由导航测试</h2>
+        <div class="nav-test">
+            <button onclick="navigateTo('/home')">首页</button>
+            <button onclick="navigateTo('/activities-teams')">活动/团队</button>
+            <button onclick="navigateTo('/messages')">消息</button>
+            <button onclick="navigateTo('/profile')">个人中心</button>
+            <button onclick="navigateTo('/activities/create')">创建活动</button>
+            <button onclick="navigateTo('/login')">登录页</button>
+        </div>
+        <div id="nav-result">点击按钮测试导航</div>
+    </div>
+
+    <div class="test-section">
+        <h2>📱 底部导航测试</h2>
+        <div id="bottom-nav-status">检查中...</div>
+        <button onclick="testBottomNav()">测试底部导航</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 控制台日志</h2>
+        <div id="console-log" style="background: #f8f9fa; padding: 10px; border-radius: 4px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;"></div>
+        <button onclick="clearLog()">清空日志</button>
+    </div>
+
+    <script type="module">
+        // 捕获控制台输出
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToLog(type, ...args) {
+            const logDiv = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            logDiv.innerHTML += `<div style="color: ${type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black'}">[${timestamp}] ${type.toUpperCase()}: ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToLog('log', ...args);
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToLog('error', ...args);
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToLog('warn', ...args);
+        };
+
+        // 检查应用状态
+        window.checkStatus = function() {
+            const statusDiv = document.getElementById('status-check');
+            
+            try {
+                // 检查当前URL
+                const currentUrl = window.location.href;
+                const currentPath = window.location.pathname;
+                
+                // 检查localStorage
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                const loginTime = localStorage.getItem('loginTime');
+                
+                let statusHTML = `
+                    <div class="info"><strong>当前URL:</strong> ${currentUrl}</div>
+                    <div class="info"><strong>当前路径:</strong> ${currentPath}</div>
+                    <div class="${token ? 'success' : 'error'}"><strong>Token:</strong> ${token ? '已存在' : '不存在'}</div>
+                    <div class="${user ? 'success' : 'error'}"><strong>用户信息:</strong> ${user ? '已存在' : '不存在'}</div>
+                    <div class="${loginTime ? 'success' : 'error'}"><strong>登录时间:</strong> ${loginTime ? new Date(parseInt(loginTime)).toLocaleString() : '不存在'}</div>
+                `;
+                
+                if (token && loginTime) {
+                    const loginTimestamp = parseInt(loginTime);
+                    const currentTime = Date.now();
+                    const fourHours = 4 * 60 * 60 * 1000;
+                    const timeRemaining = fourHours - (currentTime - loginTimestamp);
+                    
+                    if (timeRemaining > 0) {
+                        statusHTML += `<div class="success"><strong>Token有效期:</strong> ${Math.floor(timeRemaining / 60000)} 分钟</div>`;
+                    } else {
+                        statusHTML += `<div class="error"><strong>Token状态:</strong> 已过期</div>`;
+                    }
+                }
+                
+                statusDiv.innerHTML = statusHTML;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">检查状态时出错: ${error.message}</div>`;
+            }
+        };
+
+        // 测试登录
+        window.testLogin = async function() {
+            const authDiv = document.getElementById('auth-status');
+            authDiv.innerHTML = '<div class="info">正在测试登录...</div>';
+            
+            try {
+                // 导入登录API
+                const { mockLogin } = await import('./src/api/mock.js');
+                
+                const testCredentials = {
+                    studentId: '2021001',
+                    password: 'password123'
+                };
+                
+                console.log('测试登录凭据:', testCredentials);
+                
+                const result = await mockLogin(testCredentials);
+                console.log('登录结果:', result);
+                
+                if (result && result.data) {
+                    // 保存到localStorage
+                    localStorage.setItem('token', result.data.token);
+                    localStorage.setItem('user', JSON.stringify(result.data.user));
+                    localStorage.setItem('loginTime', Date.now().toString());
+                    
+                    authDiv.innerHTML = `
+                        <div class="success">✅ 登录测试成功!</div>
+                        <div class="info">用户: ${result.data.user.name}</div>
+                        <div class="info">Token: ${result.data.token.substring(0, 20)}...</div>
+                    `;
+                } else {
+                    authDiv.innerHTML = '<div class="error">❌ 登录失败: 响应格式错误</div>';
+                }
+                
+            } catch (error) {
+                console.error('登录测试失败:', error);
+                authDiv.innerHTML = `<div class="error">❌ 登录测试失败: ${error.message}</div>`;
+            }
+        };
+
+        // 测试退出
+        window.testLogout = function() {
+            try {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('loginTime');
+                
+                document.getElementById('auth-status').innerHTML = '<div class="success">✅ 已清除登录信息</div>';
+                console.log('用户已退出登录');
+                
+            } catch (error) {
+                console.error('退出登录失败:', error);
+                document.getElementById('auth-status').innerHTML = `<div class="error">❌ 退出失败: ${error.message}</div>`;
+            }
+        };
+
+        // 检查认证状态
+        window.checkAuthStatus = function() {
+            const authDiv = document.getElementById('auth-status');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                const loginTime = localStorage.getItem('loginTime');
+                
+                if (!token || !loginTime) {
+                    authDiv.innerHTML = '<div class="error">❌ 用户未登录</div>';
+                    return;
+                }
+                
+                const loginTimestamp = parseInt(loginTime);
+                const currentTime = Date.now();
+                const fourHours = 4 * 60 * 60 * 1000;
+                
+                if (currentTime - loginTimestamp > fourHours) {
+                    authDiv.innerHTML = '<div class="error">❌ Token已过期</div>';
+                } else {
+                    const userData = JSON.parse(user || '{}');
+                    authDiv.innerHTML = `
+                        <div class="success">✅ 用户已登录</div>
+                        <div class="info">用户名: ${userData.name || '未知'}</div>
+                        <div class="info">学号: ${userData.studentId || '未知'}</div>
+                    `;
+                }
+                
+            } catch (error) {
+                authDiv.innerHTML = `<div class="error">❌ 检查认证状态失败: ${error.message}</div>`;
+            }
+        };
+
+        // 导航测试
+        window.navigateTo = function(path) {
+            const navResult = document.getElementById('nav-result');
+            
+            try {
+                console.log('尝试导航到:', path);
+                
+                // 检查是否需要认证
+                const protectedRoutes = ['/home', '/activities-teams', '/messages', '/profile'];
+                const needsAuth = protectedRoutes.some(route => path.startsWith(route));
+                
+                if (needsAuth) {
+                    const token = localStorage.getItem('token');
+                    const loginTime = localStorage.getItem('loginTime');
+                    
+                    if (!token || !loginTime) {
+                        navResult.innerHTML = `<div class="error">❌ 路径 ${path} 需要登录，请先登录</div>`;
+                        return;
+                    }
+                    
+                    const loginTimestamp = parseInt(loginTime);
+                    const currentTime = Date.now();
+                    const fourHours = 4 * 60 * 60 * 1000;
+                    
+                    if (currentTime - loginTimestamp > fourHours) {
+                        navResult.innerHTML = `<div class="error">❌ Token已过期，请重新登录</div>`;
+                        return;
+                    }
+                }
+                
+                // 执行导航
+                window.location.href = window.location.origin + '/#' + path;
+                navResult.innerHTML = `<div class="success">✅ 正在导航到: ${path}</div>`;
+                
+            } catch (error) {
+                console.error('导航失败:', error);
+                navResult.innerHTML = `<div class="error">❌ 导航失败: ${error.message}</div>`;
+            }
+        };
+
+        // 测试底部导航
+        window.testBottomNav = function() {
+            const navDiv = document.getElementById('bottom-nav-status');
+            
+            try {
+                // 检查当前路径对应的底部导航状态
+                const currentPath = window.location.hash || '#/home';
+                let activeTab = 'home';
+                
+                if (currentPath.includes('/activities') || currentPath.includes('/teams')) {
+                    activeTab = 'activities-teams';
+                } else if (currentPath.includes('/messages') || currentPath.includes('/chat')) {
+                    activeTab = 'messages';
+                } else if (currentPath.includes('/profile')) {
+                    activeTab = 'profile';
+                }
+                
+                navDiv.innerHTML = `
+                    <div class="success">✅ 底部导航状态正常</div>
+                    <div class="info">当前路径: ${currentPath}</div>
+                    <div class="info">活跃标签: ${activeTab}</div>
+                `;
+                
+            } catch (error) {
+                navDiv.innerHTML = `<div class="error">❌ 检查底部导航失败: ${error.message}</div>`;
+            }
+        };
+
+        // 清空日志
+        window.clearLog = function() {
+            document.getElementById('console-log').innerHTML = '';
+        };
+
+        // 页面加载时自动检查状态
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('导航测试页面已加载');
+            checkStatus();
+            checkAuthStatus();
+            testBottomNav();
+        });
+
+        // 监听路由变化
+        window.addEventListener('hashchange', function() {
+            console.log('路由变化:', window.location.hash);
+            testBottomNav();
+        });
+    </script>
+</body>
+</html>

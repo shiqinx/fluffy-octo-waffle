@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>位置调试 - 详细分析</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .location-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .calibration-info {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .debug-info {
+            background: #f3e5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error-info {
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .step {
+            border-left: 4px solid #2196F3;
+            padding-left: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 位置获取详细调试</h1>
+    
+    <div class="container">
+        <h2>📍 位置获取测试</h2>
+        <button onclick="testLocation()">获取当前位置</button>
+        <button onclick="testMultipleTimes()">连续测试5次</button>
+        <button onclick="clearResults()">清除结果</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // 导入位置工具函数
+        import { getCurrentLocation, smartLocationCalibration, DEFAULT_LOCATION } from './src/utils/location.js';
+        
+        window.testLocation = async function() {
+            const resultsDiv = document.getElementById('results');
+            
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'step';
+            stepDiv.innerHTML = '<h3>🔍 位置获取测试 #' + (document.querySelectorAll('.step').length + 1) + '</h3>';
+            
+            try {
+                // 步骤1: 获取原始位置
+                stepDiv.innerHTML += '<div class="location-info"><h4>步骤1: 开始获取位置...</h4>';
+                
+                const location = await getCurrentLocation({
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+                
+                stepDiv.innerHTML += '<h5>✅ 位置获取成功</h5>';
+                stepDiv.innerHTML += '<pre>' + JSON.stringify(location, null, 2) + '</pre>';
+                
+                // 分析位置信息
+                if (location.isDefault) {
+                    stepDiv.innerHTML += '<div class="error-info"><h5>⚠️ 使用了默认位置</h5>';
+                    stepDiv.innerHTML += '<p>原因: ' + (location.fallbackReason || '未知') + '</p></div>';
+                }
+                
+                if (location.calibrated) {
+                    stepDiv.innerHTML += '<div class="calibration-info"><h5>🎯 位置已校准</h5>';
+                    stepDiv.innerHTML += '<p>校准来源: ' + location.calibrationSource + '</p>';
+                    stepDiv.innerHTML += '<p>原始距离: ' + (location.originalDistance || '未知') + '米</p>';
+                    stepDiv.innerHTML += '<p>权重得分: ' + (location.weightedScore || '未知') + '</p>';
+                    stepDiv.innerHTML += '<p>置信度: ' + (location.confidence || '未知') + '</p></div>';
+                }
+                
+                // 步骤2: 手动测试校准算法
+                const rawLocation = {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    accuracy: location.accuracy
+                };
+                
+                const calibratedLocation = smartLocationCalibration(rawLocation);
+                
+                stepDiv.innerHTML += '<div class="debug-info"><h4>步骤2: 校准算法分析</h4>';
+                stepDiv.innerHTML += '<h5>原始位置:</h5>';
+                stepDiv.innerHTML += '<pre>' + JSON.stringify(rawLocation, null, 2) + '</pre>';
+                stepDiv.innerHTML += '<h5>校准后位置:</h5>';
+                stepDiv.innerHTML += '<pre>' + JSON.stringify(calibratedLocation, null, 2) + '</pre>';
+                
+                if (calibratedLocation.debugInfo) {
+                    stepDiv.innerHTML += '<h5>所有参考点信息:</h5>';
+                    stepDiv.innerHTML += '<pre>' + JSON.stringify(calibratedLocation.debugInfo, null, 2) + '</pre>';
+                }
+                
+                // 步骤3: 距离分析
+                stepDiv.innerHTML += '<div class="location-info"><h4>步骤3: 关键建筑距离分析</h4>';
+                
+                const calculateDistance = function(lat1, lng1, lat2, lng2) {
+                    const R = 6371e3;
+                    const φ1 = lat1 * Math.PI / 180;
+                    const φ2 = lat2 * Math.PI / 180;
+                    const Δφ = (lat2 - lat1) * Math.PI / 180;
+                    const Δλ = (lng2 - lng1) * Math.PI / 180;
+                    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                            Math.cos(φ1) * Math.cos(φ2) *
+                            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    return R * c;
+                };
+                
+                const buildings = [
+                    { name: '图书馆', lat: 23.0419, lng: 113.4016 },
+                    { name: '3栋宿舍', lat: 23.0413, lng: 113.4022 },
+                    { name: '4栋宿舍', lat: 23.0415, lng: 113.4020 },
+                    { name: '教学楼A栋', lat: 23.0422, lng: 113.4012 },
+                    { name: '体育馆', lat: 23.0410, lng: 113.4018 },
+                    { name: '食堂', lat: 23.0425, lng: 113.4010 },
+                    { name: '默认位置', lat: DEFAULT_LOCATION.latitude, lng: DEFAULT_LOCATION.longitude }
+                ];
+                
+                buildings.forEach(building => {
+                    const distance = calculateDistance(
+                        location.latitude, location.longitude,
+                        building.lat, building.lng
+                    );
+                    stepDiv.innerHTML += `<p><strong>${building.name}</strong>: ${distance.toFixed(2)}米</p>`;
+                });
+                
+                stepDiv.innerHTML += '</div>';
+                
+            } catch (error) {
+                stepDiv.innerHTML += '<div class="error-info"><h4>❌ 位置获取失败</h4>';
+                stepDiv.innerHTML += '<p>错误: ' + error.message + '</p>';
+                stepDiv.innerHTML += '<pre>' + JSON.stringify(error, null, 2) + '</pre></div>';
+            }
+            
+            stepDiv.innerHTML += '</div>';
+            resultsDiv.appendChild(stepDiv);
+        };
+        
+        window.testMultipleTimes = async function() {
+            for (let i = 0; i < 5; i++) {
+                await window.testLocation();
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        };
+        
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+        };
+        
+        // 页面加载时自动运行一次测试
+        window.addEventListener('load', () => {
+            setTimeout(window.testLocation, 1000);
+        });
+    </script>
+</body>
+</html>

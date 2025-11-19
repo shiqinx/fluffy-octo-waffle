@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .test-cases {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+        }
+        .test-cases h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .test-case {
+            margin: 10px 0;
+            padding: 8px;
+            background-color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+        }
+        .test-case:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>登录API测试工具</h1>
+        <p style="text-align: center; color: #666;">测试登录API是否正常工作</p>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="studentId">学号/用户名:</label>
+                <input type="text" id="studentId" name="studentId" placeholder="请输入学号" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码:</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码" required>
+            </div>
+            <button type="submit">测试登录</button>
+        </form>
+
+        <div class="test-cases">
+            <h3>快速测试用例</h3>
+            <div class="test-case" onclick="fillTestData('2330502143', '123456')">
+                <strong>测试用户1:</strong> 学号: 2330502143, 密码: 123456
+            </div>
+            <div class="test-case" onclick="fillTestData('2330502134', '123456')">
+                <strong>测试用户2:</strong> 学号: 2330502134, 密码: 123456
+            </div>
+            <div class="test-case" onclick="fillTestData('admin', '123456')">
+                <strong>测试用户3:</strong> 用户名: admin, 密码: 123456
+            </div>
+            <div class="test-case" onclick="fillTestData('', '123456')">
+                <strong>空学号测试:</strong> 学号: (空), 密码: 123456
+            </div>
+            <div class="test-case" onclick="fillTestData('2330502143', '')">
+                <strong>空密码测试:</strong> 学号: 2330502143, 密码: (空)
+            </div>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        // 直接导入验证的API函数
+        import { validatedApi } from './src/api/index.js';
+        
+        let resultDiv = document.getElementById('result');
+        
+        function showResult(message, type = 'info') {
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+        
+        function fillTestData(studentId, password) {
+            document.getElementById('studentId').value = studentId;
+            document.getElementById('password').value = password;
+        }
+        
+        // 将函数暴露到全局作用域
+        window.fillTestData = fillTestData;
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+            
+            showResult(`正在测试登录...\n学号: ${studentId}\n密码: ${'*'.repeat(password.length)}`, 'info');
+            
+            try {
+                console.log('🔐 开始测试登录API...');
+                console.log('📄 输入参数:', { studentId, password });
+                
+                // 调用验证的登录API
+                const result = await validatedApi.login({ studentId, password, rememberMe: false });
+                
+                console.log('✅ 登录成功:', result);
+                showResult(
+                    `登录测试成功！\n\n` +
+                    `响应数据: ${JSON.stringify(result, null, 2)}\n\n` +
+                    `状态: ${result.success ? '成功' : '失败'}\n` +
+                    `消息: ${result.message || '无消息'}`,
+                    'success'
+                );
+                
+            } catch (error) {
+                console.error('❌ 登录测试失败:', error);
+                showResult(
+                    `登录测试失败！\n\n` +
+                    `错误类型: ${error.name || '未知'}\n` +
+                    `错误消息: ${error.message || '无消息'}\n\n` +
+                    `完整错误: ${JSON.stringify(error, null, 2)}`,
+                    'error'
+                );
+            }
+        });
+        
+        // 页面加载完成提示
+        showResult('登录API测试工具已加载完成。请输入学号和密码进行测试，或点击快速测试用例。', 'info');
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情权限测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .test-link {
+            display: inline-block;
+            margin: 10px 0;
+            padding: 12px 24px;
+            background: #1890ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .test-link:hover {
+            background: #40a9ff;
+        }
+        .test-link.organizer {
+            background: #52c41a;
+        }
+        .test-link.organizer:hover {
+            background: #73d13d;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .status.success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .status.error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        .status.info {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+        .checklist .check {
+            color: #52c41a;
+            margin-right: 8px;
+        }
+        .checklist .cross {
+            color: #ff4d4f;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>活动详情权限控制测试</h1>
+        
+        <div class="test-section">
+            <h2>📋 测试目标</h2>
+            <p>验证活动详情页面的权限控制是否按预期工作：</p>
+            <ul class="checklist">
+                <li><span class="check">✓</span>组织者视图应只显示：编辑活动、导出名单、取消活动</li>
+                <li><span class="check">✓</span>组织者视图不应显示：报名审核、参与者列表、聊天室、位置签到</li>
+                <li><span class="check">✓</span>参与者视图应显示完整的报名和参与功能</li>
+                <li><span class="check">✓</span>签到功能应受时间控制</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 测试步骤</h2>
+            
+            <h3>1. 组织者视图测试</h3>
+            <p>活动ID 1的组织者ID为 1，请使用用户ID 1登录后访问：</p>
+            <a href="http://localhost:3001/activities/detail/1" class="test-link organizer" target="_blank">
+                访问活动详情（组织者视图）
+            </a>
+            <div class="status info">
+                预期结果：底部应只显示"编辑活动"、"导出名单"、"取消活动"三个按钮
+            </div>
+
+            <h3>2. 参与者视图测试</h3>
+            <p>使用非组织者用户（ID ≠ 1）访问同一活动：</p>
+            <a href="http://localhost:3001/activities/detail/1" class="test-link" target="_blank">
+                访问活动详情（参与者视图）
+            </a>
+            <div class="status info">
+                预期结果：应显示完整的报名功能，包括"立即报名"、"进入聊天室"、"位置签到"等
+            </div>
+
+            <h3>3. 签到时间控制测试</h3>
+            <p>测试签到功能是否受活动时间限制：</p>
+            <div class="status info">
+                预期结果：不在活动时间内应显示"签到时间未到"且按钮禁用
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 问题诊断</h2>
+            <p>如果您仍然看到组织者视图的报名审核功能，可能的原因：</p>
+            <ul>
+                <li>浏览器缓存问题 - 请刷新页面或清除缓存</li>
+                <li>用户身份问题 - 请确认当前登录用户ID</li>
+                <li>开发服务器问题 - 请检查控制台是否有错误</li>
+            </ul>
+            
+            <h3>快速验证脚本</h3>
+            <button onclick="checkUserRole()" style="padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                检查当前用户角色
+            </button>
+            <div id="roleResult" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 测试结果记录</h2>
+            <div id="testResults">
+                <p>请在测试后记录结果：</p>
+                <textarea id="results" style="width: 100%; height: 100px; padding: 8px; border: 1px solid #d9d9d9; border-radius: 4px;" placeholder="记录测试结果..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function checkUserRole() {
+            // 尝试获取当前用户信息
+            const userStr = localStorage.getItem('user');
+            const roleResult = document.getElementById('roleResult');
+            
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    roleResult.innerHTML = `
+                        <div class="status success">
+                            当前用户信息：<br>
+                            ID: ${user.id}<br>
+                            名称: ${user.name}<br>
+                            角色: ${user.role || '未知'}
+                        </div>
+                    `;
+                } catch (e) {
+                    roleResult.innerHTML = '<div class="status error">用户信息格式错误</div>';
+                }
+            } else {
+                roleResult.innerHTML = '<div class="status info">未找到用户信息，请先登录</div>';
+            }
+        }
+
+        // 页面加载时自动检查用户角色
+        window.onload = function() {
+            checkUserRole();
+        };
+    </script>
+</body>
+</html>

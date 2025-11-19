@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .activity { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>活动数据调试工具</h1>
+    
+    <div class="section">
+        <h2>缓存管理</h2>
+        <button onclick="clearCache()">清理所有缓存</button>
+        <button onclick="showLocalStorage()">显示localStorage内容</button>
+        <button onclick="testAPI()">测试API获取活动详情</button>
+    </div>
+
+    <div class="section">
+        <h2>当前localStorage中的活动数据</h2>
+        <div id="localStorage-content"></div>
+    </div>
+
+    <div class="section">
+        <h2>API测试结果</h2>
+        <div id="api-test-results"></div>
+    </div>
+
+    <script>
+        // 清理缓存
+        function clearCache() {
+            const keysToRemove = [
+                'campus_activities',
+                'activity_store_activities',
+                'user_activities',
+                'current_activity',
+                'activity_detail_cache'
+            ];
+
+            keysToRemove.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    console.log(`✅ 已清理: ${key}`);
+                }
+            });
+
+            sessionStorage.clear();
+            
+            document.getElementById('localStorage-content').innerHTML = '<div class="success">缓存已清理完成！</div>';
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // 显示localStorage内容
+        function showLocalStorage() {
+            const content = document.getElementById('localStorage-content');
+            let html = '';
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                
+                html += `<div class="activity">
+                    <strong>${key}:</strong><br>
+                    <pre>${JSON.stringify(JSON.parse(value || '{}'), null, 2)}</pre>
+                </div>`;
+            }
+
+            content.innerHTML = html || '<div class="error">localStorage为空</div>';
+        }
+
+        // 测试API
+        async function testAPI() {
+            const resultsDiv = document.getElementById('api-test-results');
+            resultsDiv.innerHTML = '<div>正在测试API...</div>';
+
+            try {
+                // 测试获取活动列表
+                const listResponse = await fetch('/api/activity/list');
+                const listData = await listResponse.json();
+                
+                let html = '<h3>活动列表API测试:</h3>';
+                if (listData.success && listData.data) {
+                    listData.data.list.forEach(activity => {
+                        html += `<div class="activity">
+                            ID: ${activity.id}, 标题: ${activity.title}, 类型: ${activity.type}
+                        </div>`;
+                    });
+                }
+
+                // 测试获取活动详情（测试几个不同的ID）
+                const testIds = ['1', '2', '3', '4', '5', '6'];
+                html += '<h3>活动详情API测试:</h3>';
+                
+                for (const id of testIds) {
+                    try {
+                        const detailResponse = await fetch(`/api/activity/detail?id=${id}`);
+                        const detailData = await detailResponse.json();
+                        
+                        if (detailData.success && detailData.data) {
+                            html += `<div class="activity">
+                                <strong>ID ${id}:</strong> ${detailData.data.title}<br>
+                                描述: ${detailData.data.description}<br>
+                                组织者: ${detailData.data.organizer?.name || '未知'}
+                            </div>`;
+                        } else {
+                            html += `<div class="error">ID ${id}: ${detailData.message || '获取失败'}</div>`;
+                        }
+                    } catch (error) {
+                        html += `<div class="error">ID ${id}: 请求失败 - ${error.message}</div>`;
+                    }
+                }
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">API测试失败: ${error.message}</div>`;
+            }
+        }
+
+        // 页面加载时显示当前localStorage内容
+        window.onload = function() {
+            showLocalStorage();
+        };
+    </script>
+</body>
+</html>

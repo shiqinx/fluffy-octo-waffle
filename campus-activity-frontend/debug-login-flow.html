@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录数据流转调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log-area {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .step {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        .test-accounts {
+            background-color: #e2e3e5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 登录数据流转详细调试</h1>
+    
+    <div class="container">
+        <h3>📝 测试账号信息</h3>
+        <div class="test-accounts">
+            <strong>有效账号：</strong><br>
+            1. 学号：2330502143，密码：123456（孙金瑶）<br>
+            2. 学号：2330502134，密码：123456（卢敏婷）<br>
+            <strong>注意：请使用正确的学号和密码组合</strong>
+        </div>
+        
+        <div class="form-group">
+            <label for="studentId">学号：</label>
+            <input type="text" id="studentId" value="2330502143" placeholder="请输入学号">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码：</label>
+            <input type="password" id="password" value="123456" placeholder="请输入密码">
+        </div>
+        
+        <button onclick="testFullLoginFlow()">🚀 完整登录流程测试</button>
+        <button onclick="testStepByStep()">📋 分步调试测试</button>
+        <button onclick="testUserMatching()">👤 用户匹配测试</button>
+        <button onclick="clearLogs()">🗑️ 清除日志</button>
+    </div>
+
+    <div class="container">
+        <h3>📊 调试日志</h3>
+        <div id="logArea" class="log-area">等待测试...</div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { validateLoginParams } from './src/utils/validation.js';
+        import { convertToUserLoginRequest } from './src/utils/dataModelConverter.js';
+        import { mockLogin } from './src/api/mock.js';
+        import { globalDataManager } from './src/api/global-data.js';
+
+        window.log = function(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'step';
+            logArea.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        };
+
+        window.clearLogs = function() {
+            document.getElementById('logArea').innerHTML = '日志已清除...\n';
+        };
+
+        window.testFullLoginFlow = async function() {
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+            
+            log('🚀 开始完整登录流程测试', 'info');
+            log(`📥 输入参数: studentId="${studentId}", password="${password}"`);
+            
+            try {
+                // 步骤1: 参数验证
+                log('📋 步骤1: 执行参数验证...');
+                const validatedData = validateLoginParams({ studentId, password });
+                log(`✅ 验证结果: ${JSON.stringify(validatedData)}`, 'success');
+                
+                // 步骤2: 数据转换
+                log('🔄 步骤2: 执行数据转换...');
+                const loginRequest = convertToUserLoginRequest(validatedData);
+                log(`✅ 转换结果: ${JSON.stringify(loginRequest)}`, 'success');
+                
+                // 步骤3: 调用登录API
+                log('🔐 步骤3: 调用登录API...');
+                const result = await mockLogin(loginRequest);
+                log(`✅ 登录成功: ${JSON.stringify(result)}`, 'success');
+                
+            } catch (error) {
+                log(`❌ 登录失败: ${JSON.stringify(error)}`, 'error');
+            }
+        };
+
+        window.testStepByStep = async function() {
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+            
+            log('📋 开始分步调试测试', 'info');
+            
+            // 步骤1: 检查原始输入
+            log('🔍 步骤1: 检查原始输入');
+            log(`   studentId: "${studentId}" (类型: ${typeof studentId}, 长度: ${studentId.length})`);
+            log(`   password: "${password}" (类型: ${typeof password}, 长度: ${password.length})`);
+            
+            // 步骤2: 参数验证
+            log('\n📋 步骤2: 参数验证');
+            try {
+                const validatedData = validateLoginParams({ studentId, password });
+                log(`   ✅ 验证通过: ${JSON.stringify(validatedData)}`, 'success');
+                
+                // 检查字段映射
+                log(`   📝 字段检查:`);
+                log(`      - studentId: "${validatedData.studentId}"`);
+                log(`      - username: "${validatedData.username}"`);
+                log(`      - password: "${validatedData.password}"`);
+                
+            } catch (error) {
+                log(`   ❌ 验证失败: ${JSON.stringify(error)}`, 'error');
+                return;
+            }
+            
+            // 步骤3: 数据转换
+            log('\n🔄 步骤3: 数据转换');
+            try {
+                const loginRequest = convertToUserLoginRequest(validatedData);
+                log(`   ✅ 转换成功: ${JSON.stringify(loginRequest)}`, 'success');
+                
+                // 检查转换后的字段
+                log(`   📝 转换后字段检查:`);
+                log(`      - userId: ${loginRequest.userId} (类型: ${typeof loginRequest.userId})`);
+                log(`      - userPassword: "${loginRequest.userPassword}"`);
+                log(`      - rememberMe: ${loginRequest.rememberMe}`);
+                
+            } catch (error) {
+                log(`   ❌ 转换失败: ${JSON.stringify(error)}`, 'error');
+                return;
+            }
+            
+            // 步骤4: 用户数据检查
+            log('\n👥 步骤4: 检查用户数据库');
+            try {
+                const users = globalDataManager.getUsers();
+                log(`   📊 用户总数: ${users.length}`);
+                users.forEach((user, index) => {
+                    log(`   👤 用户${index + 1}: ${user.studentId} - ${user.realName} (密码: ${user.password})`);
+                });
+                
+                // 查找匹配用户
+                const matchedUser = users.find(u => u.studentId === studentId && u.password === password);
+                if (matchedUser) {
+                    log(`   ✅ 找到匹配用户: ${matchedUser.realName}`, 'success');
+                } else {
+                    log(`   ❌ 未找到匹配用户`, 'error');
+                    // 检查为什么没找到
+                    const userByStudentId = users.find(u => u.studentId === studentId);
+                    if (userByStudentId) {
+                        log(`   ⚠️ 学号匹配但密码错误: 期望密码"${userByStudentId.password}", 实际密码"${password}"`, 'warning');
+                    } else {
+                        log(`   ⚠️ 学号${studentId}不存在`, 'warning');
+                    }
+                }
+                
+            } catch (error) {
+                log(`   ❌ 用户数据检查失败: ${JSON.stringify(error)}`, 'error');
+            }
+        };
+
+        window.testUserMatching = async function() {
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+            
+            log('👤 开始用户匹配测试', 'info');
+            
+            try {
+                const users = globalDataManager.getUsers();
+                log(`📊 数据库中共有 ${users.length} 个用户`);
+                
+                // 逐个检查每个用户
+                users.forEach((user, index) => {
+                    log(`\n🔍 检查用户 ${index + 1}: ${user.realName}`);
+                    log(`   📝 学号: "${user.studentId}" vs "${studentId}" -> ${user.studentId === studentId ? '✅匹配' : '❌不匹配'}`);
+                    log(`   🔑 密码: "${user.password}" vs "${password}" -> ${user.password === password ? '✅匹配' : '❌不匹配'}`);
+                    
+                    const studentIdMatch = user.studentId === studentId;
+                    const passwordMatch = user.password === password;
+                    const fullMatch = studentIdMatch && passwordMatch;
+                    
+                    log(`   🎯 总体匹配: ${fullMatch ? '✅完全匹配' : '❌不匹配'}`);
+                    
+                    if (fullMatch) {
+                        log(`   🎉 找到正确用户！`, 'success');
+                    }
+                });
+                
+                // 最终匹配结果
+                const finalMatch = users.find(u => u.studentId === studentId && u.password === password);
+                if (finalMatch) {
+                    log(`\n✅ 最终结果: 找到匹配用户 - ${finalMatch.realName}`, 'success');
+                } else {
+                    log(`\n❌ 最终结果: 未找到匹配用户`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ 用户匹配测试失败: ${JSON.stringify(error)}`, 'error');
+            }
+        };
+
+        // 页面加载时显示当前用户数据
+        window.addEventListener('load', function() {
+            log('🌟 页面加载完成，初始化调试工具', 'info');
+            try {
+                const users = globalDataManager.getUsers();
+                log(`📊 当前用户数据库: ${users.length} 个用户`, 'info');
+                users.forEach((user, index) => {
+                    log(`   ${index + 1}. ${user.studentId} - ${user.realName} (密码: ${user.password})`);
+                });
+            } catch (error) {
+                log(`❌ 初始化失败: ${JSON.stringify(error)}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

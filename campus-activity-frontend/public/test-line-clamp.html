@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Clamp 兼容性测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .test-content {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        /* 导入项目的 line-clamp 样式 */
+        .text-ellipsis-2 {
+            display: -webkit-box;
+            display: box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .text-ellipsis-3 {
+            display: -webkit-box;
+            display: box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .line-clamp-1 {
+            display: -webkit-box;
+            display: box;
+            -webkit-line-clamp: 1;
+            line-clamp: 1;
+            -webkit-box-orient: vertical;
+            box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .line-clamp-4 {
+            display: -webkit-box;
+            display: box;
+            -webkit-line-clamp: 4;
+            line-clamp: 4;
+            -webkit-box-orient: vertical;
+            box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .browser-info {
+            background: #e8f4fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .old-method, .new-method {
+            padding: 15px;
+            border-radius: 4px;
+        }
+        
+        .old-method {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+        }
+        
+        .new-method {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+        }
+        
+        .method-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Line Clamp 兼容性测试页面</h1>
+    
+    <div class="browser-info">
+        <strong>浏览器信息：</strong>
+        <div id="browser-info"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">📝 测试文本</div>
+        <div class="test-content">
+            <p id="long-text">
+                这是一段用于测试 line-clamp 功能的长文本。它包含了足够的内容来演示文本截断的效果。
+                在现代网页开发中，我们经常需要限制文本显示的行数，以保持页面的整洁和美观。
+                通过使用 CSS 的 line-clamp 属性，我们可以轻松地实现这个功能。现在这段文本应该会被截断，
+                你看不到这段话的完整内容，因为 line-clamp 会限制显示的行数。
+                这个测试页面展示了不同行数截断的效果，以及新旧方法的对比。
+            </p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">🔧 方法对比</div>
+        <div class="comparison">
+            <div class="old-method">
+                <div class="method-title">❌ 旧方法（仅 WebKit 前缀）</div>
+                <div style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    这是一段使用旧方法的文本。它只使用了 -webkit-line-clamp 属性，在某些非 WebKit 内核的浏览器中可能无法正常工作。这就是为什么我们需要添加标准属性来提高兼容性的原因。
+                </div>
+            </div>
+            <div class="new-method">
+                <div class="method-title">✅ 新方法（标准 + 前缀）</div>
+                <div class="text-ellipsis-2">
+                    这是一段使用新方法的文本。它同时包含了标准属性和 WebKit 前缀，能够在更多浏览器中正常工作。这就是我们刚才实现的兼容性改进。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">🎨 不同行数截断效果</div>
+        
+        <h3>1行截断 (.line-clamp-1)</h3>
+        <div class="test-content">
+            <div class="line-clamp-1">
+                这是一段用于测试1行截断的文本。无论这段文本有多长，它都只会显示一行，超出的部分会被省略号替代。
+            </div>
+        </div>
+        
+        <h3>2行截断 (.text-ellipsis-2)</h3>
+        <div class="test-content">
+            <div class="text-ellipsis-2">
+                这是一段用于测试2行截断的文本。它可以显示两行内容，超出的部分会被省略号替代。
+                这种方式在卡片描述、消息预览等场景中非常常见，能够提供足够的信息同时保持界面的整洁。
+            </div>
+        </div>
+        
+        <h3>3行截断 (.text-ellipsis-3)</h3>
+        <div class="test-content">
+            <div class="text-ellipsis-3">
+                这是一段用于测试3行截断的文本。它可以显示三行内容，适合用于较长的描述文本。
+                在我们的项目中，活动详情、团队介绍等地方可能会使用这种截断方式。
+                三行通常能够提供足够的信息，同时又不会占用过多的屏幕空间。
+            </div>
+        </div>
+        
+        <h3>4行截断 (.line-clamp-4)</h3>
+        <div class="test-content">
+            <div class="line-clamp-4">
+                这是一段用于测试4行截断的文本。它可以显示四行内容，适合用于更长的描述文本。
+                在某些情况下，我们可能需要显示更多的信息，但又不想完全展示所有内容。
+                四行截断提供了一个很好的平衡点，既能展示足够的信息，又能保持页面的紧凑性。
+                这种方式在文章摘要、产品描述等场景中非常有用。
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">🌐 兼容性检测</div>
+        <div id="compatibility-info"></div>
+    </div>
+    
+    <script>
+        // 显示浏览器信息
+        function showBrowserInfo() {
+            const info = document.getElementById('browser-info');
+            const userAgent = navigator.userAgent;
+            const isWebKit = userAgent.includes('WebKit');
+            const isFirefox = userAgent.includes('Firefox');
+            const isChrome = userAgent.includes('Chrome');
+            const isSafari = userAgent.includes('Safari') && !isChrome;
+            
+            info.innerHTML = `
+                <div><strong>User Agent:</strong> ${userAgent}</div>
+                <div><strong>WebKit 内核:</strong> ${isWebKit ? '✅ 是' : '❌ 否'}</div>
+                <div><strong>Firefox:</strong> ${isFirefox ? '✅ 是' : '❌ 否'}</div>
+                <div><strong>Chrome:</strong> ${isChrome ? '✅ 是' : '❌ 否'}</div>
+                <div><strong>Safari:</strong> ${isSafari ? '✅ 是' : '❌ 否'}</div>
+            `;
+        }
+        
+        // 检测 line-clamp 支持
+        function checkLineClampSupport() {
+            const compatibility = document.getElementById('compatibility-info');
+            const testElement = document.createElement('div');
+            
+            // 检测标准属性支持
+            const supportsLineClamp = 'lineClamp' in testElement.style || 
+                                     CSS.supports('line-clamp', '2') ||
+                                     CSS.supports('-webkit-line-clamp', '2');
+            
+            // 检测 box-orient 支持
+            const supportsBoxOrient = CSS.supports('box-orient', 'vertical') ||
+                                     CSS.supports('-webkit-box-orient', 'vertical');
+            
+            compatibility.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong>标准 line-clamp 支持:</strong> ${supportsLineClamp ? '✅ 支持' : '❌ 不支持'}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>box-orient 支持:</strong> ${supportsBoxOrient ? '✅ 支持' : '❌ 不支持'}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>CSS.supports() 方法:</strong> ${typeof CSS.supports === 'function' ? '✅ 支持' : '❌ 不支持'}
+                </div>
+                <div>
+                    <strong>推荐使用:</strong> ${supportsLineClamp ? '标准属性 + 前缀' : '仅前缀 + 备用方案'}
+                </div>
+            `;
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            showBrowserInfo();
+            checkLineClampSupport();
+        });
+    </script>
+</body>
+</html>

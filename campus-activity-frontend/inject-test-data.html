@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注入测试数据</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #c3e6cb;
+            margin: 10px 0;
+        }
+        .info {
+            color: #0c5460;
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #bee5eb;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>活动数据修复工具</h1>
+        
+        <div class="info">
+            <h3>使用说明：</h3>
+            <p>1. 点击"注入测试数据"按钮，将测试活动数据保存到localStorage</p>
+            <p>2. 然后访问 <a href="/activity/1" target="_blank">/activity/1</a> 查看活动详情</p>
+            <p>3. 或者访问 <a href="/" target="_blank">活动列表页面</a> 查看所有活动</p>
+        </div>
+
+        <button onclick="injectTestData()">注入测试数据</button>
+        <button onclick="clearData()">清空数据</button>
+        <button onclick="checkData()">检查数据</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 测试活动数据
+        const testActivities = [
+            {
+                id: 1,
+                title: '篮球友谊赛',
+                category: 'sports',
+                description: '周末篮球友谊赛，欢迎所有篮球爱好者参加，一起享受运动的快乐！这是一个完整的活动描述，包含了活动的详细信息和参与要求。',
+                status: 'recruiting',
+                startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000).toISOString(),
+                enrollStartTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                enrollEndTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                location: {
+                    name: '学校篮球场',
+                    address: '广东药科大学云浮校区篮球场'
+                },
+                coords: [22.9149, 112.0441],
+                organizer: {
+                    id: 1,
+                    name: '张三',
+                    avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjIgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                    role: '组织者',
+                    creditScore: 95
+                },
+                currentParticipants: 8,
+                maxParticipants: 10,
+                participants: [
+                    {
+                        id: 1,
+                        userId: 1,
+                        name: '孙金瑶',
+                        avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjIgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                        creditScore: 88,
+                        checkedIn: true,
+                        status: 'approved'
+                    },
+                    {
+                        id: 2,
+                        userId: 2,
+                        name: '卢敏婷',
+                        avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjIgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                        creditScore: 92,
+                        checkedIn: false,
+                        status: 'approved'
+                    }
+                ],
+                enrollments: [
+                    {
+                        id: 3,
+                        userId: 3,
+                        userName: '王五',
+                        avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjIgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                        status: 'pending',
+                        appliedAt: new Date().toISOString(),
+                        enrollmentTime: new Date().toISOString()
+                    }
+                ],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                title: '中医养生讲座',
+                category: 'lecture',
+                description: '邀请中医专家讲解中医养生知识，了解传统中医文化，学习健康养生方法。本次讲座将涵盖中医基础理论、四季养生要点、常见疾病的中医预防方法等内容。',
+                status: 'recruiting',
+                startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                enrollStartTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                enrollEndTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                location: {
+                    name: '教学楼A101',
+                    address: '广东药科大学云浮校区教学楼A101'
+                },
+                coords: [22.9150, 112.0442],
+                organizer: {
+                    id: 1,
+                    name: '张三',
+                    avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjIgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                    role: '组织者',
+                    creditScore: 95
+                },
+                currentParticipants: 25,
+                maxParticipants: 50,
+                participants: [
+                    {
+                        id: 4,
+                        userId: 4,
+                        name: '李四',
+                        avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjIgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                        creditScore: 85,
+                        checkedIn: false,
+                        status: 'approved'
+                    }
+                ],
+                enrollments: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            },
+            {
+                id: 3,
+                title: '摄影作品展览',
+                category: 'art',
+                description: '展示学生摄影作品，分享摄影技巧和心得，欢迎摄影爱好者交流学习。展览包括风景摄影、人像摄影、纪实摄影等多个类别。',
+                status: 'recruiting',
+                startTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000).toISOString(),
+                enrollStartTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+                enrollEndTime: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+                location: {
+                    name: '艺术楼展厅',
+                    address: '广东药科大学云浮校区艺术楼展厅'
+                },
+                coords: [22.9151, 112.0443],
+                organizer: {
+                    id: 1,
+                    name: '张三',
+                    avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjIgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                    role: '组织者',
+                    creditScore: 95
+                },
+                currentParticipants: 35,
+                maxParticipants: 100,
+                participants: [],
+                enrollments: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }
+        ];
+
+        function injectTestData() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                localStorage.setItem('campus_activities', JSON.stringify(testActivities));
+                
+                let html = '<div class="success">';
+                html += '<h3>✅ 测试数据注入成功！</h3>';
+                html += `<p>已注入 ${testActivities.length} 个活动到localStorage</p>`;
+                html += '<ul>';
+                testActivities.forEach(activity => {
+                    html += `<li><strong>${activity.title}</strong> (ID: ${activity.id})</li>`;
+                });
+                html += '</ul>';
+                html += '<p>现在可以访问以下链接测试：</p>';
+                html += '<ul>';
+                html += '<li><a href="/activity/1" target="_blank">活动1详情：篮球友谊赛</a></li>';
+                html += '<li><a href="/activity/2" target="_blank">活动2详情：中医养生讲座</a></li>';
+                html += '<li><a href="/activity/3" target="_blank">活动3详情：摄影作品展览</a></li>';
+                html += '<li><a href="/" target="_blank">活动列表页面</a></li>';
+                html += '</ul>';
+                html += '</div>';
+                
+                resultDiv.innerHTML = html;
+                
+                console.log('测试活动数据已注入localStorage:', testActivities);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">注入数据失败: ${error.message}</div>`;
+            }
+        }
+
+        function clearData() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                localStorage.removeItem('campus_activities');
+                resultDiv.innerHTML = '<div class="success">✅ localStorage已清空</div>';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">清空数据失败: ${error.message}</div>`;
+            }
+        }
+
+        function checkData() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const storedActivities = localStorage.getItem('campus_activities');
+                
+                if (storedActivities) {
+                    const activities = JSON.parse(storedActivities);
+                    let html = '<div class="info">';
+                    html += `<h3>当前localStorage中的活动数据：</h3>`;
+                    html += `<p>共 ${activities.length} 个活动</p>`;
+                    html += '<ul>';
+                    activities.forEach(activity => {
+                        html += `<li><strong>${activity.title}</strong> (ID: ${activity.id}) - ${activity.category}</li>`;
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = '<div class="info">localStorage中没有活动数据</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">检查数据失败: ${error.message}</div>`;
+            }
+        }
+
+        // 页面加载时自动检查数据
+        window.onload = function() {
+            checkData();
+        };
+    </script>
+</body>
+</html>

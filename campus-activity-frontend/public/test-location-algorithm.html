@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定位算法优化测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .reference-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .point-card {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        
+        .point-card.library { border-color: #28a745; background: #f8fff9; }
+        .point-card.dormitory { border-color: #ffc107; background: #fffbf0; }
+        .point-card.academic { border-color: #17a2b8; background: #f0fcff; }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px;
+        }
+        
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            margin: 4px 0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .log-entry.info { background: #e3f2fd; }
+        .log-entry.success { background: #e8f5e8; }
+        .log-entry.warning { background: #fff3e0; }
+        .log-entry.error { background: #ffebee; }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        
+        .algorithm-result {
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .algorithm-result.old { background: #fff5f5; border-color: #fed7d7; }
+        .algorithm-result.new { background: #f0fff4; border-color: #c6f6d5; }
+        
+        .confidence-high { color: #28a745; font-weight: bold; }
+        .confidence-medium { color: #ffc107; font-weight: bold; }
+        .confidence-low { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 定位算法优化测试</h1>
+        <p>测试新的智能权重定位算法，解决图书馆被误识别为宿舍的问题</p>
+        
+        <div id="status" class="status info">
+            准备开始测试...
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="startLocationTest()">📍 开始定位测试</button>
+            <button onclick="simulateLibraryLocation()">📚 模拟图书馆位置</button>
+            <button onclick="simulateDormitoryLocation()">🏠 模拟宿舍位置</button>
+            <button onclick="clearLogs()">🗑️ 清除日志</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 校园参考点配置</h2>
+        <div class="reference-points" id="referencePoints">
+            <!-- 动态生成参考点卡片 -->
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔍 定位结果对比</h2>
+        <div class="comparison">
+            <div class="algorithm-result old">
+                <h3>❌ 旧算法结果</h3>
+                <div id="oldAlgorithmResult">等待测试...</div>
+            </div>
+            <div class="algorithm-result new">
+                <h3>✅ 新算法结果</h3>
+                <div id="newAlgorithmResult">等待测试...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📈 定位指标</h2>
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-value" id="accuracyValue">--</div>
+                <div class="metric-label">精度(米)</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="confidenceValue">--</div>
+                <div class="metric-label">置信度</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="distanceValue">--</div>
+                <div class="metric-label">最近距离(米)</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="weightScoreValue">--</div>
+                <div class="metric-label">权重得分</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📝 测试日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry info">系统初始化完成，等待测试开始...</div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟校园参考点数据（与location.js保持一致）
+        const CAMPUS_REFERENCE_POINTS = [
+            {
+                name: '图书馆',
+                coords: [23.0419, 113.4016],
+                radius: 150,
+                priority: 1,
+                weight: 1.0,
+                buildingType: 'library'
+            },
+            {
+                name: '4栋宿舍',
+                coords: [23.0415, 113.4020],
+                radius: 100,
+                priority: 2,
+                weight: 0.4,
+                buildingType: 'dormitory'
+            },
+            {
+                name: '3栋宿舍',
+                coords: [23.0413, 113.4022],
+                radius: 100,
+                priority: 2,
+                weight: 0.4,
+                buildingType: 'dormitory'
+            },
+            {
+                name: '教学楼A栋',
+                coords: [23.0421, 113.4012],
+                radius: 120,
+                priority: 3,
+                weight: 0.7,
+                buildingType: 'academic'
+            },
+            {
+                name: '体育馆',
+                coords: [23.0417, 113.4010],
+                radius: 150,
+                priority: 2,
+                weight: 0.5,
+                buildingType: 'sports'
+            },
+            {
+                name: '食堂',
+                coords: [23.0423, 113.4018],
+                radius: 120,
+                priority: 3,
+                weight: 0.4,
+                buildingType: 'dining'
+            }
+        ];
+
+        // 计算两点间距离（Haversine公式）
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // 地球半径（米）
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // 旧算法（简单距离优先）
+        function oldAlgorithm(rawLocation) {
+            const distances = CAMPUS_REFERENCE_POINTS.map(point => {
+                const distance = calculateDistance(
+                    rawLocation.latitude,
+                    rawLocation.longitude,
+                    point.coords[0],
+                    point.coords[1]
+                );
+                return { ...point, distance, isInRange: distance <= point.radius };
+            });
+
+            const inRangePoints = distances.filter(d => d.isInRange);
+            if (inRangePoints.length > 0) {
+                inRangePoints.sort((a, b) => {
+                    if (a.priority !== b.priority) return a.priority - b.priority;
+                    return a.distance - b.distance;
+                });
+                return inRangePoints[0];
+            }
+            return null;
+        }
+
+        // 新算法（智能权重）
+        function newAlgorithm(rawLocation) {
+            const distances = CAMPUS_REFERENCE_POINTS.map(point => {
+                const distance = calculateDistance(
+                    rawLocation.latitude,
+                    rawLocation.longitude,
+                    point.coords[0],
+                    point.coords[1]
+                );
+                const distanceScore = Math.max(0, 1 - distance / point.radius);
+                const weightedScore = distanceScore * point.weight;
+                return {
+                    ...point,
+                    distance,
+                    isInRange: distance <= point.radius,
+                    distanceScore,
+                    weightedScore
+                };
+            });
+
+            const inRangePoints = distances.filter(d => d.isInRange && d.weightedScore > 0.3);
+            if (inRangePoints.length > 0) {
+                inRangePoints.sort((a, b) => {
+                    if (Math.abs(a.weightedScore - b.weightedScore) > 0.1) {
+                        return b.weightedScore - a.weightedScore;
+                    }
+                    if (a.priority !== b.priority) return a.priority - b.priority;
+                    return a.distance - b.distance;
+                });
+
+                const bestPoint = inRangePoints[0];
+                const secondBest = inRangePoints[1];
+                
+                if (bestPoint.weightedScore > 0.6 && 
+                    (!secondBest || bestPoint.weightedScore - secondBest.weightedScore > 0.2)) {
+                    return { ...bestPoint, confidence: 'high' };
+                } else if (bestPoint.distance <= 80) {
+                    return { ...bestPoint, confidence: 'medium' };
+                }
+            }
+            return null;
+        }
+
+        // 日志函数
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 更新状态
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        // 更新指标
+        function updateMetrics(result) {
+            document.getElementById('accuracyValue').textContent = result.accuracy ? result.accuracy.toFixed(0) : '--';
+            document.getElementById('confidenceValue').textContent = result.confidence || '--';
+            document.getElementById('distanceValue').textContent = result.distance ? result.distance.toFixed(0) : '--';
+            document.getElementById('weightScoreValue').textContent = result.weightedScore ? result.weightedScore.toFixed(2) : '--';
+        }
+
+        // 显示算法结果
+        function showAlgorithmResult(elementId, result, algorithmName) {
+            const element = document.getElementById(elementId);
+            if (!result) {
+                element.innerHTML = '<p style="color: #666;">未找到合适的校准点</p>';
+                return;
+            }
+
+            const confidenceClass = result.confidence === 'high' ? 'confidence-high' : 
+                                  result.confidence === 'medium' ? 'confidence-medium' : 'confidence-low';
+
+            element.innerHTML = `
+                <p><strong>识别建筑：</strong>${result.name}</p>
+                <p><strong>建筑类型：</strong>${result.buildingType}</p>
+                <p><strong>距离：</strong>${result.distance.toFixed(1)}米</p>
+                <p><strong>权重得分：</strong>${result.weightedScore ? result.weightedScore.toFixed(2) : '--'}</p>
+                <p><strong>置信度：</strong><span class="${confidenceClass}">${result.confidence || '低'}</span></p>
+                <p><strong>优先级：</strong>${result.priority}</p>
+            `;
+        }
+
+        // 初始化参考点显示
+        function initReferencePoints() {
+            const container = document.getElementById('referencePoints');
+            CAMPUS_REFERENCE_POINTS.forEach(point => {
+                const card = document.createElement('div');
+                card.className = `point-card ${point.buildingType}`;
+                card.innerHTML = `
+                    <h4>${point.name}</h4>
+                    <p><strong>坐标：</strong>${point.coords[0]}, ${point.coords[1]}</p>
+                    <p><strong>半径：</strong>${point.radius}米</p>
+                    <p><strong>权重：</strong>${point.weight}</p>
+                    <p><strong>优先级：</strong>${point.priority}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 测试定位
+        function testLocation(rawLocation) {
+            addLog(`开始测试位置: ${rawLocation.latitude.toFixed(4)}, ${rawLocation.longitude.toFixed(4)}`, 'info');
+            
+            const oldResult = oldAlgorithm(rawLocation);
+            const newResult = newAlgorithm(rawLocation);
+            
+            addLog(`旧算法结果: ${oldResult ? oldResult.name : '无匹配'}`, oldResult ? 'warning' : 'error');
+            addLog(`新算法结果: ${newResult ? newResult.name : '无匹配'}`, newResult ? 'success' : 'error');
+            
+            if (newResult) {
+                addLog(`新算法详情 - 权重得分: ${newResult.weightedScore?.toFixed(2)}, 置信度: ${newResult.confidence}`, 'info');
+                updateMetrics(newResult);
+            }
+            
+            showAlgorithmResult('oldAlgorithmResult', oldResult, '旧算法');
+            showAlgorithmResult('newAlgorithmResult', newResult, '新算法');
+            
+            // 检查是否解决了问题
+            if (rawLocation.latitude === 23.0419 && rawLocation.longitude === 113.4016) {
+                // 这是图书馆位置
+                if (newResult && newResult.name === '图书馆') {
+                    updateStatus('✅ 成功！新算法正确识别图书馆位置', 'success');
+                    addLog('问题解决：图书馆位置被正确识别', 'success');
+                } else {
+                    updateStatus('❌ 问题未解决，图书馆仍被误识别', 'error');
+                    addLog('问题未解决：图书馆位置识别错误', 'error');
+                }
+            }
+        }
+
+        // 开始定位测试
+        function startLocationTest() {
+            updateStatus('正在获取真实位置...', 'info');
+            addLog('请求浏览器定位权限', 'info');
+            
+            if (!navigator.geolocation) {
+                updateStatus('浏览器不支持定位', 'error');
+                addLog('浏览器不支持地理定位API', 'error');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const rawLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    };
+                    
+                    updateStatus('定位成功，开始算法对比测试', 'success');
+                    addLog(`获取到真实位置，精度: ${position.coords.accuracy.toFixed(0)}米`, 'success');
+                    testLocation(rawLocation);
+                },
+                (error) => {
+                    updateStatus('定位失败，请使用模拟位置测试', 'error');
+                    addLog(`定位失败: ${error.message}`, 'error');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // 模拟图书馆位置
+        function simulateLibraryLocation() {
+            updateStatus('模拟图书馆位置测试', 'info');
+            const libraryLocation = {
+                latitude: 23.0419,
+                longitude: 113.4016,
+                accuracy: 50
+            };
+            testLocation(libraryLocation);
+        }
+
+        // 模拟宿舍位置
+        function simulateDormitoryLocation() {
+            updateStatus('模拟宿舍位置测试', 'info');
+            const dormitoryLocation = {
+                latitude: 23.0415,
+                longitude: 113.4020,
+                accuracy: 50
+            };
+            testLocation(dormitoryLocation);
+        }
+
+        // 清除日志
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '<div class="log-entry info">日志已清除</div>';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initReferencePoints();
+            addLog('定位算法优化测试页面已加载', 'success');
+            addLog('参考点配置已初始化', 'info');
+        });
+    </script>
+</body>
+</html>

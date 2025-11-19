@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航调试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .test-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 8px 16px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .test-link:hover {
+            background-color: #218838;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 导航调试页面</h1>
+        <p>此页面用于测试和调试导航功能，检查路由守卫和认证状态</p>
+        
+        <div class="status info">
+            <strong>当前时间:</strong> <span id="currentTime"></span>
+        </div>
+        
+        <div class="status info">
+            <strong>当前URL:</strong> <span id="currentUrl"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 系统状态检查</h2>
+        <button onclick="checkSystemStatus()">检查系统状态</button>
+        <div id="systemStatus"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔐 认证状态检查</h2>
+        <button onclick="checkAuthStatus()">检查认证状态</button>
+        <div id="authStatus"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 导航测试</h2>
+        <p>点击以下链接测试导航功能：</p>
+        
+        <div>
+            <strong>主要页面:</strong><br>
+            <a href="/home" class="test-link">首页</a>
+            <a href="/activities-teams" class="test-link">活动/团队</a>
+            <a href="/messages" class="test-link">消息</a>
+            <a href="/profile" class="test-link">个人中心</a>
+        </div>
+        
+        <div>
+            <strong>认证页面:</strong><br>
+            <a href="/login" class="test-link">登录</a>
+            <a href="/register" class="test-link">注册</a>
+        </div>
+        
+        <div>
+            <strong>测试页面:</strong><br>
+            <a href="/test" class="test-link">测试页</a>
+            <a href="/test-location" class="test-link">位置测试</a>
+            <a href="/test-map" class="test-link">地图测试</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📝 实时日志</h2>
+        <button onclick="clearLog()">清除日志</button>
+        <div id="logContainer" class="log"></div>
+    </div>
+
+    <script>
+        let logContainer = document.getElementById('logContainer');
+        
+        // 更新当前时间
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+        
+        // 更新当前URL
+        function updateUrl() {
+            document.getElementById('currentUrl').textContent = window.location.href;
+        }
+        
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logContainer.textContent += logEntry;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            console.log(`[导航调试] ${message}`);
+        }
+        
+        // 清除日志
+        function clearLog() {
+            logContainer.textContent = '';
+        }
+        
+        // 检查系统状态
+        function checkSystemStatus() {
+            const statusDiv = document.getElementById('systemStatus');
+            let statusHtml = '';
+            
+            addLog('开始检查系统状态...');
+            
+            // 检查Vue应用
+            if (window.Vue || window.__VUE__) {
+                statusHtml += '<div class="status success">✅ Vue应用已加载</div>';
+                addLog('Vue应用已加载');
+            } else {
+                statusHtml += '<div class="status error">❌ Vue应用未加载</div>';
+                addLog('Vue应用未加载', 'error');
+            }
+            
+            // 检查Vue Router
+            if (window.Vue && window.Vue.router) {
+                statusHtml += '<div class="status success">✅ Vue Router已加载</div>';
+                addLog('Vue Router已加载');
+            } else {
+                statusHtml += '<div class="status warning">⚠️ Vue Router状态未知</div>';
+                addLog('Vue Router状态未知', 'warning');
+            }
+            
+            // 检查Pinia
+            if (window.Pinia) {
+                statusHtml += '<div class="status success">✅ Pinia已加载</div>';
+                addLog('Pinia已加载');
+            } else {
+                statusHtml += '<div class="status warning">⚠️ Pinia状态未知</div>';
+                addLog('Pinia状态未知', 'warning');
+            }
+            
+            // 检查Vant
+            if (window.vant) {
+                statusHtml += '<div class="status success">✅ Vant已加载</div>';
+                addLog('Vant已加载');
+            } else {
+                statusHtml += '<div class="status warning">⚠️ Vant状态未知</div>';
+                addLog('Vant状态未知', 'warning');
+            }
+            
+            statusDiv.innerHTML = statusHtml;
+            addLog('系统状态检查完成');
+        }
+        
+        // 检查认证状态
+        function checkAuthStatus() {
+            const statusDiv = document.getElementById('authStatus');
+            let statusHtml = '';
+            
+            addLog('开始检查认证状态...');
+            
+            try {
+                // 检查localStorage
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                const loginTime = localStorage.getItem('loginTime');
+                
+                statusHtml += '<div class="status info">📱 localStorage状态:</div>';
+                statusHtml += `<div class="status ${token ? 'success' : 'error'}">Token: ${token ? '存在' : '不存在'}</div>`;
+                statusHtml += `<div class="status ${user ? 'success' : 'error'}">用户信息: ${user ? '存在' : '不存在'}</div>`;
+                statusHtml += `<div class="status ${loginTime ? 'success' : 'error'}">登录时间: ${loginTime ? '存在' : '不存在'}</div>`;
+                
+                addLog(`Token: ${token ? '存在' : '不存在'}`);
+                addLog(`用户信息: ${user ? '存在' : '不存在'}`);
+                addLog(`登录时间: ${loginTime ? '存在' : '不存在'}`);
+                
+                // 检查token是否过期
+                if (token && loginTime) {
+                    const loginTimestamp = parseInt(loginTime);
+                    const currentTime = Date.now();
+                    const fourHours = 4 * 60 * 60 * 1000;
+                    const isExpired = currentTime - loginTimestamp > fourHours;
+                    
+                    statusHtml += `<div class="status ${isExpired ? 'error' : 'success'}">Token状态: ${isExpired ? '已过期' : '有效'}</div>`;
+                    addLog(`Token状态: ${isExpired ? '已过期' : '有效'}`);
+                }
+                
+                // 尝试访问Pinia store
+                if (window.Pinia && window.__VUE_DEVTOOLS_GLOBAL_HOOK__) {
+                    statusHtml += '<div class="status success">✅ 可以访问Pinia store</div>';
+                    addLog('可以访问Pinia store');
+                } else {
+                    statusHtml += '<div class="status warning">⚠️ 无法访问Pinia store</div>';
+                    addLog('无法访问Pinia store', 'warning');
+                }
+                
+            } catch (error) {
+                statusHtml += `<div class="status error">❌ 检查认证状态时出错: ${error.message}</div>`;
+                addLog(`检查认证状态时出错: ${error.message}`, 'error');
+            }
+            
+            statusDiv.innerHTML = statusHtml;
+            addLog('认证状态检查完成');
+        }
+        
+        // 监听路由变化
+        function listenToRouteChanges() {
+            let currentPath = window.location.pathname;
+            
+            // 检查路由变化
+            setInterval(() => {
+                const newPath = window.location.pathname;
+                if (newPath !== currentPath) {
+                    addLog(`路由变化: ${currentPath} -> ${newPath}`);
+                    currentPath = newPath;
+                    updateUrl();
+                }
+            }, 100);
+        }
+        
+        // 初始化
+        function init() {
+            updateTime();
+            updateUrl();
+            listenToRouteChanges();
+            
+            addLog('导航调试页面已加载');
+            addLog('开始监听路由变化...');
+            
+            // 每秒更新时间
+            setInterval(updateTime, 1000);
+            
+            // 自动检查系统状态
+            setTimeout(() => {
+                checkSystemStatus();
+                checkAuthStatus();
+            }, 1000);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // 添加错误监听
+        window.addEventListener('error', function(event) {
+            addLog(`页面错误: ${event.error.message}`, 'error');
+        });
+        
+        // 添加未处理的Promise拒绝监听
+        window.addEventListener('unhandledrejection', function(event) {
+            addLog(`未处理的Promise拒绝: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>

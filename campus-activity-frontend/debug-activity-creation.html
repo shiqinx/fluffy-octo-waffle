@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建显示问题诊断</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .activity-list {
+            margin-top: 20px;
+        }
+        .activity-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .test-form {
+            display: grid;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input, textarea, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动创建显示问题诊断</h1>
+    
+    <div class="container">
+        <h2>🔍 数据状态检查</h2>
+        <button onclick="checkDataStatus()">检查当前数据状态</button>
+        <button onclick="clearAllData()">清理所有数据</button>
+        <div id="dataStatus"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 模拟活动创建测试</h2>
+        <div class="test-form">
+            <div class="form-group">
+                <label>活动标题:</label>
+                <input type="text" id="testTitle" value="测试活动 - 新创建" />
+            </div>
+            <div class="form-group">
+                <label>活动描述:</label>
+                <textarea id="testDescription">这是一个用于测试活动创建和显示功能的活动</textarea>
+            </div>
+            <div class="form-group">
+                <label>活动类型:</label>
+                <select id="testCategory">
+                    <option value="study">学术讲座</option>
+                    <option value="culture">文化艺术</option>
+                    <option value="tech">科技创新</option>
+                    <option value="sports">体育竞技</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>活动地点:</label>
+                <input type="text" id="testLocation" value="测试地点" />
+            </div>
+            <div class="two-column">
+                <div class="form-group">
+                    <label>开始时间:</label>
+                    <input type="datetime-local" id="testStartTime" />
+                </div>
+                <div class="form-group">
+                    <label>结束时间:</label>
+                    <input type="datetime-local" id="testEndTime" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>最大参与人数:</label>
+                <input type="number" id="testMaxParticipants" value="30" />
+            </div>
+        </div>
+        <button onclick="testCreateActivity()">创建测试活动</button>
+        <button onclick="testCreateAndList()">创建并立即获取列表</button>
+        <div id="createResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 活动列表获取测试</h2>
+        <button onclick="testGetActivityList()">获取活动列表</button>
+        <button onclick="testMultipleListCalls()">连续多次获取列表</button>
+        <button onclick="refreshPageSimulation()">模拟页面刷新</button>
+        <div id="listResult"></div>
+        <div class="activity-list" id="activityList"></div>
+    </div>
+
+    <div class="container">
+        <h2>📝 操作日志</h2>
+        <button onclick="clearLog()">清空日志</button>
+        <div class="log" id="operationLog"></div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { globalDataManager } from './src/api/global-data.js'
+        import { mockCreateActivity, mockGetActivityList } from './src/api/mock.js'
+
+        // 全局变量
+        window.globalDataManager = globalDataManager
+        window.mockCreateActivity = mockCreateActivity
+        window.mockGetActivityList = mockGetActivityList
+
+        // 日志函数
+        window.log = function(message, type = 'info') {
+            const logElement = document.getElementById('operationLog')
+            const timestamp = new Date().toLocaleTimeString()
+            const logMessage = `[${timestamp}] ${message}\n`
+            logElement.textContent += logMessage
+            logElement.scrollTop = logElement.scrollHeight
+            
+            console.log(message)
+        }
+
+        // 显示状态信息
+        window.showStatus = function(message, type = 'info', containerId = 'dataStatus') {
+            const container = document.getElementById(containerId)
+            const statusDiv = document.createElement('div')
+            statusDiv.className = `status ${type}`
+            statusDiv.textContent = message
+            container.innerHTML = ''
+            container.appendChild(statusDiv)
+        }
+
+        // 检查数据状态
+        window.checkDataStatus = function() {
+            log('🔍 检查数据状态...')
+            
+            try {
+                // 检查全局数据管理器
+                const activities = globalDataManager.getActivities()
+                const users = globalDataManager.getUsers()
+                
+                log(`📊 全局数据管理器状态:`)
+                log(`  - 活动数量: ${activities.length}`)
+                log(`  - 用户数量: ${users.length}`)
+                
+                if (activities.length > 0) {
+                    log(`  - 最新活动: ${activities[activities.length - 1].title}`)
+                }
+                
+                // 检查localStorage
+                const localStorageData = localStorage.getItem('campus_activities')
+                const localStorageActivities = localStorageData ? JSON.parse(localStorageData) : []
+                
+                log(`📦 localStorage状态:`)
+                log(`  - 数据存在: ${!!localStorageData}`)
+                log(`  - 活动数量: ${localStorageActivities.length}`)
+                
+                // 检查数据一致性
+                const isConsistent = activities.length === localStorageActivities.length
+                log(`🔄 数据一致性: ${isConsistent ? '✅ 一致' : '❌ 不一致'}`)
+                
+                if (!isConsistent) {
+                    log(`  - 全局管理器: ${activities.length} 个活动`)
+                    log(`  - localStorage: ${localStorageActivities.length} 个活动`)
+                    showStatus(`数据不一致！全局管理器有${activities.length}个活动，localStorage有${localStorageActivities.length}个活动`, 'warning')
+                } else {
+                    showStatus(`数据一致，共有${activities.length}个活动`, 'success')
+                }
+                
+            } catch (error) {
+                log(`❌ 检查数据状态失败: ${error.message}`)
+                showStatus(`检查数据状态失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 清理所有数据
+        window.clearAllData = function() {
+            log('🗑️ 清理所有数据...')
+            
+            try {
+                // 清理localStorage
+                localStorage.removeItem('campus_activities')
+                
+                // 清理全局数据管理器
+                globalDataManager.clearAllData()
+                
+                log('✅ 所有数据已清理')
+                showStatus('所有数据已清理', 'success')
+                
+                // 重新检查状态
+                setTimeout(checkDataStatus, 500)
+                
+            } catch (error) {
+                log(`❌ 清理数据失败: ${error.message}`)
+                showStatus(`清理数据失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 测试创建活动
+        window.testCreateActivity = async function() {
+            log('🧪 开始测试创建活动...')
+            
+            try {
+                const activityData = {
+                    title: document.getElementById('testTitle').value,
+                    description: document.getElementById('testDescription').value,
+                    category: document.getElementById('testCategory').value,
+                    location: document.getElementById('testLocation').value,
+                    startTime: document.getElementById('testStartTime').value,
+                    endTime: document.getElementById('testEndTime').value,
+                    maxParticipants: parseInt(document.getElementById('testMaxParticipants').value),
+                    tags: ['测试', '诊断']
+                }
+                
+                log(`📝 创建活动数据: ${JSON.stringify(activityData, null, 2)}`)
+                
+                // 调用mock创建活动
+                const result = await mockCreateActivity(activityData)
+                
+                log(`✅ 活动创建成功: ${JSON.stringify(result, null, 2)}`)
+                showStatus(`活动创建成功！活动ID: ${result.data.id}`, 'success')
+                
+                // 检查创建后的数据状态
+                setTimeout(checkDataStatus, 1000)
+                
+            } catch (error) {
+                log(`❌ 创建活动失败: ${error.message}`)
+                showStatus(`创建活动失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 测试创建并立即获取列表
+        window.testCreateAndList = async function() {
+            log('🔄 测试创建活动并立即获取列表...')
+            
+            try {
+                // 先创建活动
+                await testCreateActivity()
+                
+                // 等待一下然后获取列表
+                setTimeout(async () => {
+                    log('📋 立即获取活动列表...')
+                    await testGetActivityList()
+                }, 1500)
+                
+            } catch (error) {
+                log(`❌ 创建并获取列表失败: ${error.message}`)
+                showStatus(`创建并获取列表失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 测试获取活动列表
+        window.testGetActivityList = async function() {
+            log('📋 测试获取活动列表...')
+            
+            try {
+                const result = await mockGetActivityList()
+                
+                log(`✅ 获取列表成功: ${JSON.stringify(result, null, 2)}`)
+                
+                // 显示活动列表
+                const listContainer = document.getElementById('activityList')
+                listContainer.innerHTML = ''
+                
+                if (result.success && result.data && result.data.list) {
+                    result.data.list.forEach(activity => {
+                        const activityDiv = document.createElement('div')
+                        activityDiv.className = 'activity-item'
+                        activityDiv.innerHTML = `
+                            <h4>${activity.title} (ID: ${activity.id})</h4>
+                            <p><strong>类型:</strong> ${activity.type || activity.category}</p>
+                            <p><strong>地点:</strong> ${activity.location}</p>
+                            <p><strong>时间:</strong> ${activity.startTime} - ${activity.endTime}</p>
+                            <p><strong>状态:</strong> ${activity.status}</p>
+                            <p><strong>创建者:</strong> ${activity.organizerName}</p>
+                        `
+                        listContainer.appendChild(activityDiv)
+                    })
+                    
+                    showStatus(`成功获取${result.data.list.length}个活动`, 'success')
+                } else {
+                    showStatus('获取列表失败或数据格式错误', 'error')
+                }
+                
+            } catch (error) {
+                log(`❌ 获取活动列表失败: ${error.message}`)
+                showStatus(`获取活动列表失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 连续多次获取列表
+        window.testMultipleListCalls = async function() {
+            log('🔄 连续多次获取活动列表...')
+            
+            for (let i = 1; i <= 3; i++) {
+                log(`--- 第${i}次获取 ---`)
+                await testGetActivityList()
+                await new Promise(resolve => setTimeout(resolve, 1000))
+            }
+        }
+
+        // 模拟页面刷新
+        window.refreshPageSimulation = async function() {
+            log('🔄 模拟页面刷新...')
+            
+            // 清理当前状态，模拟页面刷新
+            log('🗑️ 清理当前内存状态...')
+            
+            // 重新获取数据
+            log('📋 重新获取活动列表...')
+            await testGetActivityList()
+            
+            // 检查数据状态
+            log('🔍 检查刷新后的数据状态...')
+            checkDataStatus()
+        }
+
+        // 清空日志
+        window.clearLog = function() {
+            document.getElementById('operationLog').textContent = ''
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 活动创建显示问题诊断工具已加载')
+            
+            // 设置默认时间
+            const now = new Date()
+            const startTime = new Date(now.getTime() + 24 * 60 * 60 * 1000) // 明天
+            const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000) // 2小时后
+            
+            document.getElementById('testStartTime').value = startTime.toISOString().slice(0, 16)
+            document.getElementById('testEndTime').value = endTime.toISOString().slice(0, 16)
+            
+            // 初始检查数据状态
+            setTimeout(checkDataStatus, 500)
+        })
+    </script>
+</body>
+</html>

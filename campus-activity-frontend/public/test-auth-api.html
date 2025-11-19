@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认证模块API测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+
+        .section h2 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: #4f46e5;
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result.success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+
+        .result.error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .result.info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status.warning {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .token-info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .token-info h4 {
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .token-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .token-item:last-child {
+            border-bottom: none;
+        }
+
+        .token-label {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .token-value {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            color: #6b7280;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 认证模块API测试</h1>
+            <p>测试用户认证、令牌管理和权限验证功能</p>
+        </div>
+
+        <div class="content">
+            <!-- 环境状态 -->
+            <div class="section">
+                <h2>环境状态</h2>
+                <div id="environment-status"></div>
+                <div class="token-info">
+                    <h4>当前令牌状态</h4>
+                    <div class="token-item">
+                        <span class="token-label">访问令牌:</span>
+                        <span class="token-value" id="access-token">未设置</span>
+                    </div>
+                    <div class="token-item">
+                        <span class="token-label">刷新令牌:</span>
+                        <span class="token-value" id="refresh-token">未设置</span>
+                    </div>
+                    <div class="token-item">
+                        <span class="token-label">令牌状态:</span>
+                        <span class="token-value" id="token-status">未检查</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户登录 -->
+            <div class="section">
+                <h2>用户登录</h2>
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="username">用户名/学号</label>
+                        <input type="text" id="username" placeholder="请输入用户名或学号" value="testuser">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" placeholder="请输入密码" value="password123">
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="remember-me">
+                    <label for="remember-me">记住我（延长令牌有效期）</label>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="testLogin()">
+                        <span>🔑</span> 登录
+                    </button>
+                    <button class="btn btn-secondary" onclick="testLogout()">
+                        <span>🚪</span> 登出
+                    </button>
+                </div>
+                <div id="login-result"></div>
+            </div>
+
+            <!-- 令牌管理 -->
+            <div class="section">
+                <h2>令牌管理</h2>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="testCheckToken()">
+                        <span>✅</span> 检查令牌状态
+                    </button>
+                    <button class="btn btn-secondary" onclick="testRefreshToken()">
+                        <span>🔄</span> 刷新令牌
+                    </button>
+                    <button class="btn btn-danger" onclick="clearTokens()">
+                        <span>🗑️</span> 清除令牌
+                    </button>
+                </div>
+                <div id="token-result"></div>
+            </div>
+
+            <!-- 自动刷新测试 -->
+            <div class="section">
+                <h2>自动刷新测试</h2>
+                <p style="margin-bottom: 15px; color: #6b7280;">
+                    测试令牌过期时的自动刷新机制（模拟401错误）
+                </p>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="testAutoRefresh()">
+                        <span>🤖</span> 测试自动刷新
+                    </button>
+                    <button class="btn btn-secondary" onclick="testConcurrentRequests()">
+                        <span>⚡</span> 并发请求测试
+                    </button>
+                </div>
+                <div id="auto-refresh-result"></div>
+            </div>
+
+            <!-- 测试日志 -->
+            <div class="section">
+                <h2>测试日志</h2>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="clearLog()">
+                        <span>🧹</span> 清空日志
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportLog()">
+                        <span>📥</span> 导出日志
+                    </button>
+                </div>
+                <div id="test-log" class="result info">等待测试...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 环境配置检测
+        function getEnvironmentConfig() {
+            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            const useMock = localStorage.getItem('useMock') === 'true'
+            const apiBaseUrl = isDev 
+                ? (localStorage.getItem('apiBaseUrl') || 'http://localhost:8080')
+                : '/api'
+            
+            return { isDev, useMock, apiBaseUrl }
+        }
+
+        // 日志函数
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString()
+            const logElement = document.getElementById('test-log')
+            const logEntry = `[${timestamp}] ${message}`
+            
+            logElement.textContent += logEntry + '\n'
+            logElement.scrollTop = logElement.scrollHeight
+            
+            console.log(`[Auth Test] ${logEntry}`)
+        }
+
+        // 显示结果
+        function showResult(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId)
+            element.className = `result ${isSuccess ? 'success' : 'error'}`
+            element.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+        }
+
+        // 更新令牌状态显示
+        function updateTokenStatus() {
+            const accessToken = localStorage.getItem('token') || '未设置'
+            const refreshToken = localStorage.getItem('refreshToken') || '未设置'
+            
+            document.getElementById('access-token').textContent = accessToken.substring(0, 20) + (accessToken.length > 20 ? '...' : '')
+            document.getElementById('refresh-token').textContent = refreshToken.substring(0, 20) + (refreshToken.length > 20 ? '...' : '')
+        }
+
+        // 更新环境状态
+        function updateEnvironmentStatus() {
+            const config = getEnvironmentConfig()
+            const statusElement = document.getElementById('environment-status')
+            
+            statusElement.innerHTML = `
+                <div class="status ${config.useMock ? 'warning' : 'success'}">
+                    <span class="status-dot"></span>
+                    当前模式: ${config.useMock ? 'Mock模式' : '后端模式'}
+                </div>
+                <div class="status info">
+                    <span class="status-dot"></span>
+                    API地址: ${config.apiBaseUrl}
+                </div>
+                <div class="status ${config.isDev ? 'success' : 'info'}">
+                    <span class="status-dot"></span>
+                    环境: ${config.isDev ? '开发环境' : '生产环境'}
+                </div>
+            `
+        }
+
+        // API请求函数
+        async function apiRequest(url, options = {}) {
+            const config = getEnvironmentConfig()
+            const token = localStorage.getItem('token')
+            
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                }
+            }
+            
+            const finalOptions = { ...defaultOptions, ...options }
+            
+            if (config.useMock) {
+                log(`使用Mock数据: ${options.method || 'GET'} ${url}`)
+                return getMockResponse(url, options)
+            }
+            
+            try {
+                log(`发送请求: ${options.method || 'GET'} ${config.apiBaseUrl}${url}`)
+                const response = await fetch(`${config.apiBaseUrl}${url}`, finalOptions)
+                const data = await response.json()
+                
+                log(`收到响应: ${response.status} ${JSON.stringify(data).substring(0, 100)}...`)
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${data.message || '请求失败'}`)
+                }
+                
+                return { success: true, data }
+            } catch (error) {
+                log(`请求失败: ${error.message}`)
+                return { success: false, error: error.message }
+            }
+        }
+
+        // Mock数据
+        function getMockResponse(url, options) {
+            const mockResponses = {
+                '/api/auth/login': {
+                    success: true,
+                    data: {
+                        token: 'mock-jwt-access-token-' + Date.now(),
+                        refreshToken: 'mock-jwt-refresh-token-' + Date.now(),
+                        tokenType: 'Bearer',
+                        expiresIn: 3600,
+                        rememberMe: options.body ? JSON.parse(options.body).rememberMe : false,
+                        user: {
+                            id: 123,
+                            username: 'testuser',
+                            role: 'USER'
+                        }
+                    }
+                },
+                '/api/auth/refresh': {
+                    success: true,
+                    data: {
+                        accessToken: 'mock-refreshed-access-token-' + Date.now(),
+                        tokenType: 'Bearer',
+                        expiresIn: 3600
+                    }
+                },
+                '/api/auth/check': {
+                    success: true,
+                    data: {
+                        valid: true,
+                        aboutToExpire: false,
+                        userId: 123,
+                        username: 'testuser'
+                    }
+                }
+            }
+            
+            return mockResponses[url] || { success: false, error: 'Mock接口未定义' }
+        }
+
+        // 测试函数
+        window.testLogin = async function() {
+            const username = document.getElementById('username').value
+            const password = document.getElementById('password').value
+            const rememberMe = document.getElementById('remember-me').checked
+            
+            if (!username || !password) {
+                showResult('login-result', '请输入用户名和密码', false)
+                return
+            }
+            
+            log(`开始登录测试: username=${username}, rememberMe=${rememberMe}`)
+            
+            const result = await apiRequest('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    username,
+                    password,
+                    rememberMe
+                })
+            })
+            
+            if (result.success) {
+                const { token, refreshToken } = result.data.data
+                localStorage.setItem('token', token)
+                localStorage.setItem('refreshToken', refreshToken)
+                updateTokenStatus()
+                showResult('login-result', result.data.data, true)
+                log('登录成功，令牌已保存')
+            } else {
+                showResult('login-result', result.error, false)
+                log(`登录失败: ${result.error}`)
+            }
+        }
+
+        window.testLogout = function() {
+            localStorage.removeItem('token')
+            localStorage.removeItem('refreshToken')
+            updateTokenStatus()
+            showResult('login-result', '已登出，令牌已清除', true)
+            log('用户已登出')
+        }
+
+        window.testCheckToken = async function() {
+            log('开始检查令牌状态')
+            
+            const result = await apiRequest('/api/auth/check', {
+                method: 'GET'
+            })
+            
+            if (result.success) {
+                document.getElementById('token-status').textContent = '有效'
+                showResult('token-result', result.data.data, true)
+                log(`令牌状态: ${JSON.stringify(result.data.data)}`)
+            } else {
+                document.getElementById('token-status').textContent = '无效'
+                showResult('token-result', result.error, false)
+                log(`令牌检查失败: ${result.error}`)
+            }
+        }
+
+        window.testRefreshToken = async function() {
+            log('开始刷新令牌')
+            
+            const refreshToken = localStorage.getItem('refreshToken')
+            if (!refreshToken) {
+                showResult('token-result', '没有刷新令牌，请先登录', false)
+                return
+            }
+            
+            const result = await apiRequest('/api/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${refreshToken}`
+                }
+            })
+            
+            if (result.success) {
+                const { accessToken } = result.data.data
+                localStorage.setItem('token', accessToken)
+                updateTokenStatus()
+                showResult('token-result', result.data.data, true)
+                log('令牌刷新成功')
+            } else {
+                showResult('token-result', result.error, false)
+                log(`令牌刷新失败: ${result.error}`)
+            }
+        }
+
+        window.clearTokens = function() {
+            localStorage.removeItem('token')
+            localStorage.removeItem('refreshToken')
+            updateTokenStatus()
+            document.getElementById('token-status').textContent = '未检查'
+            showResult('token-result', '所有令牌已清除', true)
+            log('令牌已手动清除')
+        }
+
+        window.testAutoRefresh = async function() {
+            log('开始自动刷新测试（模拟401错误）')
+            
+            // 模拟发送一个需要认证的请求
+            const result = await apiRequest('/api/user/profile', {
+                method: 'GET'
+            })
+            
+            if (result.success) {
+                showResult('auto-refresh-result', '请求成功，令牌仍然有效', true)
+            } else {
+                showResult('auto-refresh-result', `自动刷新测试: ${result.error}`, false)
+            }
+            
+            log('自动刷新测试完成')
+        }
+
+        window.testConcurrentRequests = async function() {
+            log('开始并发请求测试')
+            
+            const requests = Array(3).fill().map((_, index) => 
+                apiRequest('/api/auth/check', { method: 'GET' })
+                    .then(result => ({ index, result }))
+            )
+            
+            try {
+                const results = await Promise.all(requests)
+                const successCount = results.filter(r => r.result.success).length
+                showResult('auto-refresh-result', 
+                    `并发测试完成: ${successCount}/${results.length} 成功`, 
+                    successCount === results.length
+                )
+                log(`并发请求结果: ${successCount}/${results.length} 成功`)
+            } catch (error) {
+                showResult('auto-refresh-result', `并发测试失败: ${error.message}`, false)
+                log(`并发测试失败: ${error.message}`)
+            }
+        }
+
+        window.clearLog = function() {
+            document.getElementById('test-log').textContent = '日志已清空...\n'
+        }
+
+        window.exportLog = function() {
+            const logContent = document.getElementById('test-log').textContent
+            const blob = new Blob([logContent], { type: 'text/plain' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `auth-test-log-${new Date().toISOString().slice(0, 19)}.txt`
+            a.click()
+            URL.revokeObjectURL(url)
+            log('日志已导出')
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateEnvironmentStatus()
+            updateTokenStatus()
+            log('认证模块测试页面已加载')
+        })
+    </script>
+</body>
+</html>

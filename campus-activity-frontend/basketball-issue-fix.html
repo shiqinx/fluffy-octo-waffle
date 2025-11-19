@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>篮球赛问题修复工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .problem {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .solution {
+            background: #d1f2eb;
+            border: 1px solid #55efc4;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .data-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn.danger {
+            background: #dc3545;
+        }
+        .btn.danger:hover {
+            background: #c82333;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.success:hover {
+            background: #218838;
+        }
+        .activity-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+        }
+        .activity-item {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007bff;
+        }
+        .activity-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .activity-info {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏀 篮球赛问题修复工具</h1>
+            <p>检测和修复活动列表中所有活动都显示为篮球友谊赛的问题</p>
+        </div>
+
+        <div class="problem">
+            <h3>⚠️ 问题诊断</h3>
+            <p><strong>现象：</strong>活动列表中所有活动都显示为"篮球友谊赛"</p>
+            <p><strong>原因：</strong>localStorage中的活动数据可能被错误覆盖，导致数据单一化</p>
+            <p><strong>影响：</strong>用户无法看到多样化的活动内容，影响用户体验</p>
+        </div>
+
+        <div class="solution">
+            <h3>✅ 解决方案</h3>
+            <p>1. 检查当前localStorage中的活动数据</p>
+            <p>2. 识别数据异常（如所有活动都是篮球赛）</p>
+            <p>3. 使用正确的多样化活动数据替换异常数据</p>
+            <p>4. 验证修复结果</p>
+        </div>
+
+        <div class="data-stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalActivities">0</div>
+                <div class="stat-label">总活动数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="basketballCount">0</div>
+                <div class="stat-label">篮球活动数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="basketballPercentage">0%</div>
+                <div class="stat-label">篮球活动占比</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="dataStatus">❌</div>
+                <div class="stat-label">数据状态</div>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3>🔧 操作工具</h3>
+            <button class="btn" onclick="checkData()">检查数据</button>
+            <button class="btn success" onclick="fixData()">修复数据</button>
+            <button class="btn danger" onclick="clearData()">清空数据</button>
+            <button class="btn" onclick="exportData()">导出数据</button>
+            <button class="btn" onclick="refreshPage()">刷新页面</button>
+        </div>
+
+        <div class="container">
+            <h3>📋 当前活动列表</h3>
+            <div class="activity-list" id="activityList">
+                <p>点击"检查数据"按钮查看当前活动列表</p>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3>📝 操作日志</h3>
+            <div class="log" id="log">等待操作...</div>
+        </div>
+    </div>
+
+    <script>
+        // 正确的多样化活动数据
+        const correctActivities = [
+            {
+                id: 1,
+                title: '中医养生讲座',
+                type: '学术讲座',
+                category: 'study',
+                description: '邀请著名中医专家讲解传统养生知识，包括四季养生、食疗养生、运动养生等内容。现场还有免费中医体质检测服务。',
+                locationName: '学术报告厅',
+                location: {
+                    name: '学术报告厅',
+                    address: '广东药科大学云浮校区学术报告厅'
+                },
+                startTime: '2024-12-20T14:00:00',
+                endTime: '2024-12-20T16:30:00',
+                registrationDeadline: '2024-12-19T23:59:59',
+                currentParticipants: 156,
+                maxParticipants: 200,
+                organizer: {
+                    id: 1,
+                    name: '中医学院',
+                    avatar: '',
+                    role: '组织者',
+                    creditScore: 98
+                },
+                status: 'open',
+                isEnrolled: false,
+                distance: 0.3,
+                tags: ['健康', '养生', '中医', '讲座']
+            },
+            {
+                id: 2,
+                title: '摄影作品展览',
+                type: '文化艺术',
+                category: 'culture',
+                description: '展示我校摄影爱好者的优秀作品，包括校园风光、人物肖像、纪实摄影等多类别。开幕式将有专业摄影师现场分享拍摄技巧。',
+                locationName: '艺术展览中心',
+                location: {
+                    name: '艺术展览中心',
+                    address: '广东药科大学云浮校区艺术展览中心'
+                },
+                startTime: '2024-12-21T10:00:00',
+                endTime: '2024-12-25T18:00:00',
+                registrationDeadline: '2024-12-20T23:59:59',
+                currentParticipants: 234,
+                maxParticipants: 500,
+                organizer: {
+                    id: 2,
+                    name: '摄影协会',
+                    avatar: '',
+                    role: '组织者',
+                    creditScore: 95
+                },
+                status: 'open',
+                isEnrolled: false,
+                distance: 0.5,
+                tags: ['摄影', '艺术', '展览', '文化']
+            },
+            {
+                id: 3,
+                title: '编程马拉松大赛',
+                type: '科技创新',
+                category: 'tech',
+                description: '48小时编程挑战赛，主题为"智慧校园"。参赛者需要在规定时间内完成创新项目开发，优胜团队将获得丰厚奖品和实习机会。',
+                locationName: '创新实验室',
+                location: {
+                    name: '创新实验室',
+                    address: '广东药科大学云浮校区创新实验室'
+                },
+                startTime: '2024-12-22T09:00:00',
+                endTime: '2024-12-24T09:00:00',
+                registrationDeadline: '2024-12-21T23:59:59',
+                currentParticipants: 87,
+                maxParticipants: 100,
+                organizer: {
+                    id: 3,
+                    name: '计算机学院',
+                    avatar: '',
+                    role: '组织者',
+                    creditScore: 96
+                },
+                status: 'open',
+                isEnrolled: false,
+                distance: 1.2,
+                tags: ['编程', '创新', '比赛', '技术']
+            },
+            {
+                id: 4,
+                title: '篮球友谊赛',
+                type: '体育竞技',
+                category: 'sports',
+                description: '院系间篮球友谊赛，促进各院系交流。比赛采用国际篮联规则，设有MVP奖项和最佳团队奖。',
+                locationName: '体育馆',
+                location: {
+                    name: '体育馆',
+                    address: '广东药科大学云浮校区体育馆'
+                },
+                startTime: '2024-12-23T16:00:00',
+                endTime: '2024-12-23T18:00:00',
+                registrationDeadline: '2024-12-22T23:59:59',
+                currentParticipants: 178,
+                maxParticipants: 200,
+                organizer: {
+                    id: 4,
+                    name: '体育部',
+                    avatar: '',
+                    role: '组织者',
+                    creditScore: 94
+                },
+                status: 'open',
+                isEnrolled: false,
+                distance: 0.8,
+                tags: ['篮球', '体育', '比赛', '友谊赛']
+            },
+            {
+                id: 5,
+                title: '校园音乐节',
+                type: '文艺演出',
+                category: 'culture',
+                description: '年度校园音乐盛典，邀请校内知名乐队和校外专业音乐人同台演出。涵盖摇滚、民谣、流行等多种音乐风格。',
+                locationName: '大学生活动中心',
+                location: {
+                    name: '大学生活动中心',
+                    address: '广东药科大学云浮校区大学生活动中心'
+                },
+                startTime: '2024-12-24T19:00:00',
+                endTime: '2024-12-24T22:30:00',
+                registrationDeadline: '2024-12-23T23:59:59',
+                currentParticipants: 856,
+                maxParticipants: 1000,
+                organizer: {
+                    id: 5,
+                    name: '学生会文艺部',
+                    avatar: '',
+                    role: '组织者',
+                    creditScore: 92
+                },
+                status: 'open',
+                isEnrolled: false,
+                distance: 0.6,
+                tags: ['音乐', '演出', '文艺', '音乐节']
+            },
+            {
+                id: 6,
+                title: '图书馆学习小组',
+                type: '学习交流',
+                category: 'study',
+                description: '为期一周的集中学习活动，提供安静的学习环境和专业的学习指导。每日有不同学科的老师现场答疑。',
+                locationName: '图书馆研讨室',
+                location: {
+                    name: '图书馆研讨室',
+                    address: '广东药科大学云浮校区图书馆研讨室'
+                },
+                startTime: '2024-12-19T09:00:00',
+                endTime: '2024-12-25T21:00:00',
+                registrationDeadline: '2024-12-18T23:59:59',
+                currentParticipants: 42,
+                maxParticipants: 50,
+                organizer: {
+                    id: 6,
+                    name: '图书馆',
+                    avatar: '',
+                    role: '组织者',
+                    creditScore: 99
+                },
+                status: 'open',
+                isEnrolled: false,
+                distance: 0.4,
+                tags: ['学习', '图书馆', '研讨', '交流']
+            }
+        ];
+
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function checkData() {
+            log('🔍 开始检查localStorage中的活动数据...');
+            
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (!stored) {
+                    log('❌ localStorage中没有找到活动数据');
+                    updateStats([]);
+                    return;
+                }
+
+                const activities = JSON.parse(stored);
+                log(`✅ 成功读取活动数据，共 ${activities.length} 个活动`);
+                
+                // 分析数据
+                const basketballCount = activities.filter(activity => 
+                    activity.title && (activity.title.includes('篮球') || activity.title.includes('篮球赛'))
+                ).length;
+                
+                const basketballPercentage = activities.length > 0 ? 
+                    Math.round((basketballCount / activities.length) * 100) : 0;
+                
+                updateStats(activities, basketballCount, basketballPercentage);
+                displayActivities(activities);
+                
+                // 判断数据状态
+                if (basketballPercentage > 80) {
+                    log('⚠️ 警告：检测到过多的篮球活动，数据可能异常');
+                    document.getElementById('dataStatus').textContent = '⚠️';
+                } else {
+                    log('✅ 数据状态正常');
+                    document.getElementById('dataStatus').textContent = '✅';
+                }
+                
+            } catch (error) {
+                log(`❌ 检查数据时出错: ${error.message}`);
+            }
+        }
+
+        function updateStats(activities, basketballCount = 0, basketballPercentage = 0) {
+            document.getElementById('totalActivities').textContent = activities.length;
+            document.getElementById('basketballCount').textContent = basketballCount;
+            document.getElementById('basketballPercentage').textContent = basketballPercentage + '%';
+        }
+
+        function displayActivities(activities) {
+            const listElement = document.getElementById('activityList');
+            
+            if (activities.length === 0) {
+                listElement.innerHTML = '<p>没有找到活动数据</p>';
+                return;
+            }
+            
+            listElement.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-title">${activity.title || '未命名活动'}</div>
+                    <div class="activity-info">
+                        类型: ${activity.type || activity.category || '未知'} | 
+                        地点: ${activity.locationName || '未设置'} | 
+                        参与人数: ${activity.currentParticipants || 0}/${activity.maxParticipants || 0}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function fixData() {
+            log('🔧 开始修复活动数据...');
+            
+            try {
+                // 保存正确的活动数据到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(correctActivities));
+                
+                log(`✅ 已成功修复活动数据，共 ${correctActivities.length} 个多样化活动`);
+                log('📋 修复后的活动列表:');
+                correctActivities.forEach((activity, index) => {
+                    log(`  ${index + 1}. ${activity.title} - ${activity.type}`);
+                });
+                
+                // 更新统计和显示
+                updateStats(correctActivities, 1, Math.round((1 / correctActivities.length) * 100));
+                displayActivities(correctActivities);
+                document.getElementById('dataStatus').textContent = '✅';
+                
+                log('🎉 数据修复完成！请刷新应用页面查看效果');
+                
+            } catch (error) {
+                log(`❌ 修复数据时出错: ${error.message}`);
+            }
+        }
+
+        function clearData() {
+            if (confirm('确定要清空所有活动数据吗？此操作不可恢复！')) {
+                try {
+                    localStorage.removeItem('campus_activities');
+                    log('🗑️ 已清空活动数据');
+                    updateStats([]);
+                    displayActivities([]);
+                    document.getElementById('dataStatus').textContent = '❌';
+                } catch (error) {
+                    log(`❌ 清空数据时出错: ${error.message}`);
+                }
+            }
+        }
+
+        function exportData() {
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (!stored) {
+                    log('❌ 没有数据可以导出');
+                    return;
+                }
+                
+                const activities = JSON.parse(stored);
+                const dataStr = JSON.stringify(activities, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `activities_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                log(`✅ 已导出 ${activities.length} 个活动数据`);
+                
+            } catch (error) {
+                log(`❌ 导出数据时出错: ${error.message}`);
+            }
+        }
+
+        function refreshPage() {
+            log('🔄 准备刷新应用页面...');
+            setTimeout(() => {
+                window.open('http://localhost:3000/activities', '_blank');
+                log('✅ 已在新标签页中打开活动页面');
+            }, 1000);
+        }
+
+        // 页面加载时自动检查数据
+        window.onload = function() {
+            log('🚀 篮球赛问题修复工具已启动');
+            checkData();
+        };
+    </script>
+</body>
+</html>

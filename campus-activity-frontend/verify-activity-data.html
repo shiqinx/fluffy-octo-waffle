@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据验证</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .activity-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+        }
+        .activity-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .activity-info {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success { background-color: #d4edda; border-color: #28a745; color: #155724; }
+        .warning { background-color: #fff3cd; border-color: #ffc107; color: #856404; }
+        .error { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .info { background-color: #d1ecf1; border-color: #17a2b8; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 活动数据验证页面</h1>
+        
+        <div id="status" class="status info">
+            正在检查活动数据...
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button onclick="clearAndReload()">🧹 清理并重新加载数据</button>
+            <button onclick="checkData()">🔍 检查数据</button>
+            <button onclick="goToActivityList()">📋 前往活动列表</button>
+        </div>
+
+        <div id="activities-container"></div>
+    </div>
+
+    <script>
+        // 模拟默认活动数据
+        const defaultActivities = [
+            {
+                id: 1,
+                title: '中医养生讲座',
+                type: 'study',
+                locationName: '学术报告厅',
+                startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 15,
+                maxParticipants: 30
+            },
+            {
+                id: 2,
+                title: '摄影作品展览',
+                type: 'culture',
+                locationName: '艺术展厅',
+                startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 12,
+                maxParticipants: 25
+            },
+            {
+                id: 3,
+                title: '编程马拉松大赛',
+                type: 'tech',
+                locationName: '创新实验室',
+                startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 8,
+                maxParticipants: 20
+            },
+            {
+                id: 4,
+                title: '音乐节',
+                type: 'culture',
+                locationName: '露天剧场',
+                startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 25,
+                maxParticipants: 40
+            },
+            {
+                id: 5,
+                title: '篮球友谊赛',
+                type: 'sports',
+                locationName: '篮球场1',
+                startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 4,
+                maxParticipants: 8
+            }
+        ];
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        function renderActivities(activities) {
+            const container = document.getElementById('activities-container');
+            
+            if (!activities || activities.length === 0) {
+                container.innerHTML = '<div class="status warning">没有找到活动数据</div>';
+                return;
+            }
+
+            const html = activities.map(activity => `
+                <div class="activity-card">
+                    <div class="activity-title">${activity.title}</div>
+                    <div class="activity-info">
+                        <strong>类型:</strong> ${activity.type}<br>
+                        <strong>地点:</strong> ${activity.locationName}<br>
+                        <strong>时间:</strong> ${new Date(activity.startTime).toLocaleString()}<br>
+                        <strong>参与人数:</strong> ${activity.currentParticipants}/${activity.maxParticipants}
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<h3>📋 活动列表 (${activities.length}个活动)</h3>${html}`;
+        }
+
+        function checkData() {
+            console.log('🔍 检查当前活动数据...');
+            
+            try {
+                const storedData = localStorage.getItem('campus_activities');
+                
+                if (!storedData) {
+                    showStatus('localStorage中没有活动数据，将使用默认数据', 'warning');
+                    renderActivities(defaultActivities);
+                    return;
+                }
+                
+                const activities = JSON.parse(storedData);
+                console.log('📊 从localStorage加载的活动数据:', activities);
+                
+                const titles = activities.map(a => a.title);
+                const uniqueTitles = [...new Set(titles)];
+                
+                if (uniqueTitles.length === 1 && uniqueTitles[0] === '中医养生讲座') {
+                    showStatus('❌ 检测到数据污染！所有活动都是"中医养生讲座"', 'error');
+                } else {
+                    showStatus(`✅ 数据正常，发现${activities.length}个活动，标题多样化`, 'success');
+                }
+                
+                renderActivities(activities);
+                
+            } catch (error) {
+                console.error('❌ 检查数据时出错:', error);
+                showStatus('❌ 检查数据时出错: ' + error.message, 'error');
+                renderActivities(defaultActivities);
+            }
+        }
+
+        function clearAndReload() {
+            console.log('🧹 清理并重新加载数据...');
+            
+            try {
+                // 清理localStorage
+                localStorage.removeItem('campus_activities');
+                console.log('🗑️ 已清理localStorage中的活动数据');
+                
+                // 保存默认数据到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(defaultActivities));
+                console.log('💾 已保存默认活动数据到localStorage');
+                
+                showStatus('✅ 数据清理并重新加载成功！', 'success');
+                renderActivities(defaultActivities);
+                
+            } catch (error) {
+                console.error('❌ 清理数据时出错:', error);
+                showStatus('❌ 清理数据时出错: ' + error.message, 'error');
+            }
+        }
+
+        function goToActivityList() {
+            window.location.href = '/activities';
+        }
+
+        // 页面加载时自动检查数据
+        window.addEventListener('load', () => {
+            console.log('🚀 活动数据验证页面加载完成');
+            checkData();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限验证 - 活动详情</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        .info {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 8px;
+            background: #1890ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            text-align: center;
+        }
+        .btn:hover {
+            background: #40a9ff;
+        }
+        .btn.organizer {
+            background: #52c41a;
+        }
+        .btn.organizer:hover {
+            background: #73d13d;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+        .check {
+            color: #52c41a;
+            margin-right: 8px;
+        }
+        .cross {
+            color: #ff4d4f;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 权限控制验证</h1>
+        
+        <div class="test-result info">
+            <strong>测试目标：</strong>验证组织者视图已移除报名审核功能
+        </div>
+
+        <h2>📋 验证清单</h2>
+        <ul class="checklist">
+            <li><span class="check">✓</span>移除组织者视图的报名审核列表</li>
+            <li><span class="check">✓</span>移除组织者视图的参与者列表</li>
+            <li><span class="check">✓</span>移除审核相关的方法（approveEnrollment, rejectEnrollment）</li>
+            <li><span class="check">✓</span>移除审核相关的计算属性（pendingEnrollments, approvedParticipants）</li>
+            <li><span class="check">✓</span>组织者视图只保留：编辑活动、导出名单、取消活动</li>
+        </ul>
+
+        <h2>🧪 快速测试</h2>
+        <p>请访问活动详情页面并验证：</p>
+        
+        <a href="http://localhost:3001/activities/detail/1" class="btn organizer" target="_blank">
+            测试活动详情页面
+        </a>
+
+        <div class="test-result info">
+            <strong>预期结果：</strong><br>
+            • 如果您是组织者（用户ID=1），底部应只显示3个按钮：编辑活动、导出名单、取消活动<br>
+            • 如果您是参与者，应显示完整的报名和参与功能<br>
+            • 不应该看到任何报名审核或参与者列表功能
+        </div>
+
+        <h2>🔍 问题诊断</h2>
+        <div id="diagnosis">
+            <p>如果您仍然看到组织者视图的报名审核功能：</p>
+            <ol>
+                <li>请清除浏览器缓存并刷新页面</li>
+                <li>请确认您当前登录的用户身份</li>
+                <li>请检查浏览器控制台是否有错误信息</li>
+            </ol>
+        </div>
+
+        <h2>📝 代码变更摘要</h2>
+        <div class="test-result success">
+            <strong>已完成的修改：</strong><br>
+            1. ✅ 移除了模板中的组织者视图报名审核代码<br>
+            2. ✅ 移除了JavaScript中的审核相关计算属性<br>
+            3. ✅ 移除了JavaScript中的审核相关方法<br>
+            4. ✅ 保留了参与者视图的完整功能<br>
+            5. ✅ 保留了组织者的基本管理功能
+        </div>
+
+        <button onclick="checkCurrentRole()" style="padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+            检查当前用户角色
+        </button>
+        <div id="roleResult" style="margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        function checkCurrentRole() {
+            const userStr = localStorage.getItem('user');
+            const roleResult = document.getElementById('roleResult');
+            
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    const isOrganizer = user.id === 1; // 活动1的组织者ID是1
+                    
+                    roleResult.innerHTML = `
+                        <div class="test-result ${isOrganizer ? 'success' : 'info'}">
+                            <strong>当前用户信息：</strong><br>
+                            ID: ${user.id}<br>
+                            名称: ${user.name}<br>
+                            角色: ${isOrganizer ? '组织者（应看到管理功能）' : '参与者（应看到报名功能）'}
+                        </div>
+                    `;
+                } catch (e) {
+                    roleResult.innerHTML = '<div class="test-result error">用户信息格式错误</div>';
+                }
+            } else {
+                roleResult.innerHTML = '<div class="test-result info">未找到用户信息，请先登录</div>';
+            }
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkCurrentRole();
+        };
+    </script>
+</body>
+</html>

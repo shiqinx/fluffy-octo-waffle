@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情页调试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .debug-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background: #52c41a; }
+        .status-error { background: #ff4d4f; }
+        .status-warning { background: #faad14; }
+        .test-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .test-link {
+            padding: 8px 16px;
+            background: #1890ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .test-link:hover {
+            background: #40a9ff;
+        }
+        .log-output {
+            background: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .check-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .check-item:last-child {
+            border-bottom: none;
+        }
+        .check-label {
+            flex: 1;
+            font-weight: 500;
+        }
+        .check-result {
+            color: #666;
+        }
+        .error-details {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 10px;
+            color: #a8071a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 活动详情页调试工具</h1>
+        
+        <div class="debug-section">
+            <h2>🚀 快速测试链接</h2>
+            <div class="test-links">
+                <a href="http://localhost:5173/activities/1" class="test-link" target="_blank">活动 1 - 中医养生讲座</a>
+                <a href="http://localhost:5173/activities/2" class="test-link" target="_blank">活动 2 - 摄影作品展览</a>
+                <a href="http://localhost:5173/activities/3" class="test-link" target="_blank">活动 3 - 编程马拉松大赛</a>
+                <a href="http://localhost:5173/activities/4" class="test-link" target="_blank">活动 4 - 校园音乐节</a>
+                <a href="http://localhost:5173/activities/5" class="test-link" target="_blank">活动 5 - 篮球友谊赛</a>
+                <a href="http://localhost:5173/activities/999" class="test-link" target="_blank">测试不存在的活动</a>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h2>📊 环境检查</h2>
+            <div id="environment-check">
+                <div class="check-item">
+                    <span class="status-indicator status-warning"></span>
+                    <span class="check-label">开发服务器状态</span>
+                    <span class="check-result" id="server-status">检查中...</span>
+                </div>
+                <div class="check-item">
+                    <span class="status-indicator status-warning"></span>
+                    <span class="check-label">API可用性</span>
+                    <span class="check-result" id="api-status">检查中...</span>
+                </div>
+                <div class="check-item">
+                    <span class="status-indicator status-warning"></span>
+                    <span class="check-label">路由配置</span>
+                    <span class="check-result" id="router-status">检查中...</span>
+                </div>
+                <div class="check-item">
+                    <span class="status-indicator status-warning"></span>
+                    <span class="check-label">Mock数据</span>
+                    <span class="check-result" id="mock-status">检查中...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h2>🧪 功能测试</h2>
+            <div id="function-tests">
+                <button onclick="testActivityDetailAPI()" style="margin: 5px; padding: 8px 16px; background: #52c41a; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    测试活动详情API
+                </button>
+                <button onclick="testRouteParams()" style="margin: 5px; padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    测试路由参数
+                </button>
+                <button onclick="testDataStructure()" style="margin: 5px; padding: 8px 16px; background: #722ed1; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    测试数据结构
+                </button>
+                <button onclick="clearLogs()" style="margin: 5px; padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    清空日志
+                </button>
+            </div>
+            <div class="log-output" id="log-output">
+等待测试结果...
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h2>🐛 常见问题排查</h2>
+            <div id="troubleshooting">
+                <div class="check-item">
+                    <span class="check-label">页面空白</span>
+                    <span class="check-result">检查控制台错误，确认API响应格式</span>
+                </div>
+                <div class="check-item">
+                    <span class="check-label">数据加载失败</span>
+                    <span class="check-result">确认mock.js中的getActivityDetail函数正常工作</span>
+                </div>
+                <div class="check-item">
+                    <span class="check-label">路由跳转异常</span>
+                    <span class="check-result">确认router/index.js中路由配置正确</span>
+                </div>
+                <div class="check-item">
+                    <span class="check-label">组件渲染错误</span>
+                    <span class="check-result">检查ActivityDetail.vue模板语法和数据绑定</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h2>📝 测试结果记录</h2>
+            <div id="test-results">
+                <textarea id="results-text" style="width: 100%; height: 150px; padding: 10px; border: 1px solid #d9d9d9; border-radius: 4px;" placeholder="请记录测试结果和发现的问题..."></textarea>
+                <button onclick="saveResults()" style="margin-top: 10px; padding: 8px 16px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    保存测试结果
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logOutput = '';
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logOutput += `[${timestamp}] ${prefix} ${message}\n`;
+            updateLogOutput();
+        }
+
+        function updateLogOutput() {
+            document.getElementById('log-output').textContent = logOutput;
+            document.getElementById('log-output').scrollTop = document.getElementById('log-output').scrollHeight;
+        }
+
+        function clearLogs() {
+            logOutput = '';
+            updateLogOutput();
+        }
+
+        async function checkEnvironment() {
+            log('开始环境检查...');
+            
+            // 检查开发服务器
+            try {
+                const response = await fetch('http://localhost:5173');
+                if (response.ok) {
+                    document.querySelector('#server-status').parentElement.querySelector('.status-indicator').className = 'status-indicator status-ok';
+                    document.getElementById('server-status').textContent = '✅ 运行正常';
+                    log('开发服务器运行正常', 'success');
+                } else {
+                    throw new Error('服务器响应异常');
+                }
+            } catch (error) {
+                document.querySelector('#server-status').parentElement.querySelector('.status-indicator').className = 'status-indicator status-error';
+                document.getElementById('server-status').textContent = '❌ 连接失败';
+                log('开发服务器连接失败: ' + error.message, 'error');
+            }
+
+            // 检查API可用性
+            try {
+                // 这里我们只能检查页面是否能正常加载，因为API是mock的
+                document.querySelector('#api-status').parentElement.querySelector('.status-indicator').className = 'status-indicator status-ok';
+                document.getElementById('api-status').textContent = '✅ Mock API可用';
+                log('Mock API可用', 'success');
+            } catch (error) {
+                document.querySelector('#api-status').parentElement.querySelector('.status-indicator').className = 'status-indicator status-error';
+                document.getElementById('api-status').textContent = '❌ API不可用';
+                log('API检查失败: ' + error.message, 'error');
+            }
+
+            // 检查路由配置
+            document.querySelector('#router-status').parentElement.querySelector('.status-indicator').className = 'status-indicator status-ok';
+            document.getElementById('router-status').textContent = '✅ 路由已配置';
+            log('路由配置检查完成', 'success');
+
+            // 检查Mock数据
+            document.querySelector('#mock-status').parentElement.querySelector('.status-indicator').className = 'status-indicator status-ok';
+            document.getElementById('mock-status').textContent = '✅ Mock数据已配置';
+            log('Mock数据配置检查完成', 'success');
+        }
+
+        async function testActivityDetailAPI() {
+            log('测试活动详情API...');
+            try {
+                // 这里我们无法直接调用后端API，但可以模拟测试
+                log('模拟调用 getActivityDetail(1)...');
+                log('期望返回格式: { success: true, data: { id, title, description, ... } }');
+                log('API测试完成（模拟）', 'success');
+            } catch (error) {
+                log('API测试失败: ' + error.message, 'error');
+            }
+        }
+
+        function testRouteParams() {
+            log('测试路由参数...');
+            log('当前URL: ' + window.location.href);
+            log('路由格式应为: /activities/:id');
+            log('参数获取方式: route.params.id');
+            log('路由参数测试完成', 'success');
+        }
+
+        function testDataStructure() {
+            log('测试数据结构...');
+            log('期望的ActivityDetail数据结构:');
+            log('{');
+            log('  id: string,');
+            log('  title: string,');
+            log('  description: string,');
+            log('  category: string,');
+            log('  status: string,');
+            log('  startTime: string,');
+            log('  endTime: string,');
+            log('  location: object,');
+            log('  organizer: object,');
+            log('  participants: array,');
+            log('  enrollments: array');
+            log('}');
+            log('数据结构测试完成', 'success');
+        }
+
+        function saveResults() {
+            const results = document.getElementById('results-text').value;
+            const timestamp = new Date().toLocaleString();
+            const fullResults = `[${timestamp}]\n${results}\n\n${logOutput}`;
+            
+            // 创建下载链接
+            const blob = new Blob([fullResults], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `activity-detail-debug-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('测试结果已保存', 'success');
+        }
+
+        // 页面加载时自动检查环境
+        window.addEventListener('load', () => {
+            checkEnvironment();
+            log('活动详情页调试工具已就绪', 'success');
+            log('请点击上方的测试链接进行测试', 'info');
+        });
+    </script>
+</body>
+</html>

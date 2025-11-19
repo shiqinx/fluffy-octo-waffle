@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据诊断工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .data-display {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #0056CC;
+        }
+        .button.danger {
+            background: #FF3B30;
+        }
+        .button.danger:hover {
+            background: #D70015;
+        }
+        .button.success {
+            background: #34C759;
+        }
+        .button.success:hover {
+            background: #28A745;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007AFF;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .activity-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .activity-type {
+            color: #666;
+            font-size: 14px;
+        }
+        .error {
+            color: #FF3B30;
+            background: #FFE5E5;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #34C759;
+            background: #E5FFE5;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 活动数据诊断工具</h1>
+        
+        <div class="section">
+            <h2>📊 数据统计</h2>
+            <div class="stats" id="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">总活动数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="basketballCount">0</div>
+                    <div class="stat-label">篮球赛数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="englishCount">0</div>
+                    <div class="stat-label">英语角数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="normalCount">0</div>
+                    <div class="stat-label">正常活动数</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📋 当前活动列表</h2>
+            <div id="activitiesList"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 操作工具</h2>
+            <button class="button" onclick="loadData()">刷新数据</button>
+            <button class="button success" onclick="fixData()">修复数据</button>
+            <button class="button danger" onclick="clearData()">清空数据</button>
+            <button class="button" onclick="exportData()">导出数据</button>
+        </div>
+
+        <div class="section">
+            <h2>💾 原始数据</h2>
+            <div class="data-display" id="rawData">点击"刷新数据"查看...</div>
+        </div>
+
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        function showMessage(message, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            messagesDiv.appendChild(messageDiv);
+            setTimeout(() => messageDiv.remove(), 5000);
+        }
+
+        function loadData() {
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (!stored) {
+                    showMessage('localStorage中没有活动数据', 'error');
+                    return;
+                }
+
+                const activities = JSON.parse(stored);
+                
+                // 更新统计
+                const totalCount = activities.length;
+                const basketballCount = activities.filter(a => a.title.includes('篮球')).length;
+                const englishCount = activities.filter(a => a.title.includes('英语角')).length;
+                const normalCount = totalCount - basketballCount - englishCount;
+
+                document.getElementById('totalCount').textContent = totalCount;
+                document.getElementById('basketballCount').textContent = basketballCount;
+                document.getElementById('englishCount').textContent = englishCount;
+                document.getElementById('normalCount').textContent = normalCount;
+
+                // 显示活动列表
+                const activitiesList = document.getElementById('activitiesList');
+                activitiesList.innerHTML = '';
+                
+                activities.forEach((activity, index) => {
+                    const activityDiv = document.createElement('div');
+                    activityDiv.className = 'activity-item';
+                    
+                    const typeClass = activity.title.includes('篮球') ? 'basketball' : 
+                                     activity.title.includes('英语角') ? 'english' : 'normal';
+                    
+                    activityDiv.innerHTML = `
+                        <div class="activity-title">${index + 1}. ${activity.title}</div>
+                        <div class="activity-type">
+                            类型: ${activity.type || activity.category || '未知'} | 
+                            ID: ${activity.id} | 
+                            分类: ${typeClass}
+                        </div>
+                        <div style="font-size: 12px; color: #888; margin-top: 5px;">
+                            地点: ${activity.locationName || activity.location?.name || '未知'} | 
+                            参与者: ${activity.currentParticipants || 0}/${activity.maxParticipants || 0}
+                        </div>
+                    `;
+                    activitiesList.appendChild(activityDiv);
+                });
+
+                // 显示原始数据
+                document.getElementById('rawData').textContent = JSON.stringify(activities, null, 2);
+                
+                showMessage(`数据加载成功！共${totalCount}个活动`, 'success');
+                
+            } catch (error) {
+                showMessage('加载数据失败: ' + error.message, 'error');
+            }
+        }
+
+        function fixData() {
+            const correctActivities = [
+                {
+                    id: Date.now() + 1,
+                    title: '篮球友谊赛',
+                    type: 'sports',
+                    category: 'sports',
+                    locationName: '篮球场1',
+                    location: { name: '篮球场1', address: '学校篮球场1' },
+                    description: '周末篮球比赛，欢迎所有篮球爱好者参加。',
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                    enrollStartTime: new Date().toISOString(),
+                    enrollEndTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 4,
+                    maxParticipants: 8,
+                    organizer: { id: 1, name: '篮球社', avatar: 'https://via.placeholder.com/150', role: '组织者', creditScore: 95 },
+                    distance: 0.5,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: []
+                },
+                {
+                    id: Date.now() + 2,
+                    title: '英语角交流活动',
+                    type: 'study',
+                    category: 'study',
+                    locationName: '学生活动中心301',
+                    location: { name: '学生活动中心301', address: '学生活动中心3楼' },
+                    description: '每周五晚上的英语角活动，欢迎所有英语爱好者参加，一起练习口语，分享学习经验。',
+                    startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    enrollStartTime: new Date().toISOString(),
+                    enrollEndTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 12,
+                    maxParticipants: 25,
+                    organizer: { id: 2, name: '英语协会', avatar: 'https://via.placeholder.com/150', role: '组织者', creditScore: 92 },
+                    distance: 0.2,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: []
+                },
+                {
+                    id: Date.now() + 3,
+                    title: '中医养生讲座',
+                    type: 'study',
+                    category: 'study',
+                    locationName: '学术报告厅',
+                    location: { name: '学术报告厅', address: '学校学术报告厅' },
+                    description: '邀请中医专家讲解中医养生知识，分享传统保健方法。',
+                    startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    enrollStartTime: new Date().toISOString(),
+                    enrollEndTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 15,
+                    maxParticipants: 30,
+                    organizer: { id: 3, name: '中医学院', avatar: 'https://via.placeholder.com/150', role: '组织者', creditScore: 98 },
+                    distance: 0.8,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: []
+                },
+                {
+                    id: Date.now() + 4,
+                    title: '摄影作品展览',
+                    type: 'culture',
+                    category: 'culture',
+                    locationName: '艺术展厅',
+                    location: { name: '艺术展厅', address: '学校艺术展厅' },
+                    description: '展示学生摄影作品，分享摄影技巧，交流创作心得。',
+                    startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000).toISOString(),
+                    enrollStartTime: new Date().toISOString(),
+                    enrollEndTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 12,
+                    maxParticipants: 25,
+                    organizer: { id: 4, name: '摄影协会', avatar: 'https://via.placeholder.com/150', role: '组织者', creditScore: 92 },
+                    distance: 0.3,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: []
+                },
+                {
+                    id: Date.now() + 5,
+                    title: '编程马拉松大赛',
+                    type: 'tech',
+                    category: 'tech',
+                    locationName: '创新实验室',
+                    location: { name: '创新实验室', address: '学校创新实验室' },
+                    description: '24小时编程挑战赛，主题为智慧校园，展示编程技能。',
+                    startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                    enrollStartTime: new Date().toISOString(),
+                    enrollEndTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 8,
+                    maxParticipants: 20,
+                    organizer: { id: 5, name: '计算机学院', avatar: 'https://via.placeholder.com/150', role: '组织者', creditScore: 96 },
+                    distance: 1.2,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: []
+                },
+                {
+                    id: Date.now() + 6,
+                    title: '音乐节',
+                    type: 'culture',
+                    category: 'culture',
+                    locationName: '露天剧场',
+                    location: { name: '露天剧场', address: '学校露天剧场' },
+                    description: '年度校园音乐节，邀请校内外乐队演出，享受音乐盛宴。',
+                    startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                    enrollStartTime: new Date().toISOString(),
+                    enrollEndTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 25,
+                    maxParticipants: 40,
+                    organizer: { id: 6, name: '学生会', avatar: 'https://via.placeholder.com/150', role: '组织者', creditScore: 94 },
+                    distance: 0.6,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: []
+                }
+            ];
+
+            try {
+                localStorage.setItem('campus_activities', JSON.stringify(correctActivities));
+                showMessage('数据修复成功！已恢复为6个正确的活动', 'success');
+                loadData();
+            } catch (error) {
+                showMessage('修复数据失败: ' + error.message, 'error');
+            }
+        }
+
+        function clearData() {
+            if (confirm('确定要清空所有活动数据吗？此操作不可恢复！')) {
+                try {
+                    localStorage.removeItem('campus_activities');
+                    showMessage('数据已清空', 'success');
+                    loadData();
+                } catch (error) {
+                    showMessage('清空数据失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function exportData() {
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (!stored) {
+                    showMessage('没有数据可导出', 'error');
+                    return;
+                }
+
+                const blob = new Blob([stored], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `activities_backup_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showMessage('数据导出成功', 'success');
+            } catch (error) {
+                showMessage('导出数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 页面加载时自动加载数据
+        window.onload = function() {
+            loadData();
+        };
+    </script>
+</body>
+</html>

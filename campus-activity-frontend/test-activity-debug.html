@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .activity { margin: 10px 0; padding: 10px; background: #f9f9f9; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>活动数据调试测试</h1>
+    
+    <div class="debug-section">
+        <h2>原始活动数据</h2>
+        <div id="original-data"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>用户1的个性化数据</h2>
+        <div id="user1-data"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>用户1创建的活动筛选结果</h2>
+        <div id="user1-created"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>映射后的数据</h2>
+        <div id="mapped-data"></div>
+    </div>
+
+    <script>
+        // 模拟校园建筑数据
+        const campusBuildings = {
+            basketballCourt1: { name: '篮球场1', coords: [112.183426, 23.032266] },
+            library: { name: '图书馆', coords: [112.185, 23.03] },
+            publicLabBuilding: { name: '公共实验楼', coords: [112.186, 23.031] },
+            sportsField: { name: '田径场', coords: [112.188269, 23.030470] }
+        };
+
+        // 模拟活动数据
+        const mockActivities = [
+            {
+                id: 1,
+                title: '篮球友谊赛',
+                type: 'sports',
+                building: 'basketballCourt1',
+                description: '周末篮球比赛，欢迎观战',
+                participants: 12,
+                maxParticipants: 20,
+                organizer: { id: 1, name: '篮球社', avatar: '' }
+            },
+            {
+                id: 3,
+                title: '实验技能培训',
+                type: 'study',
+                building: 'publicLabBuilding',
+                description: '实验室设备使用培训',
+                participants: 8,
+                maxParticipants: 12,
+                organizer: { id: 3, name: '实验中心', avatar: '' }
+            },
+            {
+                id: 8,
+                title: '晨跑俱乐部',
+                type: 'sports',
+                building: 'sportsField',
+                description: '每日晨跑活动',
+                participants: 18,
+                maxParticipants: 30,
+                organizer: { id: 8, name: '跑步协会', avatar: '' }
+            }
+        ];
+
+        // 个性化活动函数
+        function getPersonalizedActivities(currentUserId, currentUserName) {
+            return mockActivities.map((activity, index) => {
+                const userSeed = currentUserId ? parseInt(currentUserId.toString()) : 1;
+                const activityIndex = index + 1;
+                
+                const isOrganizer = (activityIndex === userSeed) || (activityIndex === (userSeed + 4) % 8 + 1);
+                
+                const organizer = isOrganizer 
+                    ? { id: currentUserId, name: currentUserName || '我', avatar: '' }
+                    : activity.organizer;
+                
+                console.log(`用户${currentUserId}的活动${activity.id}(${activity.title}): isOrganizer=${isOrganizer}`);
+                
+                return {
+                    ...activity,
+                    title: activity.title, // 保持原始标题不变
+                    organizer,
+                    organizerId: organizer.id,
+                    isEnrolled: !isOrganizer && activityIndex % 3 === 0,
+                    isFavorite: !isOrganizer && activityIndex % 2 === 0,
+                    isApproved: activityIndex % 2 === 0,
+                    currentParticipants: activity.participants,
+                    status: activity.participants >= activity.maxParticipants ? 'full' : 'recruiting'
+                };
+            });
+        }
+
+        // 显示原始数据
+        function displayOriginalData() {
+            const container = document.getElementById('original-data');
+            mockActivities.forEach(activity => {
+                const div = document.createElement('div');
+                div.className = 'activity';
+                div.innerHTML = `
+                    <strong>ID: ${activity.id}</strong><br>
+                    标题: ${activity.title}<br>
+                    组织者: ${activity.organizer.name} (ID: ${activity.organizer.id})
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 显示用户1的个性化数据
+        function displayUser1Data() {
+            const container = document.getElementById('user1-data');
+            const user1Activities = getPersonalizedActivities(1, '我');
+            
+            user1Activities.forEach(activity => {
+                const div = document.createElement('div');
+                div.className = 'activity';
+                div.innerHTML = `
+                    <strong>ID: ${activity.id}</strong><br>
+                    标题: ${activity.title}<br>
+                    组织者: ${activity.organizer.name} (ID: ${activity.organizer.id})<br>
+                    是否为组织者: ${activity.organizerId === 1}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 显示用户1创建的活动
+        function displayUser1Created() {
+            const container = document.getElementById('user1-created');
+            const user1Activities = getPersonalizedActivities(1, '我');
+            const createdActivities = user1Activities.filter(activity => {
+                const isOrganizer = activity.organizerId === 1;
+                console.log(`活动${activity.id}(${activity.title}) - 组织者ID: ${activity.organizerId}, 是否为组织者: ${isOrganizer}`);
+                return isOrganizer;
+            });
+            
+            createdActivities.forEach(activity => {
+                const div = document.createElement('div');
+                div.className = 'activity';
+                div.innerHTML = `
+                    <strong>ID: ${activity.id}</strong><br>
+                    标题: ${activity.title}<br>
+                    组织者: ${activity.organizer.name} (ID: ${activity.organizer.id})
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 显示映射后的数据
+        function displayMappedData() {
+            const container = document.getElementById('mapped-data');
+            const user1Activities = getPersonalizedActivities(1, '我');
+            const createdActivities = user1Activities.filter(activity => activity.organizerId === 1);
+            
+            const mappedActivities = createdActivities.map(activity => {
+                console.log(`映射前: ID=${activity.id}, 标题="${activity.title}"`);
+                const mapped = {
+                    id: activity.id.toString(),
+                    title: activity.title,
+                    joinedCount: activity.currentParticipants || activity.participants || 0,
+                    status: activity.status || 'recruiting'
+                };
+                console.log(`映射后:`, mapped);
+                return mapped;
+            });
+            
+            mappedActivities.forEach(activity => {
+                const div = document.createElement('div');
+                div.className = 'activity';
+                div.innerHTML = `
+                    <strong>ID: ${activity.id}</strong><br>
+                    标题: ${activity.title}<br>
+                    报名人数: ${activity.joinedCount}<br>
+                    状态: ${activity.status}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 页面加载完成后执行
+        window.onload = function() {
+            displayOriginalData();
+            displayUser1Data();
+            displayUser1Created();
+            displayMappedData();
+        };
+    </script>
+</body>
+</html>

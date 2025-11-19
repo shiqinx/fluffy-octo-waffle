@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录功能验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .success { background-color: #d4edda; border-color: #28a745; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🔐 登录功能验证</h1>
+        
+        <h3>测试用户1 (孙金瑶)</h3>
+        <input type="text" id="studentId1" value="2330502143" placeholder="学号">
+        <input type="password" id="password1" value="abc123456" placeholder="密码">
+        <button onclick="testLogin(1)">测试登录</button>
+        <div id="result1"></div>
+        
+        <h3>测试用户2 (卢敏婷)</h3>
+        <input type="text" id="studentId2" value="2330502134" placeholder="学号">
+        <input type="password" id="password2" value="test123456" placeholder="密码">
+        <button onclick="testLogin(2)">测试登录</button>
+        <div id="result2"></div>
+        
+        <h3>错误用户测试</h3>
+        <input type="text" id="studentId3" value="9999999999" placeholder="学号">
+        <input type="password" id="password3" value="wrongpassword" placeholder="密码">
+        <button onclick="testLogin(3)">测试登录</button>
+        <div id="result3"></div>
+        
+        <button onclick="testAll()">🧪 运行所有测试</button>
+        <button onclick="clearResults()">🗑️ 清除结果</button>
+    </div>
+
+    <script type="module">
+        // 直接导入并测试登录API
+        window.testLogin = async function(testNum) {
+            const studentId = document.getElementById(`studentId${testNum}`).value;
+            const password = document.getElementById(`password${testNum}`).value;
+            const resultDiv = document.getElementById(`result${testNum}`);
+            
+            resultDiv.innerHTML = '<div class="result">🔄 正在测试...</div>';
+            
+            try {
+                // 直接调用登录API
+                import('./src/api/auth.js').then(({ login }) => {
+                    return login({ studentId, password });
+                }).then(result => {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ 登录成功！<br>
+                            用户名: ${result.data?.userName || '未知'}<br>
+                            学号: ${result.data?.studentId || studentId}<br>
+                            Token: ${result.data?.token ? '已生成' : '未生成'}<br>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                }).catch(error => {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ 登录失败！<br>
+                            错误信息: ${error.message}<br>
+                            <pre>${error.stack || JSON.stringify(error, null, 2)}</pre>
+                        </div>
+                    `;
+                });
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ 测试出错！<br>
+                        错误信息: ${error.message}
+                    </div>
+                `;
+            }
+        };
+        
+        window.testAll = async function() {
+            for (let i = 1; i <= 3; i++) {
+                await testLogin(i);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        };
+        
+        window.clearResults = function() {
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`result${i}`).innerHTML = '';
+            }
+        };
+    </script>
+</body>
+</html>

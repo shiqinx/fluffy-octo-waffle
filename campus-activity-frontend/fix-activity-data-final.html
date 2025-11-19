@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清理活动数据污染</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #c82333; }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 清理活动数据污染工具</h1>
+        
+        <div id="status" class="status info">
+            正在检查当前数据状态...
+        </div>
+
+        <div class="actions">
+            <button onclick="checkCurrentData()">📊 检查当前数据</button>
+            <button onclick="fixActivityData()" class="danger">🔧 修复活动数据</button>
+            <button onclick="clearAllData()" class="danger">🗑️ 清理所有数据</button>
+            <button onclick="reloadPage()">🔄 重新加载页面</button>
+        </div>
+
+        <div id="dataDisplay"></div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+
+        function displayData(title, data) {
+            const displayEl = document.getElementById('dataDisplay');
+            const section = document.createElement('div');
+            section.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            displayEl.appendChild(section);
+        }
+
+        function checkCurrentData() {
+            updateStatus('正在检查当前数据...', 'info');
+            document.getElementById('dataDisplay').innerHTML = '';
+
+            try {
+                // 检查localStorage中的活动数据
+                const storedActivities = localStorage.getItem('campus_activities');
+                if (storedActivities) {
+                    const activities = JSON.parse(storedActivities);
+                    displayData(`localStorage中的活动数据 (${activities.length}个)`, activities);
+                    
+                    // 检查数据污染情况
+                    const titles = activities.map(a => a.title);
+                    const uniqueTitles = [...new Set(titles)];
+                    const duplicates = titles.filter((title, index) => titles.indexOf(title) !== index);
+                    
+                    if (duplicates.length > 0) {
+                        updateStatus(`发现数据污染！有${duplicates.length}个重复的活动标题`, 'error');
+                        displayData('重复的活动标题', duplicates);
+                    } else if (uniqueTitles.length === 1 && uniqueTitles[0] === '中医养生讲座') {
+                        updateStatus('发现严重数据污染！所有活动都显示为"中医养生讲座"', 'error');
+                    } else {
+                        updateStatus(`数据检查完成，共${activities.length}个活动，未发现明显污染`, 'success');
+                    }
+                } else {
+                    updateStatus('localStorage中没有活动数据', 'warning');
+                }
+
+                // 检查其他可能的数据源
+                const keys = Object.keys(localStorage);
+                const activityKeys = keys.filter(key => key.includes('activity') || key.includes('活动'));
+                if (activityKeys.length > 0) {
+                    displayData('所有活动相关的localStorage键', activityKeys);
+                    activityKeys.forEach(key => {
+                        try {
+                            const data = JSON.parse(localStorage.getItem(key));
+                            displayData(`${key} 数据`, data);
+                        } catch (e) {
+                            displayData(`${key} 数据 (解析失败)`, localStorage.getItem(key));
+                        }
+                    });
+                }
+
+            } catch (error) {
+                updateStatus(`检查数据时出错: ${error.message}`, 'error');
+                displayData('错误详情', error);
+            }
+        }
+
+        function fixActivityData() {
+            updateStatus('正在修复活动数据...', 'info');
+            
+            try {
+                // 清理被污染的数据
+                localStorage.removeItem('campus_activities');
+                
+                // 设置正确的默认活动数据
+                const defaultActivities = [
+                    {
+                        id: 1,
+                        title: '中医养生讲座',
+                        type: 'study',
+                        category: 'study',
+                        locationName: '学术报告厅',
+                        description: '邀请中医专家讲解中医养生知识，分享传统保健方法。',
+                        startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 15,
+                        maxParticipants: 30,
+                        organizer: { id: 2, name: '中医学院', avatar: '', role: '组织者', creditScore: 98 },
+                        distance: 0.8,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open'
+                    },
+                    {
+                        id: 2,
+                        title: '摄影作品展览',
+                        type: 'culture',
+                        category: 'culture',
+                        locationName: '艺术展厅',
+                        description: '展示学生摄影作品，分享摄影技巧，交流创作心得。',
+                        startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 12,
+                        maxParticipants: 25,
+                        organizer: { id: 3, name: '摄影协会', avatar: '', role: '组织者', creditScore: 92 },
+                        distance: 0.3,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open'
+                    },
+                    {
+                        id: 3,
+                        title: '编程马拉松大赛',
+                        type: 'tech',
+                        category: 'tech',
+                        locationName: '创新实验室',
+                        description: '24小时编程挑战赛，主题为智慧校园，展示编程技能。',
+                        startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 8,
+                        maxParticipants: 20,
+                        organizer: { id: 4, name: '计算机学院', avatar: '', role: '组织者', creditScore: 96 },
+                        distance: 1.2,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open'
+                    },
+                    {
+                        id: 4,
+                        title: '音乐节',
+                        type: 'culture',
+                        category: 'culture',
+                        locationName: '露天剧场',
+                        description: '年度校园音乐节，邀请校内外乐队演出，享受音乐盛宴。',
+                        startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 25,
+                        maxParticipants: 40,
+                        organizer: { id: 5, name: '学生会', avatar: '', role: '组织者', creditScore: 94 },
+                        distance: 0.6,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open'
+                    },
+                    {
+                        id: 5,
+                        title: '篮球友谊赛',
+                        type: 'sports',
+                        category: 'sports',
+                        locationName: '篮球场1',
+                        description: '周末篮球比赛，欢迎所有篮球爱好者参加。',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 4,
+                        maxParticipants: 8,
+                        organizer: { id: 1, name: '篮球社', avatar: '', role: '组织者', creditScore: 95 },
+                        distance: 0.5,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open'
+                    }
+                ];
+
+                localStorage.setItem('campus_activities', JSON.stringify(defaultActivities));
+                updateStatus('✅ 活动数据修复成功！已恢复5个不同的活动', 'success');
+                displayData('修复后的活动数据', defaultActivities);
+
+            } catch (error) {
+                updateStatus(`修复数据时出错: ${error.message}`, 'error');
+                displayData('错误详情', error);
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('确定要清理所有localStorage数据吗？这将删除所有本地存储的数据。')) {
+                try {
+                    const keys = Object.keys(localStorage);
+                    keys.forEach(key => localStorage.removeItem(key));
+                    updateStatus('✅ 所有localStorage数据已清理', 'success');
+                } catch (error) {
+                    updateStatus(`清理数据时出错: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function reloadPage() {
+            if (confirm('确定要重新加载页面吗？')) {
+                window.location.reload();
+            }
+        }
+
+        // 页面加载时自动检查数据
+        window.onload = function() {
+            checkCurrentData();
+        };
+    </script>
+</body>
+</html>

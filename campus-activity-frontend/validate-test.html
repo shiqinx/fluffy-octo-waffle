@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证函数测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 10px 15px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 验证函数详细测试</h1>
+    
+    <div class="test-section">
+        <h2>测试 validateLoginParams 函数</h2>
+        <button onclick="testValidateFunction()">测试验证函数</button>
+        <div id="validateResult"></div>
+    </div>
+
+    <script type="module">
+        import { validateLoginParams } from './src/utils/validation.js'
+        
+        window.testValidateFunction = async function() {
+            const resultDiv = document.getElementById('validateResult')
+            
+            resultDiv.innerHTML = '<div class="result">测试验证函数...</div>'
+            
+            const testCases = [
+                { 
+                    name: '正常学号', 
+                    input: { studentId: '20210001', password: '123456', rememberMe: false } 
+                },
+                { 
+                    name: '空学号字符串', 
+                    input: { studentId: '', password: '123456', rememberMe: false } 
+                },
+                { 
+                    name: 'null学号', 
+                    input: { studentId: null, password: '123456', rememberMe: false } 
+                },
+                { 
+                    name: 'undefined学号', 
+                    input: { studentId: undefined, password: '123456', rememberMe: false } 
+                },
+                { 
+                    name: '无学号字段', 
+                    input: { password: '123456', rememberMe: false } 
+                },
+                { 
+                    name: '空密码', 
+                    input: { studentId: '20210001', password: '', rememberMe: false } 
+                }
+            ]
+            
+            let results = []
+            
+            for (const testCase of testCases) {
+                try {
+                    console.log(`🔍 测试: ${testCase.name}`)
+                    console.log('📝 输入:', testCase.input)
+                    
+                    const result = await validateLoginParams(testCase.input)
+                    console.log('✅ 验证通过:', result)
+                    
+                    results.push({
+                        name: testCase.name,
+                        input: testCase.input,
+                        result: '✅ 成功',
+                        output: result
+                    })
+                } catch (error) {
+                    console.error('❌ 验证失败:', error.message)
+                    
+                    results.push({
+                        name: testCase.name,
+                        input: testCase.input,
+                        result: '❌ 失败',
+                        error: error.message
+                    })
+                }
+            }
+            
+            resultDiv.innerHTML = `<div class="result">
+                <strong>验证函数测试完成!</strong><br>
+                <pre>${JSON.stringify(results, null, 2)}</pre>
+            </div>`
+        }
+    </script>
+</body>
+</html>

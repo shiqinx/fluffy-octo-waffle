@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题深度调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        input { margin: 5px; padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; margin: 5px; background: #1989fa; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1677ff; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; max-height: 300px; overflow-y: auto; border-radius: 4px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .step { margin: 10px 0; padding: 10px; background: #e9ecef; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 登录问题深度调试</h1>
+    
+    <div class="test-section">
+        <h2>📝 测试表单</h2>
+        <div class="form-group">
+            <label for="studentId">学号:</label>
+            <input type="text" id="studentIdInput" placeholder="请输入学号" value="20210001">
+        </div>
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="passwordInput" placeholder="请输入密码" value="123456">
+        </div>
+        <button onclick="testStep1()">步骤1: 检查表单数据</button>
+        <button onclick="testStep2()">步骤2: 测试验证函数</button>
+        <button onclick="testStep3()">步骤3: 测试登录API</button>
+        <button onclick="testFullFlow()">完整流程测试</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 手动测试</h2>
+        <button onclick="testEmptyStudentId()">测试空学号</button>
+        <button onclick="testValidStudentId()">测试有效学号</button>
+        <button onclick="testSpecialCharacters()">测试特殊字符</button>
+        <button onclick="clearResults()">清空结果</button>
+    </div>
+
+    <script type="module">
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { validatedApi } from './src/api/index.js'
+        
+        // 模拟表单数据结构
+        let form = {
+            studentId: '',
+            password: ''
+        }
+        
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults')
+            const resultDiv = document.createElement('div')
+            resultDiv.className = `result ${type}`
+            resultDiv.innerHTML = message
+            resultsDiv.appendChild(resultDiv)
+        }
+        
+        window.testStep1 = function() {
+            addResult('<h3>步骤1: 检查表单数据</h3>')
+            
+            // 获取输入框值
+            const studentIdInput = document.getElementById('studentIdInput')
+            const passwordInput = document.getElementById('passwordInput')
+            
+            // 更新表单数据
+            form.studentId = studentIdInput.value
+            form.password = passwordInput.value
+            
+            addResult(`<div class="step">
+                <strong>表单数据获取:</strong><br>
+                输入框值: "${studentIdInput.value}"<br>
+                表单studentId: "${form.studentId}"<br>
+                表单password: "${form.password}"<br>
+                studentId类型: ${typeof form.studentId}<br>
+                studentId长度: ${form.studentId.length}<br>
+                studentId是否为空: ${!form.studentId}<br>
+                studentId是否为空字符串: ${form.studentId === ''}<br>
+                studentId是否为null: ${form.studentId === null}<br>
+                studentId是否为undefined: ${form.studentId === undefined}
+            </div>`, 'info')
+        }
+        
+        window.testStep2 = function() {
+            addResult('<h3>步骤2: 测试验证函数</h3>')
+            
+            try {
+                const params = {
+                    studentId: form.studentId,
+                    password: form.password
+                }
+                
+                addResult(`<div class="step">
+                    <strong>调用验证函数参数:</strong><br>
+                    <pre>${JSON.stringify(params, null, 2)}</pre>
+                </div>`, 'info')
+                
+                const validatedParams = validateLoginParams(params)
+                
+                addResult(`<div class="step">
+                    <strong>验证通过!</strong><br>
+                    <pre>${JSON.stringify(validatedParams, null, 2)}</pre>
+                </div>`, 'success')
+            } catch (error) {
+                addResult(`<div class="step">
+                    <strong>验证失败!</strong><br>
+                    错误: ${error.message}<br>
+                    错误类型: ${typeof error}<br>
+                    <pre>${error.stack || '无堆栈信息'}</pre>
+                </div>`, 'error')
+            }
+        }
+        
+        window.testStep3 = async function() {
+            addResult('<h3>步骤3: 测试登录API</h3>')
+            
+            try {
+                const credentials = {
+                    studentId: form.studentId,
+                    password: form.password,
+                    rememberMe: false
+                }
+                
+                addResult(`<div class="step">
+                    <strong>调用登录API参数:</strong><br>
+                    <pre>${JSON.stringify(credentials, null, 2)}</pre>
+                </div>`, 'info')
+                
+                const response = await validatedApi.login(credentials)
+                
+                addResult(`<div class="step">
+                    <strong>登录API调用成功!</strong><br>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                </div>`, 'success')
+            } catch (error) {
+                addResult(`<div class="step">
+                    <strong>登录API调用失败!</strong><br>
+                    错误: ${error.message}<br>
+                    错误类型: ${typeof error}<br>
+                    错误详情: ${JSON.stringify(error, null, 2)}<br>
+                    <pre>${error.stack || '无堆栈信息'}</pre>
+                </div>`, 'error')
+            }
+        }
+        
+        window.testFullFlow = async function() {
+            addResult('<h3>完整流程测试</h3>')
+            
+            // 步骤1: 获取表单数据
+            const studentIdInput = document.getElementById('studentIdInput')
+            const passwordInput = document.getElementById('passwordInput')
+            form.studentId = studentIdInput.value
+            form.password = passwordInput.value
+            
+            addResult(`<div class="step">
+                <strong>1. 表单数据:</strong><br>
+                studentId: "${form.studentId}"<br>
+                password: "${form.password}"
+            </div>`, 'info')
+            
+            // 步骤2: 验证
+            try {
+                const validatedParams = validateLoginParams({
+                    studentId: form.studentId,
+                    password: form.password
+                })
+                addResult(`<div class="step">
+                    <strong>2. 验证通过:</strong><br>
+                    ${JSON.stringify(validatedParams)}
+                </div>`, 'success')
+            } catch (error) {
+                addResult(`<div class="step">
+                    <strong>2. 验证失败:</strong><br>
+                    ${error.message}
+                </div>`, 'error')
+                return
+            }
+            
+            // 步骤3: 登录API
+            try {
+                const response = await validatedApi.login({
+                    studentId: form.studentId,
+                    password: form.password,
+                    rememberMe: false
+                })
+                addResult(`<div class="step">
+                    <strong>3. 登录成功:</strong><br>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                </div>`, 'success')
+            } catch (error) {
+                addResult(`<div class="step">
+                    <strong>3. 登录失败:</strong><br>
+                    ${error.message}<br>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                </div>`, 'error')
+            }
+        }
+        
+        window.testEmptyStudentId = function() {
+            document.getElementById('studentIdInput').value = ''
+            addResult('设置为空学号', 'warning')
+        }
+        
+        window.testValidStudentId = function() {
+            document.getElementById('studentIdInput').value = '20210001'
+            addResult('设置为有效学号: 20210001', 'info')
+        }
+        
+        window.testSpecialCharacters = function() {
+            document.getElementById('studentIdInput').value = 'abc@#$%'
+            addResult('设置为特殊字符: abc@#$%', 'warning')
+        }
+        
+        window.clearResults = function() {
+            document.getElementById('testResults').innerHTML = ''
+        }
+    </script>
+</body>
+</html>

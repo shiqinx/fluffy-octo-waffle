@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API错误修复验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API错误修复验证</h1>
+        
+        <div class="section">
+            <h2>📋 问题描述</h2>
+            <div class="status error">
+                <strong>原始错误:</strong> dataModelConverter.js:268 API调用错误: Object
+            </div>
+            <p>这个错误通常是因为前端尝试连接后端API服务器，但后端服务未启动或配置不正确导致的。</p>
+        </div>
+
+        <div class="section">
+            <h2>🔧 修复方案</h2>
+            <div class="status success">
+                <strong>✅ 已应用的修复:</strong>
+                <ul>
+                    <li>创建 .env.development 环境配置文件</li>
+                    <li>启用 Mock 模式 (VITE_USE_MOCK=true)</li>
+                    <li>配置 API 基础地址</li>
+                    <li>重启开发服务器</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧪 验证测试</h2>
+            <button onclick="runVerification()">开始验证</button>
+            <button onclick="testSpecificApi()">测试特定API</button>
+            <button onclick="checkEnvironment()">检查环境</button>
+            
+            <div id="verification-result" style="margin-top: 20px;"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 实时状态</h2>
+            <div id="real-time-status" class="loading">等待检查...</div>
+        </div>
+
+        <div class="section">
+            <h2>🚀 快速操作</h2>
+            <button onclick="openMainApp()">打开主应用</button>
+            <button onclick="openApiTest()">API测试页面</button>
+            <button onclick="refreshPage()">刷新页面</button>
+        </div>
+
+        <div class="section">
+            <h2>📝 使用说明</h2>
+            <div class="status info">
+                <strong>当前状态:</strong> Mock模式已启用，无需后端服务器即可正常使用所有功能。
+            </div>
+            <h3>可用的功能:</h3>
+            <ul>
+                <li>✅ 用户登录/注册</li>
+                <li>✅ 活动列表/创建/报名</li>
+                <li>✅ 团队管理</li>
+                <li>✅ 聊天功能</li>
+                <li>✅ 个人资料管理</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        // 检查环境配置
+        async function checkEnvironment() {
+            const resultDiv = document.getElementById('verification-result');
+            resultDiv.innerHTML = '<div class="loading">正在检查环境配置...</div>';
+            
+            try {
+                const response = await fetch('/api/user/info', {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>🔍 环境检查结果</h3>';
+                html += '<div class="test-result success">';
+                html += `<strong>API响应状态:</strong> ${response.status}<br>`;
+                html += `<strong>响应数据:</strong> <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                html += '</div>';
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                let html = '<h3>🔍 环境检查结果</h3>';
+                html += '<div class="test-result error">';
+                html += `<strong>检查失败:</strong> ${error.message}<br>`;
+                html += '<strong>建议:</strong> 确保开发服务器正在运行且Mock模式已启用';
+                html += '</div>';
+                
+                resultDiv.innerHTML = html;
+            }
+        }
+
+        // 运行完整验证
+        async function runVerification() {
+            const resultDiv = document.getElementById('verification-result');
+            resultDiv.innerHTML = '<div class="loading">正在运行完整验证...</div>';
+            
+            const tests = [
+                { name: '用户信息API', url: '/api/user/info' },
+                { name: '活动列表API', url: '/api/activity/list' },
+                { name: '位置列表API', url: '/api/location/list' }
+            ];
+            
+            let results = '';
+            let successCount = 0;
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url);
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success !== false) {
+                        results += `<div class="test-result success">✅ ${test.name}: 正常</div>`;
+                        successCount++;
+                    } else {
+                        results += `<div class="test-result error">❌ ${test.name}: 失败 - ${data.message || '未知错误'}</div>`;
+                    }
+                } catch (error) {
+                    results += `<div class="test-result error">❌ ${test.name}: 异常 - ${error.message}</div>`;
+                }
+            }
+            
+            const summary = successCount === tests.length ? 
+                '<div class="status success">🎉 所有API测试通过！错误问题已解决。</div>' :
+                `<div class="status warning">⚠️ ${successCount}/${tests.length} 个API正常，仍有问题需要解决。</div>`;
+            
+            resultDiv.innerHTML = `
+                <h3>🧪 验证结果</h3>
+                ${summary}
+                ${results}
+            `;
+        }
+
+        // 测试特定API
+        async function testSpecificApi() {
+            const resultDiv = document.getElementById('verification-result');
+            
+            // 测试登录API
+            try {
+                const response = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: '2330502143',
+                        userPassword: '123456'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>🔐 登录API测试</h3>';
+                html += '<div class="test-result success">';
+                html += `<strong>请求状态:</strong> ${response.status}<br>`;
+                html += `<strong>响应数据:</strong> <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                html += '</div>';
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>🔐 登录API测试</h3>
+                    <div class="test-result error">
+                        <strong>测试失败:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 更新实时状态
+        function updateRealTimeStatus() {
+            const statusDiv = document.getElementById('real-time-status');
+            const isDev = window.location.hostname === 'localhost';
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            
+            let status = '✅ 当前环境正常<br>';
+            status += `🌐 访问地址: ${window.location.href}<br>`;
+            status += `🔧 开发环境: ${isDev ? '是' : '否'}<br>`;
+            status += `🔒 安全协议: ${protocol}<br>`;
+            status += `🚪 端口号: ${port || '默认'}<br>`;
+            
+            statusDiv.innerHTML = status;
+        }
+
+        // 打开主应用
+        function openMainApp() {
+            window.open('/', '_blank');
+        }
+
+        // 打开API测试页面
+        function openApiTest() {
+            window.open('/test-activity-api.html', '_blank');
+        }
+
+        // 刷新页面
+        function refreshPage() {
+            window.location.reload();
+        }
+
+        // 页面加载时自动检查
+        window.addEventListener('load', () => {
+            updateRealTimeStatus();
+            setTimeout(checkEnvironment, 1000);
+        });
+
+        // 导出到全局作用域
+        window.checkEnvironment = checkEnvironment;
+        window.runVerification = runVerification;
+        window.testSpecificApi = testSpecificApi;
+        window.openMainApp = openMainApp;
+        window.openApiTest = openApiTest;
+        window.refreshPage = refreshPage;
+    </script>
+</body>
+</html>

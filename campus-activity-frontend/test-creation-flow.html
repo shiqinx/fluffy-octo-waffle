@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建和显示完整流程测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .test-button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #40a9ff;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .error {
+            background: #fff2f2;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        .info {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .activity-list {
+            margin-top: 20px;
+        }
+        .activity-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #1890ff;
+        }
+        .activity-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .activity-info {
+            color: #666;
+            font-size: 14px;
+        }
+        .log-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+        }
+        .log-time {
+            color: #666;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动创建和显示完整流程测试</h1>
+    
+    <div class="test-section">
+        <h2>测试步骤</h2>
+        <button class="test-button" onclick="step1_checkInitialState()">1. 检查初始状态</button>
+        <button class="test-button" onclick="step2_createActivity()" id="createBtn">2. 创建测试活动</button>
+        <button class="test-button" onclick="step3_checkActivityList()" id="checkBtn">3. 检查活动列表</button>
+        <button class="test-button" onclick="step4_clearData()">4. 清理测试数据</button>
+        
+        <div id="status" class="status info">准备开始测试...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>当前活动列表</h2>
+        <div id="activityList" class="activity-list">
+            <div class="info">点击"检查活动列表"按钮查看当前活动</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试日志</h2>
+        <div id="logSection" class="log-section">
+            <div class="log-entry"><span class="log-time">[准备]</span> 测试日志将显示在这里...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { createActivity } from './src/api/activity.js'
+        import { useActivityStore } from './src/stores/activity.js'
+
+        let activityStore = null
+        let testResults = []
+
+        // 日志函数
+        function addLog(message, type = 'info') {
+            const logSection = document.getElementById('logSection')
+            const time = new Date().toLocaleTimeString()
+            const logEntry = document.createElement('div')
+            logEntry.className = 'log-entry'
+            logEntry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`
+            logSection.appendChild(logEntry)
+            logSection.scrollTop = logSection.scrollHeight
+            
+            console.log(`[测试日志] ${message}`)
+        }
+
+        // 状态更新函数
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status')
+            statusDiv.textContent = message
+            statusDiv.className = `status ${type}`
+        }
+
+        // 显示活动列表
+        function displayActivityList(activities) {
+            const listDiv = document.getElementById('activityList')
+            
+            if (!activities || activities.length === 0) {
+                listDiv.innerHTML = '<div class="info">暂无活动</div>'
+                return
+            }
+
+            listDiv.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-title">${activity.title} (ID: ${activity.id})</div>
+                    <div class="activity-info">
+                        类型: ${activity.type || activity.category} | 
+                        地点: ${activity.locationName || activity.location?.name} | 
+                        时间: ${new Date(activity.startTime).toLocaleString()} |
+                        参与人数: ${activity.currentParticipants || 0}/${activity.maxParticipants || 0}
+                    </div>
+                </div>
+            `).join('')
+        }
+
+        // 步骤1: 检查初始状态
+        window.step1_checkInitialState = async function() {
+            try {
+                addLog('开始检查初始状态...')
+                updateStatus('正在检查初始状态...', 'info')
+
+                // 初始化store
+                if (!activityStore) {
+                    activityStore = useActivityStore()
+                }
+
+                // 加载活动数据
+                await activityStore.loadActivities()
+                
+                const initialCount = activityStore.activities.length
+                addLog(`初始活动数量: ${initialCount}`)
+                
+                displayActivityList(activityStore.activities)
+                
+                updateStatus(`初始状态检查完成，共有 ${initialCount} 个活动`, 'success')
+                addLog('初始状态检查完成')
+                
+            } catch (error) {
+                addLog(`检查初始状态失败: ${error.message}`, 'error')
+                updateStatus(`检查初始状态失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 步骤2: 创建测试活动
+        window.step2_createActivity = async function() {
+            try {
+                addLog('开始创建测试活动...')
+                updateStatus('正在创建测试活动...', 'info')
+
+                const createBtn = document.getElementById('createBtn')
+                createBtn.disabled = true
+
+                // 准备测试活动数据
+                const testActivity = {
+                    title: `测试活动_${Date.now()}`,
+                    category: 'other',
+                    description: '这是一个测试创建的活动，用于验证创建后立即显示的功能',
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                    location: {
+                        name: '测试地点',
+                        address: '测试地址'
+                    },
+                    maxParticipants: 20,
+                    requiresApproval: false
+                }
+
+                addLog(`准备创建活动: ${testActivity.title}`)
+
+                // 调用创建活动API
+                const response = await createActivity(testActivity)
+                
+                if (response.success) {
+                    addLog(`活动创建成功! ID: ${response.data.id}`)
+                    updateStatus('活动创建成功!', 'success')
+                    
+                    // 立即刷新store数据
+                    await activityStore.loadActivities()
+                    addLog(`刷新后活动数量: ${activityStore.activities.length}`)
+                    
+                } else {
+                    throw new Error(response.message || '创建活动失败')
+                }
+
+            } catch (error) {
+                addLog(`创建活动失败: ${error.message}`, 'error')
+                updateStatus(`创建活动失败: ${error.message}`, 'error')
+            } finally {
+                const createBtn = document.getElementById('createBtn')
+                createBtn.disabled = false
+            }
+        }
+
+        // 步骤3: 检查活动列表
+        window.step3_checkActivityList = async function() {
+            try {
+                addLog('开始检查活动列表...')
+                updateStatus('正在检查活动列表...', 'info')
+
+                const checkBtn = document.getElementById('checkBtn')
+                checkBtn.disabled = true
+
+                // 重新加载活动数据
+                await activityStore.loadActivities()
+                
+                const activities = activityStore.activities
+                const count = activities.length
+                
+                addLog(`当前活动数量: ${count}`)
+                
+                // 查找刚创建的测试活动
+                const testActivities = activities.filter(a => a.title.includes('测试活动_'))
+                addLog(`找到 ${testActivities.length} 个测试活动`)
+                
+                displayActivityList(activities)
+                
+                if (testActivities.length > 0) {
+                    updateStatus(`测试成功! 找到 ${testActivities.length} 个新创建的活动`, 'success')
+                    addLog('测试成功: 新创建的活动已正确显示在列表中')
+                } else {
+                    updateStatus('测试失败: 未找到新创建的活动', 'error')
+                    addLog('测试失败: 新创建的活动未在列表中显示', 'error')
+                }
+
+            } catch (error) {
+                addLog(`检查活动列表失败: ${error.message}`, 'error')
+                updateStatus(`检查活动列表失败: ${error.message}`, 'error')
+            } finally {
+                const checkBtn = document.getElementById('checkBtn')
+                checkBtn.disabled = false
+            }
+        }
+
+        // 步骤4: 清理测试数据
+        window.step4_clearData = async function() {
+            try {
+                addLog('开始清理测试数据...')
+                updateStatus('正在清理测试数据...', 'info')
+
+                // 获取所有活动
+                await activityStore.loadActivities()
+                const activities = activityStore.activities
+                
+                // 过滤出测试活动
+                const nonTestActivities = activities.filter(a => !a.title.includes('测试活动_'))
+                
+                // 更新store
+                activityStore.activities = nonTestActivities
+                activityStore.saveActivitiesToStorage()
+                
+                addLog(`清理完成，保留 ${nonTestActivities.length} 个活动`)
+                displayActivityList(nonTestActivities)
+                
+                updateStatus('测试数据清理完成', 'success')
+                addLog('测试数据清理完成')
+
+            } catch (error) {
+                addLog(`清理测试数据失败: ${error.message}`, 'error')
+                updateStatus(`清理测试数据失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 页面加载时的初始化
+        addLog('页面加载完成，准备开始测试')
+        addLog('请按顺序点击测试按钮进行测试')
+    </script>
+</body>
+</html>

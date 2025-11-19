@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题实时诊断</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log-area {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 登录问题实时诊断</h1>
+    
+    <div class="container">
+        <h2>🌍 环境信息</h2>
+        <div id="envInfo"></div>
+    </div>
+
+    <div class="container">
+        <h2>📝 测试登录</h2>
+        <div class="form-group">
+            <label for="studentId">学号:</label>
+            <input type="text" id="studentId" value="2330502134" placeholder="请输入学号">
+        </div>
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" value="test123456" placeholder="请输入密码">
+        </div>
+        <button onclick="testStepByStep()">🔧 逐步测试</button>
+        <button onclick="testDirectLogin()">🚀 直接登录测试</button>
+        <button onclick="testBothUsers()">👥 测试两个用户</button>
+        <button onclick="clearLog()">🧹 清除日志</button>
+        <div id="testResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 实时日志</h2>
+        <div id="logArea" class="log-area">等待测试...\n</div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { globalDataManager } from './src/api/global-data.js'
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { convertToUserLoginRequest } from './src/utils/dataModelConverter.js'
+        import { mockLogin } from './src/api/mock.js'
+        import { login } from './src/api/auth.js'
+
+        let logArea = document.getElementById('logArea')
+        let testResult = document.getElementById('testResult')
+        let envInfo = document.getElementById('envInfo')
+
+        window.log = function(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString()
+            const logMessage = `[${timestamp}] ${message}\n`
+            logArea.textContent += logMessage
+            logArea.scrollTop = logArea.scrollHeight
+            console.log(logMessage)
+        }
+
+        window.clearLog = function() {
+            logArea.textContent = '日志已清除...\n'
+        }
+
+        window.showResult = function(message, type) {
+            testResult.innerHTML = `<div class="test-result ${type}">${message}</div>`
+        }
+
+        // 显示环境信息
+        function showEnvInfo() {
+            envInfo.innerHTML = `
+                <p><strong>当前URL:</strong> ${window.location.href}</p>
+                <p><strong>VITE_USE_MOCK:</strong> ${import.meta.env?.VITE_USE_MOCK || 'undefined'}</p>
+                <p><strong>VITE_API_BASE_URL:</strong> ${import.meta.env?.VITE_API_BASE_URL || 'undefined'}</p>
+                <p><strong>Node环境:</strong> ${typeof process !== 'undefined' ? '是' : '否'}</p>
+                <p><strong>浏览器:</strong> ${navigator.userAgent}</p>
+            `
+        }
+
+        // 逐步测试
+        window.testStepByStep = async function() {
+            const studentId = document.getElementById('studentId').value
+            const password = document.getElementById('password').value
+            
+            log(`\n🔧 开始逐步测试登录: ${studentId}`)
+            showResult('逐步测试中...', 'info')
+            
+            try {
+                // 步骤1: 检查用户数据
+                log('\n📋 步骤1: 检查用户数据')
+                const users = globalDataManager.getUsers()
+                let targetUser = null
+                users.forEach(user => {
+                    log(`- ${user.realName}: 学号="${user.studentId}" (${typeof user.studentId}), 密码="${user.password}" (${typeof user.password})`)
+                    if (user.studentId === studentId) {
+                        targetUser = user
+                    }
+                })
+                
+                if (!targetUser) {
+                    log(`❌ 未找到学号为 ${studentId} 的用户`)
+                    showResult(`未找到学号为 ${studentId} 的用户`, 'error')
+                    return
+                }
+                
+                log(`✅ 找到目标用户: ${targetUser.realName}`)
+                
+                // 步骤2: 测试验证函数
+                log('\n✅ 步骤2: 测试验证函数')
+                const validated = await validateLoginParams({ studentId, password })
+                log(`验证结果: ${JSON.stringify(validated)}`)
+                
+                // 步骤3: 测试数据转换
+                log('\n🔄 步骤3: 测试数据转换')
+                const converted = convertToUserLoginRequest(validated)
+                log(`转换结果: ${JSON.stringify(converted)}`)
+                
+                // 步骤4: 测试mockLogin
+                log('\n🔍 步骤4: 测试mockLogin')
+                try {
+                    const mockResult = await mockLogin({
+                        studentId: converted.userId,
+                        password: converted.userPassword
+                    })
+                    log(`✅ mockLogin成功: ${JSON.stringify(mockResult)}`)
+                } catch (error) {
+                    log(`❌ mockLogin失败: ${error.message}`)
+                    log(`错误详情: ${JSON.stringify(error)}`)
+                    showResult(`mockLogin失败: ${error.message}`, 'error')
+                    return
+                }
+                
+                // 步骤5: 测试完整登录API
+                log('\n🔐 步骤5: 测试完整登录API')
+                const loginResult = await login({ studentId, password, rememberMe: false })
+                log(`✅ 完整登录成功: ${JSON.stringify(loginResult)}`)
+                showResult(`登录成功！用户: ${loginResult.data?.user?.realName || '未知'}`, 'success')
+                
+            } catch (error) {
+                log(`❌ 测试失败: ${error.message}`)
+                log(`错误类型: ${typeof error}`)
+                log(`错误详情: ${JSON.stringify(error)}`)
+                showResult(`测试失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 直接登录测试
+        window.testDirectLogin = async function() {
+            const studentId = document.getElementById('studentId').value
+            const password = document.getElementById('password').value
+            
+            log(`\n🚀 直接测试登录: ${studentId}`)
+            showResult('直接登录测试中...', 'info')
+            
+            try {
+                const result = await login({ studentId, password, rememberMe: false })
+                log(`✅ 登录成功: ${JSON.stringify(result)}`)
+                showResult(`登录成功！用户: ${result.data?.user?.realName || '未知'}`, 'success')
+            } catch (error) {
+                log(`❌ 登录失败: ${error.message}`)
+                log(`错误类型: ${typeof error}`)
+                log(`错误详情: ${JSON.stringify(error)}`)
+                showResult(`登录失败: ${error.message}`, 'error')
+            }
+        }
+
+        // 测试两个用户
+        window.testBothUsers = async function() {
+            log('\n👥 测试两个用户登录...')
+            showResult('批量测试中...', 'info')
+            
+            const testUsers = [
+                { studentId: '2330502134', password: 'test123456', name: '卢敏婷' },
+                { studentId: '2330502143', password: '123456', name: '孙金瑶' }
+            ]
+            
+            let successCount = 0
+            let failCount = 0
+            
+            for (const testUser of testUsers) {
+                try {
+                    log(`\n--- 测试用户: ${testUser.name} (${testUser.studentId}) ---`)
+                    
+                    const result = await login({ 
+                        studentId: testUser.studentId, 
+                        password: testUser.password, 
+                        rememberMe: false 
+                    })
+                    
+                    log(`✅ ${testUser.name} 登录成功`)
+                    successCount++
+                    
+                } catch (error) {
+                    log(`❌ ${testUser.name} 登录失败: ${error.message}`)
+                    log(`错误详情: ${JSON.stringify(error)}`)
+                    failCount++
+                }
+            }
+            
+            const message = `测试完成: 成功 ${successCount} 个，失败 ${failCount} 个`
+            showResult(message, failCount === 0 ? 'success' : 'error')
+        }
+
+        // 页面加载完成
+        showEnvInfo()
+        log('🔧 登录诊断页面已加载')
+        log('💡 点击"逐步测试"按钮开始详细诊断')
+        
+    </script>
+</body>
+</html>

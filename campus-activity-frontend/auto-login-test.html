@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动化登录测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .summary {
+            font-weight: bold;
+            font-size: 18px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🚀 自动化登录测试</h1>
+        <p>这个页面将自动测试登录功能的所有场景</p>
+        
+        <button onclick="runAllTests()">🧪 运行所有测试</button>
+        <button onclick="clearResults()">🗑️ 清除结果</button>
+        
+        <div id="results"></div>
+        <div id="summary" class="summary" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { login } from './src/api/auth.js';
+
+        window.login = login;
+
+        const testCases = [
+            {
+                name: '用户1 (孙金瑶)',
+                data: { studentId: '2330502143', password: 'abc123456' },
+                expected: 'success'
+            },
+            {
+                name: '用户2 (卢敏婷)', 
+                data: { studentId: '2330502134', password: 'test123456' },
+                expected: 'success'
+            },
+            {
+                name: '错误用户',
+                data: { studentId: '9999999999', password: 'wrongpassword' },
+                expected: 'error'
+            }
+        ];
+
+        function addResult(message, type = 'info', details = null) {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let html = `<div class="test-result ${type}">
+                <strong>[${timestamp}] ${message}</strong>`;
+            
+            if (details) {
+                html += `<pre>${JSON.stringify(details, null, 2)}</pre>`;
+            }
+            
+            html += '</div>';
+            results.innerHTML += html;
+            results.scrollTop = results.scrollHeight;
+        }
+
+        window.runAllTests = async function() {
+            clearResults();
+            addResult('🚀 开始自动化登录测试...', 'info');
+            
+            let passed = 0;
+            let failed = 0;
+            
+            for (const testCase of testCases) {
+                try {
+                    addResult(`📝 测试: ${testCase.name}`, 'info');
+                    addResult(`   学号: ${testCase.data.studentId}`, 'info');
+                    addResult(`   密码: ${testCase.data.password}`, 'info');
+                    
+                    const result = await login(testCase.data);
+                    
+                    if (testCase.expected === 'success') {
+                        addResult(`✅ 成功: 登录通过`, 'success');
+                        addResult(`   用户名: ${result.data?.userName || '未知'}`, 'success');
+                        addResult(`   Token: ${result.data?.token ? '已生成' : '未生成'}`, 'success');
+                        addResult(`   完整响应:`, 'success', result);
+                        passed++;
+                    } else {
+                        addResult(`❌ 失败: 应该失败但成功了`, 'error');
+                        failed++;
+                    }
+                    
+                } catch (error) {
+                    if (testCase.expected === 'error') {
+                        addResult(`✅ 成功: 正确拒绝登录`, 'success');
+                        addResult(`   错误信息: ${error.message}`, 'success');
+                        passed++;
+                    } else {
+                        addResult(`❌ 失败: 意外错误`, 'error');
+                        addResult(`   错误信息: ${error.message}`, 'error');
+                        addResult(`   错误详情:`, 'error', error);
+                        failed++;
+                    }
+                }
+                
+                addResult('---', 'info');
+            }
+            
+            // 显示总结
+            const summary = document.getElementById('summary');
+            summary.style.display = 'block';
+            summary.innerHTML = `
+                📊 测试结果:<br>
+                通过: ${passed}<br>
+                失败: ${failed}<br>
+                总计: ${passed + failed}<br><br>
+                ${failed === 0 ? '🎉 所有测试通过！登录功能正常工作。' : `⚠️ 有 ${failed} 个测试失败，需要检查。`}
+            `;
+        };
+
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+        };
+
+        // 页面加载完成后自动运行测试
+        window.addEventListener('load', () => {
+            addResult('🔧 测试页面已加载，点击"运行所有测试"按钮开始测试', 'info');
+        });
+    </script>
+</body>
+</html>

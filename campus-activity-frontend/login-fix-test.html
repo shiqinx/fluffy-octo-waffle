@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录修复验证</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        input { margin: 5px; padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; margin: 5px; background: #1989fa; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1677ff; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; max-height: 300px; overflow-y: auto; border-radius: 4px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🔧 登录修复验证</h1>
+    
+    <div class="test-section">
+        <h2>📝 测试登录验证</h2>
+        <div class="form-group">
+            <label for="studentId">学号:</label>
+            <input type="text" id="studentIdInput" placeholder="请输入学号" value="20210001">
+        </div>
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="passwordInput" placeholder="请输入密码" value="123456">
+        </div>
+        <button onclick="testLogin()">测试登录</button>
+        <button onclick="testEmptyStudentId()">测试空学号</button>
+        <button onclick="testValidStudentId()">测试有效学号</button>
+        <div id="testResults"></div>
+    </div>
+
+    <script type="module">
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { validatedApi } from './src/api/index.js'
+        
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults')
+            const resultDiv = document.createElement('div')
+            resultDiv.className = `result ${type}`
+            resultDiv.innerHTML = message
+            resultsDiv.appendChild(resultDiv)
+        }
+        
+        window.testLogin = async function() {
+            const studentId = document.getElementById('studentIdInput').value
+            const password = document.getElementById('passwordInput').value
+            
+            addResult(`<h3>测试登录参数: studentId="${studentId}", password="${password}"</h3>`)
+            
+            try {
+                const credentials = { studentId, password }
+                addResult(`调用 validateLoginParams 参数: <pre>${JSON.stringify(credentials, null, 2)}</pre>`)
+                
+                const validatedParams = await validateLoginParams(credentials)
+                addResult(`✅ 验证成功: <pre>${JSON.stringify(validatedParams, null, 2)}</pre>`, 'success')
+                
+                // 测试API调用
+                try {
+                    const response = await validatedApi.login(credentials)
+                    addResult(`✅ API调用成功: <pre>${JSON.stringify(response, null, 2)}</pre>`, 'success')
+                } catch (apiError) {
+                    addResult(`❌ API调用失败: ${apiError.message}`, 'error')
+                }
+            } catch (error) {
+                addResult(`❌ 验证失败: ${error.message}`, 'error')
+            }
+        }
+        
+        window.testEmptyStudentId = function() {
+            document.getElementById('studentIdInput').value = ''
+            addResult('设置为空学号', 'warning')
+        }
+        
+        window.testValidStudentId = function() {
+            document.getElementById('studentIdInput').value = '20210001'
+            addResult('设置为有效学号: 20210001', 'info')
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .activity { margin: 10px 0; padding: 10px; background: #f9f9f9; }
+        .user-1 { color: blue; }
+        .user-3 { color: green; }
+        .user-8 { color: red; }
+    </style>
+</head>
+<body>
+    <h1>活动数据调试</h1>
+    
+    <div class="section">
+        <h2>原始活动数据</h2>
+        <div id="original-data"></div>
+    </div>
+    
+    <div class="section">
+        <h2>用户1的活动数据</h2>
+        <div id="user1-data"></div>
+    </div>
+    
+    <div class="section">
+        <h2>用户1创建的活动筛选结果</h2>
+        <div id="user1-created"></div>
+    </div>
+
+    <script>
+        // 模拟活动数据
+        const mockActivities = [
+            {
+                id: 1,
+                title: '篮球友谊赛',
+                type: 'sports',
+                building: 'basketballCourt1',
+                description: '周末篮球比赛，欢迎观战',
+                startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                participants: 12,
+                maxParticipants: 20,
+                organizer: { id: 1, name: '篮球社', avatar: '' },
+                distance: 0.5,
+                isEnrolled: false
+            },
+            {
+                id: 2,
+                title: '图书馆学习小组',
+                type: 'study',
+                building: 'library',
+                description: '期末复习互助学习',
+                startTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+                participants: 6,
+                maxParticipants: 15,
+                organizer: { id: 2, name: '学习部', avatar: '' },
+                distance: 0.3,
+                isEnrolled: true
+            },
+            {
+                id: 3,
+                title: '实验技能培训',
+                type: 'study',
+                building: 'publicLabBuilding',
+                description: '实验室设备使用培训',
+                startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                participants: 8,
+                maxParticipants: 12,
+                organizer: { id: 3, name: '实验中心', avatar: '' },
+                distance: 0.4,
+                isEnrolled: false
+            },
+            {
+                id: 4,
+                title: '网球友谊赛',
+                type: 'sports',
+                building: 'tennisCourt',
+                description: '网球技巧交流赛',
+                startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                participants: 4,
+                maxParticipants: 8,
+                organizer: { id: 4, name: '网球社', avatar: '' },
+                distance: 0.6,
+                isEnrolled: false
+            },
+            {
+                id: 5,
+                title: '编程马拉松',
+                type: 'study',
+                building: 'softwareCollege',
+                description: '24小时编程挑战赛',
+                startTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+                participants: 15,
+                maxParticipants: 30,
+                organizer: { id: 5, name: '编程协会', avatar: '' },
+                distance: 0.2,
+                isEnrolled: false
+            },
+            {
+                id: 6,
+                title: '中医养生讲座',
+                type: 'study',
+                building: 'chineseMedicineCollege',
+                description: '传统中医养生知识分享',
+                startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 1.5 * 60 * 60 * 1000).toISOString(),
+                participants: 25,
+                maxParticipants: 50,
+                organizer: { id: 6, name: '中医学院', avatar: '' },
+                distance: 0.3,
+                isEnrolled: false
+            },
+            {
+                id: 7,
+                title: '宿舍联谊活动',
+                type: 'social',
+                building: 'canteen1',
+                description: '各宿舍楼联谊晚会',
+                startTime: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+                participants: 40,
+                maxParticipants: 100,
+                organizer: { id: 7, name: '学生会', avatar: '' },
+                distance: 0.4,
+                isEnrolled: false
+            },
+            {
+                id: 8,
+                title: '晨跑俱乐部',
+                type: 'sports',
+                building: 'sportsField',
+                description: '每日晨跑活动',
+                startTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 7 * 60 * 60 * 1000).toISOString(),
+                participants: 18,
+                maxParticipants: 30,
+                organizer: { id: 8, name: '跑步协会', avatar: '' },
+                distance: 0.5,
+                isEnrolled: false
+            }
+        ];
+
+        function getPersonalizedActivities(currentUserId, currentUserName) {
+            return mockActivities.map((activity, index) => {
+                const userSeed = currentUserId ? parseInt(currentUserId.toString()) : 1;
+                const activityIndex = index + 1;
+                
+                const isOrganizer = (activityIndex === userSeed) || (activityIndex === (userSeed + 4) % 8 + 1);
+                const isEnrolled = !isOrganizer && (
+                    (activityIndex === (userSeed % 8) + 1) || 
+                    (activityIndex === (userSeed + 2) % 8 + 1) ||
+                    (activityIndex === (userSeed + 5) % 8 + 1)
+                );
+                const isFavorite = !isOrganizer && (
+                    (activityIndex === (userSeed + 1) % 8 + 1) || 
+                    (activityIndex === (userSeed + 3) % 8 + 1) ||
+                    (activityIndex === (userSeed + 6) % 8 + 1)
+                );
+                const isApproved = isEnrolled && activityIndex % 2 === 0;
+                
+                const organizer = isOrganizer 
+                    ? { id: currentUserId, name: currentUserName || '我', avatar: '' }
+                    : activity.organizer;
+                
+                console.log(`用户${currentUserId}的活动${activity.id}(${activity.title}): isOrganizer=${isOrganizer}, isEnrolled=${isEnrolled}, isFavorite=${isFavorite}, isApproved=${isApproved}`);
+                
+                return {
+                    ...activity,
+                    title: activity.title,
+                    organizer,
+                    organizerId: organizer.id,
+                    isEnrolled,
+                    isFavorite,
+                    isApproved,
+                    currentParticipants: activity.participants + (isEnrolled ? 1 : 0),
+                    status: activity.participants >= activity.maxParticipants ? 'full' : 'recruiting'
+                };
+            });
+        }
+
+        function displayData() {
+            // 显示原始数据
+            const originalDiv = document.getElementById('original-data');
+            originalDiv.innerHTML = mockActivities.map(activity => 
+                `<div class="activity">
+                    <strong>活动${activity.id}:</strong> ${activity.title}<br>
+                    <small>组织者ID: ${activity.organizer.id}</small>
+                </div>`
+            ).join('');
+
+            // 获取用户1的个性化数据
+            const user1Activities = getPersonalizedActivities('1', '用户1');
+            const user1Div = document.getElementById('user1-data');
+            user1Div.innerHTML = user1Activities.map(activity => 
+                `<div class="activity">
+                    <strong>活动${activity.id}:</strong> ${activity.title}<br>
+                    <small>组织者ID: ${activity.organizerId}, isOrganizer: ${activity.isOrganizer}</small>
+                </div>`
+            ).join('');
+
+            // 筛选用户1创建的活动
+            const user1Created = user1Activities.filter(activity => activity.organizerId === '1');
+            const user1CreatedDiv = document.getElementById('user1-created');
+            user1CreatedDiv.innerHTML = user1Created.map(activity => 
+                `<div class="activity user-1">
+                    <strong>活动${activity.id}:</strong> ${activity.title}<br>
+                    <small>组织者ID: ${activity.organizerId}, isOrganizer: ${activity.isOrganizer}</small>
+                </div>`
+            ).join('');
+        }
+
+        displayData();
+    </script>
+</body>
+</html>

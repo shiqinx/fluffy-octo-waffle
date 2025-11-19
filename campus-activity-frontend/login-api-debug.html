@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录API详细调试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .debug-log {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        .info { color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">🔍 登录API详细调试工具</h1>
+        
+        <!-- 测试用户信息 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">📋 测试用户信息</h2>
+            <div id="userInfo" class="space-y-2"></div>
+        </div>
+
+        <!-- 登录测试表单 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">🧪 登录测试</h2>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">学号</label>
+                    <input type="text" id="studentId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="2330502143">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="abc123456">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="testLogin()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">测试登录</button>
+                <button onclick="testUser1()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">测试用户1</button>
+                <button onclick="testUser2()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition">测试用户2</button>
+                <button onclick="clearLogs()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">清空日志</button>
+            </div>
+        </div>
+
+        <!-- 调试日志 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">📝 调试日志</h2>
+            <div id="debugLog" class="debug-log bg-gray-900 text-green-400 p-4 rounded h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        window.debugLog = document.getElementById('debugLog');
+        window.userInfo = document.getElementById('userInfo');
+
+        // 日志函数
+        window.log = function(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            window.debugLog.appendChild(logEntry);
+            window.debugLog.scrollTop = window.debugLog.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        };
+
+        // 清空日志
+        window.clearLogs = function() {
+            window.debugLog.innerHTML = '';
+            window.log('日志已清空', 'info');
+        };
+
+        // 显示用户信息
+        window.displayUserInfo = function() {
+            // 模拟用户数据
+            const users = [
+                {
+                    id: 1,
+                    studentId: '2330502143',
+                    realName: '孙金瑶',
+                    password: 'abc123456',
+                    department: '计算机科学与技术',
+                    avatar: '/default-avatar.png',
+                    creditScore: 95,
+                    bio: '热爱编程的学生',
+                    interests: ['编程', '音乐', '电影'],
+                    tags: ['积极', '靠谱'],
+                    contact: { email: '', phone: '' }
+                },
+                {
+                    id: 2,
+                    studentId: '2330502134',
+                    realName: '卢敏婷',
+                    password: 'test123456',
+                    department: '计算机科学与技术',
+                    avatar: '/default-avatar.png',
+                    creditScore: 92,
+                    bio: '喜欢参加各种活动',
+                    interests: ['摄影', '旅行', '阅读'],
+                    tags: ['细心', '创意'],
+                    contact: { email: '', phone: '' }
+                }
+            ];
+            
+            window.userInfo.innerHTML = '';
+            
+            users.forEach((user, index) => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'bg-gray-50 p-3 rounded border border-gray-200';
+                userDiv.innerHTML = `
+                    <div class="font-semibold">用户 ${index + 1}: ${user.realName}</div>
+                    <div class="text-sm text-gray-600">
+                        学号: ${user.studentId} (类型: ${typeof user.studentId})<br>
+                        密码: ${user.password} (类型: ${typeof user.password}, 长度: ${user.password.length})<br>
+                        ID: ${user.id} (类型: ${typeof user.id})
+                    </div>
+                `;
+                window.userInfo.appendChild(userDiv);
+            });
+        };
+
+        // 模拟登录函数
+        window.mockLogin = async function(data) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const studentId = data.studentId || data.username;
+            const password = data.password;
+            
+            window.log(`🔐 mockLogin 尝试登录: studentId="${studentId}", password="${password}"`, 'info');
+            
+            // 模拟用户数据
+            const users = [
+                { id: 1, studentId: '2330502143', realName: '孙金瑶', password: 'abc123456' },
+                { id: 2, studentId: '2330502134', realName: '卢敏婷', password: 'test123456' }
+            ];
+            
+            window.log(`📋 用户列表: ${JSON.stringify(users.map(u => ({ studentId: u.studentId, password: u.password })))}`, 'info');
+            
+            // 增强用户匹配逻辑
+            let user = null;
+            for (const u of users) {
+                window.log(`🔍 比较用户: inputStudentId="${studentId}" vs storedStudentId="${u.studentId}" (==: ${u.studentId == studentId}, ===: ${u.studentId === studentId})`, 'info');
+                window.log(`🔍 比较密码: inputPassword="${password}" vs storedPassword="${u.password}" (==: ${u.password == password}, ===: ${u.password === password})`, 'info');
+                
+                if ((u.studentId == studentId) && (u.password == password)) {
+                    user = u;
+                    break;
+                }
+            }
+            
+            if (user) {
+                const token = 'mock_jwt_token_' + Date.now();
+                const response = {
+                    success: true,
+                    data: {
+                        token: token,
+                        user: {
+                            id: user.id,
+                            realName: user.realName,
+                            studentId: user.studentId
+                        }
+                    },
+                    message: '登录成功'
+                };
+                
+                window.log(`✅ 登录成功: ${JSON.stringify(response)}`, 'success');
+                return response;
+            } else {
+                const error = {
+                    success: false,
+                    message: '学号或密码错误'
+                };
+                window.log(`❌ 登录失败: ${JSON.stringify(error)}`, 'error');
+                throw error;
+            }
+        };
+
+        // 测试登录
+        window.testLogin = async function() {
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+            
+            window.log(`🧪 开始登录测试`, 'info');
+            window.log(`输入参数: studentId="${studentId}" (${typeof studentId}), password="${password}" (${typeof password}, 长度: ${password.length})`, 'info');
+            
+            try {
+                // 步骤1: 测试mockLogin直接调用
+                window.log(`🔐 步骤1: 测试mockLogin直接调用`, 'info');
+                const mockResult = await window.mockLogin({ studentId, password });
+                window.log(`✅ mockLogin成功: ${JSON.stringify(mockResult)}`, 'success');
+                
+            } catch (error) {
+                window.log(`❌ 登录失败: ${JSON.stringify(error)}`, 'error');
+                window.log(`错误类型: ${typeof error}`, 'error');
+                window.log(`错误消息: ${error.message}`, 'error');
+                if (error.success !== undefined) {
+                    window.log(`错误success字段: ${error.success}`, 'error');
+                }
+            }
+        };
+
+        // 测试用户1
+        window.testUser1 = async function() {
+            document.getElementById('studentId').value = '2330502143';
+            document.getElementById('password').value = 'abc123456';
+            await window.testLogin();
+        };
+
+        // 测试用户2
+        window.testUser2 = async function() {
+            document.getElementById('studentId').value = '2330502134';
+            document.getElementById('password').value = 'test123456';
+            await window.testLogin();
+        };
+
+        // 初始化
+        window.log('🚀 登录API调试工具初始化', 'info');
+        window.displayUserInfo();
+        window.log('📋 用户信息已加载', 'info');
+        window.log('💡 请点击测试按钮开始调试', 'info');
+    </script>
+</body>
+</html>

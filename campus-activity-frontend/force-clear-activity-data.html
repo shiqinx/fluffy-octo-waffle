@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制清理活动数据污染</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success { background-color: #d4edda; border-color: #28a745; color: #155724; }
+        .warning { background-color: #fff3cd; border-color: #ffc107; color: #856404; }
+        .error { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .info { background-color: #d1ecf1; border-color: #17a2b8; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #c82333; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 强制清理活动数据污染工具</h1>
+        
+        <div class="status info">
+            <strong>说明：</strong>这个工具将强制清理localStorage中被污染的活动数据，并重新加载正确的默认数据。
+        </div>
+
+        <div class="status warning">
+            <strong>警告：</strong>这将清除所有本地存储的活动数据，页面将自动刷新。
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button onclick="forceClearData()" class="danger">🧹 强制清理数据</button>
+            <button onclick="checkData()">🔍 检查当前数据</button>
+            <button onclick="goToActivityList()">📋 前往活动列表</button>
+        </div>
+
+        <div id="status" class="status info" style="display: none;"></div>
+        <div id="countdown" class="countdown" style="display: none;"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+
+        function showCountdown(seconds) {
+            const countdownDiv = document.getElementById('countdown');
+            countdownDiv.style.display = 'block';
+            
+            let remaining = seconds;
+            const interval = setInterval(() => {
+                countdownDiv.textContent = `🔄 ${remaining} 秒后自动刷新页面...`;
+                remaining--;
+                
+                if (remaining < 0) {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+
+        function checkData() {
+            log('🔍 开始检查当前活动数据...');
+            
+            try {
+                const storedData = localStorage.getItem('campus_activities');
+                
+                if (!storedData) {
+                    log('✅ localStorage中没有活动数据');
+                    showStatus('localStorage中没有活动数据', 'success');
+                    return;
+                }
+                
+                const activities = JSON.parse(storedData);
+                log(`📊 发现 ${activities.length} 个活动`);
+                
+                const titles = activities.map(a => a.title);
+                const uniqueTitles = [...new Set(titles)];
+                
+                log(`📋 活动标题列表:`);
+                titles.forEach((title, index) => {
+                    log(`  ${index + 1}. ${title}`);
+                });
+                
+                if (uniqueTitles.length === 1 && uniqueTitles[0] === '中医养生讲座') {
+                    log('⚠️ 检测到数据污染！所有活动都是"中医养生讲座"');
+                    showStatus('检测到数据污染！需要清理', 'error');
+                } else {
+                    log('✅ 数据正常，活动标题多样化');
+                    showStatus('数据正常，无需清理', 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ 检查数据时出错: ${error.message}`);
+                showStatus('检查数据时出错', 'error');
+            }
+        }
+
+        function forceClearData() {
+            log('🧹 开始强制清理活动数据...');
+            showStatus('正在清理数据...', 'warning');
+            
+            try {
+                // 清理localStorage
+                localStorage.removeItem('campus_activities');
+                log('🗑️ 已清理localStorage中的活动数据');
+                
+                // 验证清理结果
+                const afterCleanup = localStorage.getItem('campus_activities');
+                if (afterCleanup) {
+                    log('⚠️ 清理失败，localStorage中仍有数据');
+                    showStatus('清理失败，请重试', 'error');
+                } else {
+                    log('✅ localStorage清理成功');
+                    showStatus('数据清理成功，即将刷新页面...', 'success');
+                    
+                    // 显示倒计时
+                    showCountdown(3);
+                }
+                
+            } catch (error) {
+                log(`❌ 清理数据时出错: ${error.message}`);
+                showStatus('清理数据时出错', 'error');
+            }
+        }
+
+        function goToActivityList() {
+            window.location.href = '/activities';
+        }
+
+        // 页面加载时自动检查数据
+        window.addEventListener('load', () => {
+            log('🚀 页面加载完成');
+            checkData();
+        });
+    </script>
+</body>
+</html>

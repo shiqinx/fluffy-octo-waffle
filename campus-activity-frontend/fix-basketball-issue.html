@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>篮球赛问题修复页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .activity-list {
+            margin: 20px 0;
+        }
+        .activity-item {
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .activity-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .activity-type {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn.danger {
+            background-color: #dc3545;
+        }
+        .btn.danger:hover {
+            background-color: #c82333;
+        }
+        .btn.success {
+            background-color: #28a745;
+        }
+        .btn.success:hover {
+            background-color: #218838;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏀 篮球赛问题修复页面</h1>
+            <p>检测和修复活动列表中全是篮球赛的问题</p>
+        </div>
+
+        <div id="status" class="status">
+            正在检查当前数据状态...
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalActivities">0</div>
+                <div class="stat-label">总活动数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="basketballCount">0</div>
+                <div class="stat-label">篮球活动数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="basketballPercent">0%</div>
+                <div class="stat-label">篮球活动占比</div>
+            </div>
+        </div>
+
+        <div class="activity-list" id="currentActivities">
+            <h3>当前活动列表</h3>
+            <div id="activitiesList"></div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="btn success" onclick="fixActivities()">🔧 修复活动数据</button>
+            <button class="btn" onclick="refreshData()">🔄 刷新检查</button>
+            <button class="btn danger" onclick="clearAllData()">🗑️ 清空所有数据</button>
+        </div>
+
+        <div class="log" id="log">初始化中...</div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('log');
+        let statusElement = document.getElementById('status');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            console.log(logMessage);
+            logElement.textContent += logMessage + '\n';
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'success') {
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+        }
+
+        function checkCurrentData() {
+            log('🔍 开始检查当前活动数据...');
+            
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                let activities = [];
+                
+                if (stored) {
+                    activities = JSON.parse(stored);
+                    log(`📦 从localStorage加载了 ${activities.length} 个活动`);
+                } else {
+                    log('📦 localStorage中没有活动数据');
+                }
+
+                // 显示活动列表
+                displayActivities(activities);
+                
+                // 统计数据
+                const basketballCount = activities.filter(activity => 
+                    activity.title && activity.title.includes('篮球')
+                ).length;
+                
+                const totalActivities = activities.length;
+                const basketballPercent = totalActivities > 0 ? 
+                    Math.round((basketballCount / totalActivities) * 100) : 0;
+
+                // 更新统计显示
+                document.getElementById('totalActivities').textContent = totalActivities;
+                document.getElementById('basketballCount').textContent = basketballCount;
+                document.getElementById('basketballPercent').textContent = basketballPercent + '%';
+
+                // 判断状态
+                if (totalActivities === 0) {
+                    updateStatus('没有活动数据，需要添加正确的活动数据', 'warning');
+                } else if (basketballCount > totalActivities * 0.8) {
+                    updateStatus(`⚠️ 检测到过多的篮球活动 (${basketballPercent}%)，需要修复`, 'warning');
+                } else {
+                    updateStatus('✅ 活动数据正常，篮球活动占比合理', 'success');
+                }
+
+                log(`📊 统计结果: 总计${totalActivities}个活动，篮球活动${basketballCount}个 (${basketballPercent}%)`);
+                
+            } catch (error) {
+                log(`❌ 检查数据失败: ${error.message}`);
+                updateStatus('❌ 检查数据失败', 'error');
+            }
+        }
+
+        function displayActivities(activities) {
+            const listElement = document.getElementById('activitiesList');
+            listElement.innerHTML = '';
+            
+            if (activities.length === 0) {
+                listElement.innerHTML = '<p style="color: #666; text-align: center;">暂无活动数据</p>';
+                return;
+            }
+            
+            activities.forEach((activity, index) => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                
+                const title = activity.title || '无标题';
+                const type = activity.type || activity.category || '无类型';
+                const isBasketball = title.includes('篮球');
+                
+                item.innerHTML = `
+                    <div class="activity-title">${isBasketball ? '🏀' : '📋'} ${index + 1}. ${title}</div>
+                    <div class="activity-type">类型: ${type}</div>
+                `;
+                
+                if (isBasketball) {
+                    item.style.backgroundColor = '#fff3cd';
+                    item.style.borderColor = '#ffeaa7';
+                }
+                
+                listElement.appendChild(item);
+            });
+        }
+
+        function fixActivities() {
+            log('🚀 开始修复活动数据...');
+            
+            try {
+                const correctActivities = [
+                    {
+                        id: 1,
+                        title: '中医养生讲座',
+                        type: '学术讲座',
+                        category: 'study',
+                        description: '邀请中医专家讲解中医养生知识，分享传统保健方法。',
+                        locationName: '学术报告厅',
+                        location: {
+                            name: '学术报告厅',
+                            address: '广东药科大学云浮校区学术报告厅'
+                        },
+                        startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 15,
+                        maxParticipants: 30,
+                        organizer: {
+                            id: 2,
+                            name: '中医学院',
+                            role: '组织者',
+                            creditScore: 98
+                        },
+                        isEnrolled: false,
+                        status: 'open',
+                        distance: 0.8,
+                        tags: ['中医', '养生', '健康', '讲座']
+                    },
+                    {
+                        id: 2,
+                        title: '摄影作品展览',
+                        type: '文化艺术',
+                        category: 'culture',
+                        description: '展示学生摄影作品，分享摄影技巧，交流创作心得。',
+                        locationName: '艺术展厅',
+                        location: {
+                            name: '艺术展厅',
+                            address: '广东药科大学云浮校区艺术展厅'
+                        },
+                        startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 12,
+                        maxParticipants: 25,
+                        organizer: {
+                            id: 3,
+                            name: '摄影协会',
+                            role: '组织者',
+                            creditScore: 92
+                        },
+                        isEnrolled: false,
+                        status: 'open',
+                        distance: 0.3,
+                        tags: ['摄影', '艺术', '展览', '创作']
+                    },
+                    {
+                        id: 3,
+                        title: '编程马拉松大赛',
+                        type: '科技创新',
+                        category: 'tech',
+                        description: '24小时编程挑战赛，主题为智慧校园，展示编程技能。',
+                        locationName: '创新实验室',
+                        location: {
+                            name: '创新实验室',
+                            address: '广东药科大学云浮校区创新实验室'
+                        },
+                        startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 8,
+                        maxParticipants: 20,
+                        organizer: {
+                            id: 4,
+                            name: '计算机学院',
+                            role: '组织者',
+                            creditScore: 96
+                        },
+                        isEnrolled: false,
+                        status: 'open',
+                        distance: 1.2,
+                        tags: ['编程', '创新', '比赛', '技术']
+                    },
+                    {
+                        id: 4,
+                        title: '篮球友谊赛',
+                        type: '体育竞技',
+                        category: 'sports',
+                        description: '院系间篮球友谊赛，促进各院系交流。比赛采用国际篮联规则，设有MVP奖项。',
+                        locationName: '体育馆',
+                        location: {
+                            name: '体育馆',
+                            address: '广东药科大学云浮校区体育馆'
+                        },
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 16,
+                        maxParticipants: 20,
+                        organizer: {
+                            id: 1,
+                            name: '体育部',
+                            role: '组织者',
+                            creditScore: 94
+                        },
+                        isEnrolled: false,
+                        status: 'open',
+                        distance: 0.8,
+                        tags: ['篮球', '体育', '比赛', '友谊赛']
+                    },
+                    {
+                        id: 5,
+                        title: '校园音乐节',
+                        type: '文艺演出',
+                        category: 'culture',
+                        description: '年度校园音乐盛典，邀请校内知名乐队和校外专业音乐人同台演出。',
+                        locationName: '大学生活动中心',
+                        location: {
+                            name: '大学生活动中心',
+                            address: '广东药科大学云浮校区大学生活动中心'
+                        },
+                        startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 85,
+                        maxParticipants: 100,
+                        organizer: {
+                            id: 5,
+                            name: '学生会文艺部',
+                            role: '组织者',
+                            creditScore: 92
+                        },
+                        isEnrolled: false,
+                        status: 'open',
+                        distance: 0.6,
+                        tags: ['音乐', '演出', '文艺', '音乐节']
+                    },
+                    {
+                        id: 6,
+                        title: '图书馆学习小组',
+                        type: '学习交流',
+                        category: 'study',
+                        description: '为期一周的集中学习活动，提供安静的学习环境和专业的学习指导。',
+                        locationName: '图书馆研讨室',
+                        location: {
+                            name: '图书馆研讨室',
+                            address: '广东药科大学云浮校区图书馆研讨室'
+                        },
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 42,
+                        maxParticipants: 50,
+                        organizer: {
+                            id: 6,
+                            name: '图书馆',
+                            role: '组织者',
+                            creditScore: 99
+                        },
+                        isEnrolled: false,
+                        status: 'open',
+                        distance: 0.4,
+                        tags: ['学习', '图书馆', '研讨', '交流']
+                    }
+                ];
+                
+                // 保存到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(correctActivities));
+                
+                log('✅ 已修复localStorage中的活动数据');
+                log(`📋 修复后的活动列表 (${correctActivities.length}个活动):`);
+                correctActivities.forEach((activity, index) => {
+                    log(`  ${index + 1}. ${activity.title} - ${activity.type}`);
+                });
+                
+                updateStatus('✅ 活动数据修复成功！3秒后自动刷新页面...', 'success');
+                
+                // 3秒后刷新页面数据
+                setTimeout(() => {
+                    checkCurrentData();
+                    updateStatus('✅ 活动数据已修复，现在可以正常访问活动列表页面了', 'success');
+                }, 3000);
+                
+            } catch (error) {
+                log(`❌ 修复失败: ${error.message}`);
+                updateStatus('❌ 修复失败，请检查控制台', 'error');
+            }
+        }
+
+        function refreshData() {
+            log('🔄 刷新数据检查...');
+            checkCurrentData();
+        }
+
+        function clearAllData() {
+            if (confirm('确定要清空所有活动数据吗？此操作不可恢复。')) {
+                try {
+                    localStorage.removeItem('campus_activities');
+                    log('🗑️ 已清空所有活动数据');
+                    updateStatus('🗑️ 所有数据已清空', 'warning');
+                    checkCurrentData();
+                } catch (error) {
+                    log(`❌ 清空数据失败: ${error.message}`);
+                    updateStatus('❌ 清空数据失败', 'error');
+                }
+            }
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            log('🚀 篮球赛问题修复页面已加载');
+            checkCurrentData();
+        };
+    </script>
+</body>
+</html>

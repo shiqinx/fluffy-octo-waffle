@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化路由测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button.success {
+            background: #28a745;
+        }
+        .test-button.warning {
+            background: #ffc107;
+            color: #000;
+        }
+        .iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .mobile-frame {
+            width: 375px;
+            height: 667px;
+            margin: 0 auto;
+            border: 2px solid #333;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            background: white;
+        }
+        .test-log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 5px;
+            border-radius: 2px;
+        }
+        .log-entry.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-entry.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-entry.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 简化路由导航测试</h1>
+    
+    <div class="test-container">
+        <h2>📱 移动端模拟测试</h2>
+        <p>测试简化后的路由守卫是否能正常响应导航请求</p>
+        
+        <div class="mobile-frame">
+            <iframe id="app-frame" src="/"></iframe>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button class="test-button" onclick="testNavigation('/home')">测试首页</button>
+            <button class="test-button" onclick="testNavigation('/activities-teams')">测试活动/团队</button>
+            <button class="test-button" onclick="testNavigation('/messages')">测试消息</button>
+            <button class="test-button" onclick="testNavigation('/profile')">测试个人中心</button>
+            <button class="test-button warning" onclick="testNavigation('/login')">测试登录页</button>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔗 直接链接测试</h2>
+        <p>直接访问各个路由，测试路由守卫的响应</p>
+        
+        <div style="margin-bottom: 15px;">
+            <a href="/#/home" target="_blank" class="test-button">首页</a>
+            <a href="/#/activities-teams" target="_blank" class="test-button">活动/团队</a>
+            <a href="/#/messages" target="_blank" class="test-button">消息</a>
+            <a href="/#/profile" target="_blank" class="test-button">个人中心</a>
+            <a href="/#/login" target="_blank" class="test-button warning">登录页</a>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>📊 测试结果</h2>
+        <div id="test-status" class="status info">等待测试...</div>
+        
+        <h3>📝 测试日志</h3>
+        <div id="test-log" class="test-log">
+            <div class="log-entry info">测试开始...</div>
+        </div>
+        
+        <div style="margin-top: 15px;">
+            <button class="test-button" onclick="runFullTest()">运行完整测试</button>
+            <button class="test-button success" onclick="clearLog()">清空日志</button>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 测试指南</h2>
+        <ol>
+            <li><strong>基础导航测试：</strong>点击上方按钮测试各个页面导航</li>
+            <li><strong>直接链接测试：</strong>点击链接在新标签页中直接访问路由</li>
+            <li><strong>认证流程测试：</strong>测试登录/未登录状态下的页面访问</li>
+            <li><strong>响应速度测试：</strong>观察页面跳转是否立即响应</li>
+        </ol>
+        
+        <div class="status info">
+            <strong>预期结果：</strong>所有导航请求应该立即响应，无卡顿或无响应现象
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        let navigationTimeout;
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('test-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('test-status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function testNavigation(path) {
+            addLog(`开始测试导航到: ${path}`, 'info');
+            const iframe = document.getElementById('app-frame');
+            
+            // 设置超时检测
+            clearTimeout(navigationTimeout);
+            navigationTimeout = setTimeout(() => {
+                addLog(`❌ 导航超时: ${path}`, 'error');
+                updateStatus('导航测试失败 - 存在响应问题', 'error');
+            }, 3000);
+
+            try {
+                // 监听iframe加载完成
+                iframe.onload = () => {
+                    clearTimeout(navigationTimeout);
+                    addLog(`✅ 导航成功: ${path}`, 'success');
+                    testResults.push({ path, success: true });
+                    updateTestSummary();
+                };
+
+                // 执行导航
+                iframe.src = `/#${path}`;
+                addLog(`🚀 执行导航: ${path}`, 'info');
+                
+            } catch (error) {
+                clearTimeout(navigationTimeout);
+                addLog(`❌ 导航错误: ${path} - ${error.message}`, 'error');
+                testResults.push({ path, success: false, error: error.message });
+                updateTestSummary();
+            }
+        }
+
+        function updateTestSummary() {
+            const total = testResults.length;
+            const success = testResults.filter(r => r.success).length;
+            const failed = total - success;
+            
+            if (total === 0) return;
+            
+            if (failed === 0) {
+                updateStatus(`✅ 所有测试通过 (${success}/${total})`, 'success');
+            } else {
+                updateStatus(`⚠️ 部分测试失败 (${success}/${total} 成功, ${failed} 失败)`, 'error');
+            }
+        }
+
+        function runFullTest() {
+            addLog('🧪 开始完整测试序列', 'info');
+            testResults = [];
+            
+            const testPaths = ['/home', '/activities-teams', '/messages', '/profile', '/login'];
+            let currentIndex = 0;
+            
+            function runNextTest() {
+                if (currentIndex < testPaths.length) {
+                    const path = testPaths[currentIndex];
+                    testNavigation(path);
+                    currentIndex++;
+                    setTimeout(runNextTest, 4000); // 每个测试间隔4秒
+                } else {
+                    addLog('🏁 完整测试序列完成', 'info');
+                }
+            }
+            
+            runNextTest();
+        }
+
+        function clearLog() {
+            const log = document.getElementById('test-log');
+            log.innerHTML = '<div class="log-entry info">日志已清空...</div>';
+            testResults = [];
+            updateStatus('等待测试...', 'info');
+        }
+
+        // 监听iframe错误
+        document.getElementById('app-frame').onerror = () => {
+            clearTimeout(navigationTimeout);
+            addLog('❌ iframe加载错误', 'error');
+        };
+
+        // 页面加载完成后的初始化
+        window.onload = () => {
+            addLog('📱 测试页面加载完成', 'success');
+            updateStatus('准备就绪 - 开始测试导航功能', 'info');
+        };
+    </script>
+</body>
+</html>

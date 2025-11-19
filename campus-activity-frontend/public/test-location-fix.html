@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定位错误修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .location-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .error-details {
+            background-color: #f8d7da;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧭 定位错误修复测试</h1>
+        <p>这个页面用于测试定位服务错误处理的修复效果。</p>
+        
+        <div class="status info">
+            <strong>测试目标：</strong>验证定位失败时是否显示具体的错误信息，而不是"UNKNOWN_ERROR"
+        </div>
+        
+        <button onclick="testLocation()" id="testBtn">📍 测试定位功能</button>
+        <button onclick="testPermissionError()" id="permissionBtn">🚫 模拟权限错误</button>
+        <button onclick="testTimeoutError()" id="timeoutBtn">⏱️ 模拟超时错误</button>
+        <button onclick="clearResults()" id="clearBtn">🗑️ 清除结果</button>
+    </div>
+
+    <div class="container">
+        <h2>📊 测试结果</h2>
+        <div id="results"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔍 错误信息分析</h2>
+        <div id="errorAnalysis"></div>
+    </div>
+
+    <script type="module">
+        // 模拟Vue环境中的错误处理
+        const results = document.getElementById('results');
+        const errorAnalysis = document.getElementById('errorAnalysis');
+        
+        function addResult(type, title, content) {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>${title}</strong><br>${content}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function addErrorAnalysis(error) {
+            const div = document.createElement('div');
+            div.className = 'error-details';
+            
+            let analysis = `🔍 错误分析：
+类型: ${error?.code || '未知'}
+消息: ${error?.message || '无消息'}
+用户友好: ${error?.isUserFriendly ? '是' : '否'}
+建议: ${error?.suggestion || '无建议'}
+原始错误: ${error?.originalError ? JSON.stringify(error.originalError) : '无原始错误'}
+
+📋 完整错误对象：
+${JSON.stringify(error, null, 2)}`;
+            
+            div.textContent = analysis;
+            errorAnalysis.appendChild(div);
+            errorAnalysis.scrollTop = errorAnalysis.scrollHeight;
+        }
+
+        // 模拟定位函数（简化版本）
+        async function getCurrentLocation(options = {}) {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject({
+                        code: 'GEOLOCATION_NOT_SUPPORTED',
+                        message: '浏览器不支持地理位置功能',
+                        isUserFriendly: true,
+                        suggestion: '请更新浏览器或使用支持定位的浏览器'
+                    });
+                    return;
+                }
+
+                const defaultOptions = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 30000
+                };
+
+                const finalOptions = { ...defaultOptions, ...options };
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy,
+                            timestamp: position.timestamp
+                        });
+                    },
+                    (error) => {
+                        let userFriendlyError;
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                userFriendlyError = {
+                                    code: 'PERMISSION_DENIED',
+                                    message: '位置权限被拒绝，请在设备设置中允许应用访问您的位置',
+                                    isUserFriendly: true,
+                                    suggestion: '请在浏览器设置中允许位置访问',
+                                    originalError: error
+                                };
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                userFriendlyError = {
+                                    code: 'POSITION_UNAVAILABLE',
+                                    message: '无法获取您的位置，请尝试开启GPS或移动到信号更好的区域',
+                                    isUserFriendly: true,
+                                    suggestion: '请检查设备定位服务是否开启',
+                                    originalError: error
+                                };
+                                break;
+                            case error.TIMEOUT:
+                                userFriendlyError = {
+                                    code: 'TIMEOUT',
+                                    message: '获取位置超时，请稍后再试',
+                                    isUserFriendly: true,
+                                    suggestion: '请检查网络连接和定位权限',
+                                    originalError: error
+                                };
+                                break;
+                            default:
+                                userFriendlyError = {
+                                    code: 'UNKNOWN_ERROR',
+                                    message: '获取位置时发生未知错误，请稍后再试',
+                                    isUserFriendly: true,
+                                    suggestion: '请稍后重试',
+                                    originalError: error
+                                };
+                        }
+                        reject(userFriendlyError);
+                    },
+                    finalOptions
+                );
+            });
+        }
+
+        // 模拟stores中的错误处理逻辑
+        async function testLocationWithErrorHandling(options = {}) {
+            try {
+                const position = await getCurrentLocation(options);
+                
+                addResult('success', '✅ 定位成功', 
+                    `纬度: ${position.latitude}<br>
+                     经度: ${position.longitude}<br>
+                     精度: ${position.accuracy}米<br>
+                     时间戳: ${new Date(position.timestamp).toLocaleString()}`);
+                
+                return { success: true, position };
+            } catch (error) {
+                // 模拟修复后的错误处理逻辑
+                let locationError;
+                if (error && error.code && error.isUserFriendly) {
+                    // 如果是用户友好的错误对象，直接使用
+                    locationError = error;
+                } else {
+                    // 否则创建标准化的错误对象
+                    locationError = {
+                        code: 'POSITION_ERROR',
+                        message: error?.message || String(error),
+                        isUserFriendly: true,
+                        suggestion: '请稍后重试'
+                    };
+                }
+                
+                addResult('error', '❌ 定位失败', 
+                    `错误代码: ${locationError.code}<br>
+                     错误消息: ${locationError.message}<br>
+                     用户友好: ${locationError.isUserFriendly ? '是' : '否'}<br>
+                     建议: ${locationError.suggestion}`);
+                
+                addErrorAnalysis(locationError);
+                
+                return { success: false, error: locationError };
+            }
+        }
+
+        // 测试函数
+        window.testLocation = async function() {
+            addResult('info', '🔄 开始测试', '正在测试正常的定位功能...');
+            await testLocationWithErrorHandling();
+        };
+
+        window.testPermissionError = async function() {
+            addResult('info', '🔄 开始测试', '正在模拟权限错误（超短超时时间）...');
+            await testLocationWithErrorHandling({ timeout: 1 }); // 1ms超时，很可能触发权限或超时错误
+        };
+
+        window.testTimeoutError = async function() {
+            addResult('info', '🔄 开始测试', '正在模拟超时错误（1ms超时）...');
+            await testLocationWithErrorHandling({ timeout: 1 });
+        };
+
+        window.clearResults = function() {
+            results.innerHTML = '';
+            errorAnalysis.innerHTML = '';
+            addResult('info', '🧹 已清除', '所有测试结果已清除');
+        };
+
+        // 初始化
+        addResult('info', '🚀 准备就绪', '定位错误修复测试页面已加载，请点击按钮开始测试');
+    </script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制刷新验证修复</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .activity-item {
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+        .activity-item:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 强制刷新验证修复效果</h1>
+        <div class="warning">
+            <strong>重要提示：</strong><br>
+            1. 请先按 <strong>Ctrl+F5</strong> 强制刷新主应用页面<br>
+            2. 或者按 <strong>F12</strong> 打开开发者工具，右键刷新按钮选择"清空缓存并硬性重新加载"<br>
+            3. 然后再回来测试
+        </div>
+        
+        <button class="test-btn" onclick="testAllActivities()">🧪 测试所有活动</button>
+        <button class="test-btn" onclick="clearCache()">🗑️ 清除本地缓存</button>
+        <button class="test-btn" onclick="checkCurrentPage()">📋 检查当前页面</button>
+        <button class="test-btn" onclick="forceReload()">🔄 强制重新加载</button>
+        
+        <div id="log" class="log">点击按钮开始测试...</div>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 活动列表（点击测试详情）</h2>
+        <div id="activity-list"></div>
+    </div>
+
+    <script>
+        // 模拟正确的活动数据
+        const correctActivities = [
+            {
+                id: "1",
+                title: "中医养生讲座",
+                type: "lecture",
+                description: "专业中医师讲解日常养生知识",
+                time: "2024-01-15 14:00",
+                location: "教学楼A101",
+                organizer: "张教授",
+                image: "https://via.placeholder.com/300x200/4CAF50/ffffff?text=中医养生"
+            },
+            {
+                id: "2", 
+                title: "篮球友谊赛",
+                type: "sports",
+                description: "院系间篮球交流比赛",
+                time: "2024-01-16 16:00",
+                location: "体育馆",
+                organizer: "体育部",
+                image: "https://via.placeholder.com/300x200/2196F3/ffffff?text=篮球赛"
+            },
+            {
+                id: "3",
+                title: "英语角活动",
+                type: "academic",
+                description: "英语口语练习交流活动",
+                time: "2024-01-17 19:00", 
+                location: "外语楼201",
+                organizer: "英语协会",
+                image: "https://via.placeholder.com/300x200/FF9800/ffffff?text=英语角"
+            },
+            {
+                id: "4",
+                title: "编程马拉松",
+                type: "competition",
+                description: "24小时编程挑战赛",
+                time: "2024-01-18 09:00",
+                location: "计算机实验室",
+                organizer: "计算机协会", 
+                image: "https://via.placeholder.com/300x200/9C27B0/ffffff?text=编程马拉松"
+            },
+            {
+                id: "5",
+                title: "志愿者招募",
+                type: "volunteer",
+                description: "社区服务志愿者招募活动",
+                time: "2024-01-19 14:00",
+                location: "学生活动中心",
+                organizer: "志愿者协会",
+                image: "https://via.placeholder.com/300x200/F44336/ffffff?text=志愿者"
+            },
+            {
+                id: "6",
+                title: "摄影展览",
+                type: "cultural",
+                description: "校园摄影作品展览",
+                time: "2024-01-20 10:00",
+                location: "艺术馆",
+                organizer: "摄影协会",
+                image: "https://via.placeholder.com/300x200/00BCD4/ffffff?text=摄影展"
+            }
+        ];
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function renderActivityList() {
+            const listDiv = document.getElementById('activity-list');
+            listDiv.innerHTML = '';
+            
+            correctActivities.forEach(activity => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                item.innerHTML = `
+                    <h3>${activity.title}</h3>
+                    <p><strong>ID:</strong> ${activity.id} | <strong>类型:</strong> ${activity.type}</p>
+                    <p><strong>时间:</strong> ${activity.time}</p>
+                    <p><strong>地点:</strong> ${activity.location}</p>
+                    <p><strong>描述:</strong> ${activity.description}</p>
+                `;
+                item.onclick = () => testActivityDetail(activity);
+                listDiv.appendChild(item);
+            });
+        }
+
+        function testActivityDetail(activity) {
+            log(`🔍 测试活动: ${activity.title} (ID: ${activity.id})`);
+            
+            // 模拟修复后的查找逻辑
+            const foundActivity = correctActivities.find(act => String(act.id) === String(activity.id));
+            
+            if (foundActivity) {
+                log(`✅ 找到活动: ${foundActivity.title}`, 'success');
+                log(`📍 跳转链接应为: /activity/${activity.id}`);
+                
+                // 尝试在新窗口打开详情页
+                const detailUrl = `/activity/${activity.id}`;
+                log(`🌐 正在尝试打开: ${detailUrl}`);
+                
+                // 检查是否可以访问
+                fetch(detailUrl)
+                    .then(response => {
+                        if (response.ok) {
+                            log(`✅ 页面可访问: ${detailUrl}`, 'success');
+                            log(`👉 请手动在新窗口中验证显示内容是否为: ${foundActivity.title}`);
+                        } else {
+                            log(`⚠️ 页面响应状态: ${response.status}`, 'warning');
+                        }
+                    })
+                    .catch(error => {
+                        log(`❌ 无法访问页面: ${error.message}`, 'error');
+                    });
+            } else {
+                log(`❌ 未找到活动: ${activity.title}`, 'error');
+            }
+        }
+
+        function testAllActivities() {
+            log('🧪 开始测试所有活动...');
+            let successCount = 0;
+            let totalCount = correctActivities.length;
+            
+            correctActivities.forEach((activity, index) => {
+                setTimeout(() => {
+                    const foundActivity = correctActivities.find(act => String(act.id) === String(activity.id));
+                    if (foundActivity && foundActivity.title === activity.title) {
+                        successCount++;
+                        log(`✅ 活动 ${index + 1}: ${activity.title} - 正常`, 'success');
+                    } else {
+                        log(`❌ 活动 ${index + 1}: ${activity.title} - 失败`, 'error');
+                    }
+                    
+                    if (index === totalCount - 1) {
+                        log(`📊 测试完成: ${successCount}/${totalCount} 成功`, 
+                            successCount === totalCount ? 'success' : 'error');
+                    }
+                }, index * 200);
+            });
+        }
+
+        function clearCache() {
+            log('🗑️ 清除缓存中...');
+            
+            // 清除localStorage
+            localStorage.clear();
+            log('✅ localStorage 已清除');
+            
+            // 清除sessionStorage
+            sessionStorage.clear();
+            log('✅ sessionStorage 已清除');
+            
+            // 尝试清除service worker缓存
+            if ('caches' in window) {
+                caches.keys().then(cacheNames => {
+                    cacheNames.forEach(cacheName => {
+                        caches.delete(cacheName);
+                    });
+                    log('✅ Service Worker 缓存已清除');
+                });
+            }
+            
+            log('🔄 缓存清除完成，请刷新页面重试', 'success');
+        }
+
+        function checkCurrentPage() {
+            log('📋 检查当前页面状态...');
+            
+            const currentUrl = window.location.href;
+            const path = window.location.pathname;
+            
+            log(`📍 当前URL: ${currentUrl}`);
+            log(`📍 当前路径: ${path}`);
+            
+            // 检查是否在活动详情页
+            const activityMatch = path.match(/\/activity\/(\d+)/);
+            if (activityMatch) {
+                const activityId = activityMatch[1];
+                log(`🎯 检测到活动详情页，活动ID: ${activityId}`);
+                
+                // 查找对应的活动
+                const activity = correctActivities.find(act => String(act.id) === String(activityId));
+                if (activity) {
+                    log(`📝 应该显示的活动: ${activity.title}`, 'success');
+                } else {
+                    log(`❌ 未找到ID为 ${activityId} 的活动`, 'error');
+                }
+                
+                // 检查页面标题
+                setTimeout(() => {
+                    const titleElement = document.querySelector('h1, .activity-title, .title');
+                    if (titleElement) {
+                        const pageTitle = titleElement.textContent.trim();
+                        log(`🏷️ 页面标题显示: "${pageTitle}"`);
+                        
+                        if (activity && pageTitle.includes(activity.title)) {
+                            log(`✅ 标题匹配正确！`, 'success');
+                        } else if (pageTitle.includes('中医养生讲座')) {
+                            log(`❌ 标题仍然显示"中医养生讲座"，修复未生效！`, 'error');
+                            log('🔧 请尝试以下解决方案：', 'warning');
+                            log('1. 按 Ctrl+F5 强制刷新页面');
+                            log('2. 清除浏览器缓存');
+                            log('3. 重启开发服务器');
+                            log('4. 检查浏览器控制台是否有错误');
+                        } else {
+                            log(`⚠️ 标题不匹配，显示为: "${pageTitle}"`, 'warning');
+                        }
+                    } else {
+                        log('❌ 未找到页面标题元素', 'error');
+                    }
+                }, 1000);
+            } else {
+                log('ℹ️ 当前不在活动详情页');
+            }
+        }
+
+        function forceReload() {
+            log('🔄 强制重新加载页面...');
+            window.location.reload(true);
+        }
+
+        // 初始化
+        renderActivityList();
+        log('🚀 强制刷新验证页面已加载', 'success');
+        log('💡 如果修复仍未生效，请尝试以下步骤：', 'warning');
+        log('1. 在主应用页面按 Ctrl+F5 强制刷新');
+        log('2. 清除浏览器缓存');
+        log('3. 重启开发服务器 (npm run dev)');
+        log('4. 检查浏览器控制台的网络请求');
+    </script>
+</body>
+</html>

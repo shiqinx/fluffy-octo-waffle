@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API错误调试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .error-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+        }
+        .error-section.error {
+            border-color: #ff4d4f;
+            background: #fff2f0;
+        }
+        .error-section.warning {
+            border-color: #faad14;
+            background: #fffbe6;
+        }
+        .error-section.success {
+            border-color: #52c41a;
+            background: #f6ffed;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        .log-container {
+            background: #001529;
+            color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-error {
+            color: #ff4d4f;
+        }
+        .log-warn {
+            color: #faad14;
+        }
+        .log-info {
+            color: #1890ff;
+        }
+        .log-success {
+            color: #52c41a;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔍 API错误调试工具</h2>
+        
+        <div class="error-section warning">
+            <h3>⚠️ 检测到的错误</h3>
+            <div id="detected-errors">
+                <div class="status">
+                    <strong>错误位置：</strong> dataModelConverter.js:268<br>
+                    <strong>错误信息：</strong> API调用错误: Object<br>
+                    <strong>可能原因：</strong> API请求失败，可能是网络问题或后端服务未启动
+                </div>
+            </div>
+        </div>
+
+        <div class="error-section">
+            <h3>🧪 调试工具</h3>
+            <button onclick="testBasicAPI()">测试基础API连接</button>
+            <button onclick="testActivityAPI()">测试活动API</button>
+            <button onclick="testAuthAPI()">测试认证API</button>
+            <button onclick="testNetworkConnection()">测试网络连接</button>
+            <button onclick="clearLogs()">清空日志</button>
+            <div id="debug-results" class="log-container"></div>
+        </div>
+
+        <div class="error-section">
+            <h3>📊 实时错误监控</h3>
+            <button onclick="startErrorMonitoring()">开始监控</button>
+            <button onclick="stopErrorMonitoring()">停止监控</button>
+            <div id="error-monitor" class="log-container"></div>
+        </div>
+
+        <div class="error-section">
+            <h3>🔧 修复建议</h3>
+            <div id="fix-suggestions">
+                <div class="status success">
+                    <strong>1. 检查后端服务：</strong><br>
+                    • 确认后端服务是否正在运行<br>
+                    • 检查后端服务端口是否正确<br>
+                    • 验证API端点是否可访问
+                </div>
+                <div class="status success">
+                    <strong>2. 检查网络连接：</strong><br>
+                    • 确认前端能访问后端地址<br>
+                    • 检查防火墙设置<br>
+                    • 验证CORS配置
+                </div>
+                <div class="status success">
+                    <strong>3. 检查API配置：</strong><br>
+                    • 确认API基础URL配置正确<br>
+                    • 检查请求头设置<br>
+                    • 验证认证token是否有效
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let errorMonitorInterval = null;
+        let originalConsoleError = null;
+        let errorLogs = [];
+
+        // 重写console.error来捕获错误
+        function setupErrorCapture() {
+            originalConsoleError = console.error;
+            console.error = function(...args) {
+                // 调用原始console.error
+                originalConsoleError.apply(console, args);
+                
+                // 捕获错误
+                const errorText = args.join(' ');
+                errorLogs.push({
+                    timestamp: new Date().toISOString(),
+                    type: 'error',
+                    message: errorText
+                });
+                
+                // 如果包含dataModelConverter错误，特殊处理
+                if (errorText.includes('dataModelConverter.js:268')) {
+                    addLogEntry('error-monitor', `🔍 捕获到dataModelConverter错误: ${errorText}`, 'error');
+                }
+            };
+        }
+
+        // 恢复原始console.error
+        function restoreConsoleError() {
+            if (originalConsoleError) {
+                console.error = originalConsoleError;
+            }
+        }
+
+        // 添加日志条目
+        function addLogEntry(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 测试基础API连接
+        async function testBasicAPI() {
+            addLogEntry('debug-results', '🔍 开始测试基础API连接...', 'info');
+            
+            try {
+                // 测试后端连接
+                const response = await fetch('http://localhost:8080/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    addLogEntry('debug-results', '✅ 后端服务连接正常', 'success');
+                } else {
+                    addLogEntry('debug-results', `❌ 后端服务响应异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLogEntry('debug-results', `❌ 无法连接到后端服务: ${error.message}`, 'error');
+                addLogEntry('debug-results', '💡 请检查后端服务是否在 http://localhost:8080 运行', 'warn');
+            }
+        }
+
+        // 测试活动API
+        async function testActivityAPI() {
+            addLogEntry('debug-results', '🔍 开始测试活动API...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/activity/list', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addLogEntry('debug-results', '✅ 活动API响应正常', 'success');
+                    addLogEntry('debug-results', `📊 返回数据: ${JSON.stringify(data).substring(0, 100)}...`, 'info');
+                } else {
+                    addLogEntry('debug-results', `❌ 活动API响应异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLogEntry('debug-results', `❌ 活动API调用失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试认证API
+        async function testAuthAPI() {
+            addLogEntry('debug-results', '🔍 开始测试认证API...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/user/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: 'test',
+                        userPassword: 'test'
+                    })
+                });
+                
+                if (response.ok) {
+                    addLogEntry('debug-results', '✅ 认证API响应正常', 'success');
+                } else {
+                    addLogEntry('debug-results', `❌ 认证API响应异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLogEntry('debug-results', `❌ 认证API调用失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试网络连接
+        async function testNetworkConnection() {
+            addLogEntry('debug-results', '🔍 开始测试网络连接...', 'info');
+            
+            try {
+                // 测试本地连接
+                const localResponse = await fetch('http://localhost:3000', {
+                    method: 'GET'
+                });
+                
+                if (localResponse.ok) {
+                    addLogEntry('debug-results', '✅ 前端服务连接正常', 'success');
+                }
+                
+                // 测试后端连接
+                const backendResponse = await fetch('http://localhost:8080', {
+                    method: 'GET'
+                });
+                
+                if (backendResponse.ok) {
+                    addLogEntry('debug-results', '✅ 后端服务连接正常', 'success');
+                } else {
+                    addLogEntry('debug-results', `⚠️ 后端服务响应: ${backendResponse.status}`, 'warn');
+                }
+            } catch (error) {
+                addLogEntry('debug-results', `❌ 网络连接测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 开始错误监控
+        function startErrorMonitoring() {
+            addLogEntry('error-monitor', '🔍 开始监控API错误...', 'info');
+            setupErrorCapture();
+            
+            // 定期检查错误
+            errorMonitorInterval = setInterval(() => {
+                if (errorLogs.length > 0) {
+                    const recentErrors = errorLogs.slice(-5);
+                    recentErrors.forEach(log => {
+                        addLogEntry('error-monitor', `${log.message}`, log.type);
+                    });
+                    errorLogs = []; // 清空已处理的错误
+                }
+            }, 1000);
+        }
+
+        // 停止错误监控
+        function stopErrorMonitoring() {
+            if (errorMonitorInterval) {
+                clearInterval(errorMonitorInterval);
+                errorMonitorInterval = null;
+            }
+            restoreConsoleError();
+            addLogEntry('error-monitor', '⏹️ 错误监控已停止', 'info');
+        }
+
+        // 清空日志
+        function clearLogs() {
+            document.getElementById('debug-results').innerHTML = '';
+            document.getElementById('error-monitor').innerHTML = '';
+            errorLogs = [];
+        }
+
+        // 页面加载时自动开始监控
+        window.onload = function() {
+            addLogEntry('debug-results', '🚀 API错误调试工具已加载', 'success');
+            addLogEntry('debug-results', '💡 点击上方按钮开始调试', 'info');
+            
+            // 自动开始错误监控
+            setTimeout(() => {
+                startErrorMonitoring();
+            }, 1000);
+        };
+
+        // 页面卸载时清理
+        window.onbeforeunload = function() {
+            stopErrorMonitoring();
+            restoreConsoleError();
+        };
+    </script>
+</body>
+</html>

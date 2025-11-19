@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动列表测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .activity-list {
+            margin-top: 20px;
+        }
+        .activity-item {
+            padding: 12px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .activity-info {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>活动列表功能测试</h2>
+        
+        <div class="test-section">
+            <h3>1. 检查localStorage</h3>
+            <button onclick="checkLocalStorage()">检查活动数据</button>
+            <button onclick="clearLocalStorage()">清空数据</button>
+            <div id="localStorage-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 创建测试活动</h3>
+            <button onclick="createTestActivity()">创建测试活动</button>
+            <button onclick="createMultipleActivities()">创建多个活动</button>
+            <div id="create-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 模拟页面刷新</h3>
+            <button onclick="simulatePageLoad()">模拟页面加载</button>
+            <div id="load-result" class="result"></div>
+        </div>
+
+        <div class="activity-list">
+            <h3>4. 当前活动列表</h3>
+            <div id="activities-display"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟活动数据结构
+        function createActivityData(id, title, type = 'sports') {
+            return {
+                id: id,
+                title: title,
+                type: type,
+                category: type,
+                locationName: '测试地点',
+                location: {
+                    name: '测试地点',
+                    address: '测试地址'
+                },
+                description: `这是${title}的描述`,
+                startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: Math.floor(Math.random() * 10) + 1,
+                maxParticipants: 20,
+                organizer: {
+                    id: 1,
+                    name: '测试组织者',
+                    avatar: ''
+                },
+                distance: 0.5,
+                isEnrolled: false,
+                isApproved: false,
+                status: 'open',
+                participants: [],
+                enrollments: [],
+                createdAt: new Date().toISOString()
+            };
+        }
+
+        function checkLocalStorage() {
+            const result = document.getElementById('localStorage-result');
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    const activities = JSON.parse(stored);
+                    result.innerHTML = `✅ 找到 ${activities.length} 个活动<br><pre>${JSON.stringify(activities, null, 2)}</pre>`;
+                } else {
+                    result.innerHTML = '❌ localStorage中没有活动数据';
+                }
+            } catch (error) {
+                result.innerHTML = `❌ 读取localStorage失败: ${error.message}`;
+            }
+        }
+
+        function clearLocalStorage() {
+            const result = document.getElementById('localStorage-result');
+            try {
+                localStorage.removeItem('campus_activities');
+                result.innerHTML = '✅ localStorage已清空';
+                displayActivities();
+            } catch (error) {
+                result.innerHTML = `❌ 清空失败: ${error.message}`;
+            }
+        }
+
+        function createTestActivity() {
+            const result = document.getElementById('create-result');
+            try {
+                const newActivity = createActivityData(Date.now(), '测试活动-' + new Date().toLocaleTimeString());
+                
+                // 获取现有活动
+                let activities = [];
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    activities = JSON.parse(stored);
+                }
+                
+                // 添加新活动到开头
+                activities.unshift(newActivity);
+                
+                // 保存到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(activities));
+                
+                result.innerHTML = `✅ 成功创建活动: ${newActivity.title}`;
+                displayActivities();
+            } catch (error) {
+                result.innerHTML = `❌ 创建失败: ${error.message}`;
+            }
+        }
+
+        function createMultipleActivities() {
+            const result = document.getElementById('create-result');
+            try {
+                const activities = [
+                    createActivityData(Date.now() + 1, '篮球友谊赛', 'sports'),
+                    createActivityData(Date.now() + 2, '学习小组', 'study'),
+                    createActivityData(Date.now() + 3, '游戏竞赛', 'game')
+                ];
+                
+                // 获取现有活动
+                let existingActivities = [];
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    existingActivities = JSON.parse(stored);
+                }
+                
+                // 合并活动列表
+                const allActivities = [...activities, ...existingActivities];
+                
+                // 保存到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(allActivities));
+                
+                result.innerHTML = `✅ 成功创建 ${activities.length} 个活动`;
+                displayActivities();
+            } catch (error) {
+                result.innerHTML = `❌ 批量创建失败: ${error.message}`;
+            }
+        }
+
+        function simulatePageLoad() {
+            const result = document.getElementById('load-result');
+            try {
+                // 模拟页面加载时的数据读取过程
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    const activities = JSON.parse(stored);
+                    result.innerHTML = `✅ 模拟页面加载成功，读取到 ${activities.length} 个活动`;
+                } else {
+                    result.innerHTML = '❌ 模拟页面加载失败，没有数据';
+                }
+                displayActivities();
+            } catch (error) {
+                result.innerHTML = `❌ 模拟加载失败: ${error.message}`;
+            }
+        }
+
+        function displayActivities() {
+            const display = document.getElementById('activities-display');
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    const activities = JSON.parse(stored);
+                    if (activities.length === 0) {
+                        display.innerHTML = '<p style="color: #999;">暂无活动</p>';
+                    } else {
+                        display.innerHTML = activities.map(activity => `
+                            <div class="activity-item">
+                                <div class="activity-title">${activity.title}</div>
+                                <div class="activity-info">
+                                    📍 ${activity.locationName} | 
+                                    👥 ${activity.currentParticipants}/${activity.maxParticipants}人 | 
+                                    🏷️ ${activity.type}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    display.innerHTML = '<p style="color: #999;">暂无活动</p>';
+                }
+            } catch (error) {
+                display.innerHTML = `<p style="color: red;">显示失败: ${error.message}</p>`;
+            }
+        }
+
+        // 页面加载时显示当前活动
+        window.onload = function() {
+            displayActivities();
+        };
+    </script>
+</body>
+</html>

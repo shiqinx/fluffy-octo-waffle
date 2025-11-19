@@ -1,122 +1,125 @@
 <template>
   <div class="register-page">
-    <!-- 背景装饰 -->
-    <div class="background-decor">
-      <div class="circle circle-1"></div>
-      <div class="circle circle-2"></div>
-      <div class="circle circle-3"></div>
-    </div>
+    <van-nav-bar
+      title="用户注册"
+      left-text="返回"
+      left-arrow
+      @click-left="$router.back()"
+      fixed
+      placeholder
+    />
 
-    <!-- 主要内容 -->
     <div class="register-content">
-      <!-- 头部品牌信息 -->
-      <div class="brand-header">
-        <div class="logo">
-          <div class="logo-icon">🏫</div>
-          <h1 class="brand-title">校园活动平台</h1>
-        </div>
-        <p class="brand-subtitle">创建您的校园活动账户</p>
-      </div>
-
-      <!-- 注册表单 -->
-      <div class="register-form-container">
-        <h2 class="form-title">用户注册</h2>
-        
-        <div class="form-wrapper">
-          <!-- 用户名输入 -->
-          <div class="input-group">
-            <div class="input-icon">👤</div>
-            <input
-              v-model="registerForm.name"
-              type="text"
-              placeholder="请输入真实姓名（仅支持中文）"
-              class="form-input"
-              @input="validateNameInput"
-              maxlength="4"
-            >
-            <div class="input-hint">仅支持2-4个中文字符</div>
-          </div>
-
-          <!-- 学号输入 -->
-          <div class="input-group">
-            <div class="input-icon">🎓</div>
-            <input
-              v-model="registerForm.studentId"
-              type="text"
-              placeholder="请输入学号"
-              class="form-input"
-              maxlength="12"
-            >
-          </div>
-
-          <!-- 密码输入 -->
-          <div class="input-group">
-            <div class="input-icon">🔒</div>
-            <input
-              v-model="registerForm.password"
-              type="password"
-              placeholder="请输入密码"
-              class="form-input"
-            >
-          </div>
-
-          <!-- 确认密码输入 -->
-          <div class="input-group">
-            <div class="input-icon">✅</div>
-            <input
-              v-model="registerForm.confirmPassword"
-              type="password"
-              placeholder="请再次输入密码"
-              class="form-input"
-            >
-          </div>
-
-          <!-- 密码强度提示 -->
-          <div class="password-strength" v-if="registerForm.password">
-            <div class="strength-bar">
-              <div 
-                class="strength-fill" 
-                :class="passwordStrength.class"
-              ></div>
-            </div>
-            <div class="strength-text">{{ passwordStrength.text }}</div>
-          </div>
-
-          <!-- 注册协议 -->
-          <div class="agreement">
-            <label class="checkbox-label">
-              <input
-                v-model="registerForm.agreed"
-                type="checkbox"
-                class="checkbox-input"
-              >
-              <span class="checkbox-custom"></span>
-              <span class="checkbox-text">
-                我已阅读并同意
-                <a href="#" class="agreement-link">《用户协议》</a>
-                和
-                <a href="#" class="agreement-link">《隐私政策》</a>
-              </span>
-            </label>
-          </div>
-
-          <!-- 注册按钮 -->
-          <button
-            @click="onSubmit"
-            :disabled="loading || !registerForm.agreed"
-            class="register-btn"
+      <van-form @submit="onSubmit" class="register-form">
+        <van-cell-group inset>
+          <van-field
+            v-model="form.realName"
+            name="realName"
+            label="真实姓名"
+            placeholder="请输入真实姓名（仅中文）"
+            :rules="[{ required: true, pattern: /^[\u4e00-\u9fa5]{2,10}$/, message: '请输入2-10位中文姓名' }]"
+            clearable
+          />
+          <van-field
+            v-model="form.studentId"
+            name="studentId"
+            label="学号"
+            placeholder="请输入6-12位学号"
+            :rules="[{ required: true, pattern: /^\d{6,12}$/, message: '请输入6-12位数字学号' }]"
+            clearable
+            maxlength="12"
+          />
+          <van-field
+            v-model="form.password"
+            type="password"
+            name="password"
+            label="密码"
+            placeholder="请输入密码"
+            :rules="[{ required: true, validator: validatePassword, message: '密码至少6位，包含字母和数字' }]"
+            clearable
+            @input="checkPasswordStrength"
           >
-            <span v-if="!loading">立即注册</span>
-            <span v-else class="loading-text">注册中...</span>
-          </button>
+            <template #extra>
+              <div class="password-strength">
+                <span class="strength-text">{{ strengthText }}</span>
+                <div class="strength-bar">
+                  <div 
+                    class="strength-progress" 
+                    :class="strengthClass"
+                    :style="{ width: strengthWidth }"
+                  ></div>
+                </div>
+              </div>
+            </template>
+          </van-field>
+          <van-field
+            v-model="form.confirmPassword"
+            type="password"
+            name="confirmPassword"
+            label="确认密码"
+            placeholder="请再次输入密码"
+            :rules="[{ validator: validateConfirmPassword, message: '两次密码输入不一致' }]"
+            clearable
+          />
+        </van-cell-group>
+
+        <div class="agreement-section">
+          <van-checkbox v-model="agreed" shape="square" class="agreement-checkbox">
+            我已阅读并同意
+            <span class="agreement-link" @click="showAgreement = true">《用户协议》</span>
+          </van-checkbox>
         </div>
 
-        <!-- 登录链接 -->
-        <div class="login-link">
-          <span>已有账号？</span>
-          <a @click="goToLogin" class="link">立即登录</a>
+        <div class="submit-section">
+          <van-button 
+            round 
+            block 
+            type="primary" 
+            native-type="submit" 
+            :loading="loading"
+            :disabled="!agreed"
+            size="large"
+          >
+            注册
+          </van-button>
         </div>
-      </div>
+      </van-form>
+
+      <van-popup v-model:show="showAgreement" position="bottom" :style="{ height: '70%' }">
+        <div class="agreement-popup">
+          <div class="agreement-header">
+            <h3>用户协议</h3>
+          </div>
+          <div class="agreement-content">
+            <div class="agreement-text">
+              <h4>欢迎使用基于位置的校园活动与组队平台</h4>
+              <p>请您仔细阅读以下条款，如果您不同意本服务条款，您应不使用本平台。</p>
+              
+              <h5>一、服务说明</h5>
+              <p>本平台为校园师生提供基于地理位置的活动发布、组队匹配、即时通讯等服务。</p>
+              
+              <h5>二、用户注册</h5>
+              <p>1. 用户需使用真实学号进行注册（6-12位数字）</p>
+              <p>2. 用户需提供真实姓名信息（2-10位中文）</p>
+              <p>3. 用户需设置安全密码</p>
+              <p>4. 用户需同意本协议条款</p>
+              
+              <h5>三、使用规则</h5>
+              <p>1. 不得发布违法、违规内容</p>
+              <p>2. 尊重他人隐私权</p>
+              <p>3. 遵守校园管理规定</p>
+              
+              <h5>四、隐私保护</h5>
+              <p>我们将保护您的个人信息安全，仅在必要范围内使用您的信息。</p>
+            </div>
+          </div>
+          <div class="agreement-actions">
+            <van-button type="primary" block @click="showAgreement = false" size="large">
+              同意并关闭
+            </van-button>
+          </div>
+        </div>
+      </van-popup>
     </div>
   </div>
 </template>
@@ -124,465 +127,234 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const registerForm = ref({
-  name: '',
+const form = ref({
+  realName: '',
   studentId: '',
   password: '',
-  confirmPassword: '',
-  agreed: false
+  confirmPassword: ''
 })
+
+const agreed = ref(false)
+const showAgreement = ref(false)
 const loading = ref(false)
 
+// 密码强度相关
+const passwordStrength = ref(0) // 0: 无, 1: 弱, 2: 中, 3: 强
+
 // 计算密码强度
-const passwordStrength = computed(() => {
-  const password = registerForm.value.password
+const checkPasswordStrength = () => {
+  const password = form.value.password
   if (!password) {
-    return { class: 'weak', text: '' }
+    passwordStrength.value = 0
+    return
   }
 
   let strength = 0
-  if (password.length >= 8) strength++
-  if (/[a-z]/.test(password)) strength++
-  if (/[A-Z]/.test(password)) strength++
-  if (/[0-9]/.test(password)) strength++
-  if (/[^a-zA-Z0-9]/.test(password)) strength++
-
-  switch (strength) {
-    case 0:
-    case 1:
-      return { class: 'weak', text: '密码强度：弱' }
-    case 2:
-    case 3:
-      return { class: 'medium', text: '密码强度：中' }
-    case 4:
-    case 5:
-      return { class: 'strong', text: '密码强度：强' }
-    default:
-      return { class: 'weak', text: '密码强度：弱' }
-  }
-})
-
-// 验证中文字符输入
-const validateNameInput = (event) => {
-  const input = event.target
-  const value = input.value
   
-  // 移除非中文字符
-  const chineseOnly = value.replace(/[^\u4e00-\u9fa5]/g, '')
+  // 长度评分
+  if (password.length >= 6) strength += 1
+  if (password.length >= 8) strength += 1
   
-  // 更新输入框的值
-  if (value !== chineseOnly) {
-    input.value = chineseOnly
-    registerForm.value.name = chineseOnly
+  // 复杂度评分
+  if (/[a-z]/.test(password)) strength += 1
+  if (/[A-Z]/.test(password)) strength += 1
+  if (/[0-9]/.test(password)) strength += 1
+  if (/[^a-zA-Z0-9]/.test(password)) strength += 1
+  
+  // 最终强度等级
+  if (strength <= 2) {
+    passwordStrength.value = 1 // 弱
+  } else if (strength <= 4) {
+    passwordStrength.value = 2 // 中
+  } else {
+    passwordStrength.value = 3 // 强
   }
 }
 
-// 验证表单
-const validateForm = () => {
-  if (!registerForm.value.name.trim()) {
-    alert('请输入真实姓名')
-    return false
+// 密码强度文本
+const strengthText = computed(() => {
+  const texts = ['', '弱', '中', '强']
+  return passwordStrength.value > 0 ? `密码强度：${texts[passwordStrength.value]}` : ''
+})
+
+// 密码强度进度条宽度
+const strengthWidth = computed(() => {
+  const widths = ['0%', '33%', '66%', '100%']
+  return widths[passwordStrength.value]
+})
+
+// 密码强度样式类
+const strengthClass = computed(() => {
+  const classes = ['', 'strength-weak', 'strength-medium', 'strength-strong']
+  return classes[passwordStrength.value]
+})
+
+// 密码验证规则
+const validatePassword = (val) => {
+  if (!val) {
+    return '请输入密码'
   }
-  
-  // 验证用户名是否为纯中文
-  if (!/^[\u4e00-\u9fa5]+$/.test(registerForm.value.name)) {
-    alert('姓名只能包含中文字符')
-    return false
+  if (val.length < 6) {
+    return '密码长度至少6位'
   }
-  
-  // 验证姓名长度（2-4个中文字符）
-  if (registerForm.value.name.length < 2 || registerForm.value.name.length > 4) {
-    alert('姓名长度应为2-4个中文字符')
-    return false
+  if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(val)) {
+    return '密码需包含字母和数字'
   }
-  
-  if (!registerForm.value.studentId.trim()) {
-    alert('请输入学号')
-    return false
-  }
-  
-  // 学号格式验证（假设学号是数字）
-  if (!/^\d+$/.test(registerForm.value.studentId)) {
-    alert('学号格式不正确，请输入数字')
-    return false
-  }
-  
-  if (!registerForm.value.password.trim()) {
-    alert('请输入密码')
-    return false
-  }
-  
-  if (registerForm.value.password.length < 6) {
-    alert('密码长度至少6位')
-    return false
-  }
-  
-  if (registerForm.value.password !== registerForm.value.confirmPassword) {
-    alert('两次输入的密码不一致')
-    return false
-  }
-  
-  if (!registerForm.value.agreed) {
-    alert('请同意用户协议和隐私政策')
-    return false
-  }
-  
   return true
 }
 
+// 确认密码验证
+const validateConfirmPassword = (val) => {
+  return val === form.value.password
+}
+
 const onSubmit = async () => {
-  if (!validateForm()) {
+  if (!agreed.value) {
+    showToast('请同意用户协议')
+    return
+  }
+
+  // 手动验证学号格式
+  if (!/^\d{6,12}$/.test(form.value.studentId)) {
+    showToast('请输入6-12位数字学号')
+    return
+  }
+
+  // 手动验证密码
+  const passwordValid = validatePassword(form.value.password)
+  if (passwordValid !== true) {
+    showToast(passwordValid)
     return
   }
 
   loading.value = true
-
   try {
-    const result = await authStore.register(registerForm.value)
-    
-    if (result.success) {
-      alert('注册成功！')
-      router.push('/')
-    } else {
-      alert(result.message || '注册失败')
-    }
+    await authStore.registerUser(form.value)
+    showToast('注册成功')
+    router.push('/login')
   } catch (error) {
-    console.error('注册错误:', error)
-    alert('注册失败，请重试')
+    showToast(error.message || '注册失败')
   } finally {
     loading.value = false
   }
-}
-
-const goToLogin = () => {
-  router.push('/login')
 }
 </script>
 
 <style scoped>
 .register-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
-}
-
-.background-decor {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.circle-1 {
-  width: 200px;
-  height: 200px;
-  top: -50px;
-  left: -50px;
-}
-
-.circle-2 {
-  width: 150px;
-  height: 150px;
-  bottom: 100px;
-  right: -50px;
-}
-
-.circle-3 {
-  width: 100px;
-  height: 100px;
-  top: 50%;
-  right: 20%;
+  background: #f5f5f5;
 }
 
 .register-content {
+  padding: 20px;
+}
+
+.register-form {
+  margin-top: 20px;
+}
+
+.agreement-section {
+  padding: 20px 16px;
+}
+
+.agreement-checkbox {
   width: 100%;
-  max-width: 400px;
-  z-index: 1;
 }
 
-.brand-header {
-  text-align: center;
-  margin-bottom: 30px;
-  color: white;
+.agreement-link {
+  color: #1989fa;
 }
 
-.logo {
+.submit-section {
+  padding: 0 16px;
+}
+
+.agreement-popup {
+  height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  flex-direction: column;
 }
 
-.logo-icon {
-  font-size: 40px;
-}
-
-.brand-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.brand-subtitle {
-  font-size: 14px;
-  opacity: 0.9;
-  margin: 0;
-}
-
-.register-form-container {
-  background: white;
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-.form-title {
+.agreement-header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
   text-align: center;
-  margin-bottom: 25px;
-  font-size: 22px;
-  font-weight: 600;
+}
+
+.agreement-header h3 {
+  margin: 0;
   color: #333;
 }
 
-.form-wrapper {
-  margin-bottom: 25px;
+.agreement-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
 }
 
-.input-group {
-  position: relative;
-  margin-bottom: 16px;
+.agreement-text h4 {
+  color: #333;
+  margin-bottom: 12px;
 }
 
-.input-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 16px;
-  z-index: 1;
-}
-
-.form-input {
-  width: 100%;
-  height: 48px;
-  padding: 0 20px 0 45px;
-  border: 2px solid #f1f3f4;
-  border-radius: 10px;
-  font-size: 15px;
-  transition: all 0.3s ease;
-  background: #fafbfc;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #667eea;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.input-hint {
-  font-size: 12px;
+.agreement-text h5 {
   color: #666;
-  margin-top: 4px;
-  text-align: left;
-  padding-left: 45px;
+  margin: 16px 0 8px 0;
 }
 
-/* 密码强度指示器 */
+.agreement-text p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.agreement-actions {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 密码强度样式 */
 .password-strength {
-  margin: 10px 0 20px 0;
-}
-
-.strength-bar {
-  width: 100%;
-  height: 6px;
-  background: #f1f3f4;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 5px;
-}
-
-.strength-fill {
-  height: 100%;
-  width: 0%;
-  transition: all 0.3s ease;
-  border-radius: 3px;
-}
-
-.strength-fill.weak {
-  width: 33%;
-  background: #ff4757;
-}
-
-.strength-fill.medium {
-  width: 66%;
-  background: #ffa502;
-}
-
-.strength-fill.strong {
-  width: 100%;
-  background: #2ed573;
+  margin-top: 8px;
 }
 
 .strength-text {
   font-size: 12px;
   color: #666;
-  text-align: center;
+  display: block;
+  margin-bottom: 4px;
 }
 
-/* 协议同意 */
-.agreement {
-  margin: 20px 0 25px 0;
+.strength-bar {
+  width: 80px;
+  height: 4px;
+  background: #f0f0f0;
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.checkbox-label {
-  display: flex;
-  align-items: flex-start;
-  cursor: pointer;
-  font-size: 13px;
-  color: #666;
-  line-height: 1.4;
-}
-
-.checkbox-input {
-  display: none;
-}
-
-.checkbox-custom {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ddd;
-  border-radius: 3px;
-  margin-right: 8px;
-  margin-top: 2px;
-  position: relative;
+.strength-progress {
+  height: 100%;
+  border-radius: 2px;
   transition: all 0.3s ease;
 }
 
-.checkbox-input:checked + .checkbox-custom {
-  background: #667eea;
-  border-color: #667eea;
+.strength-weak {
+  background: #ff4d4f;
 }
 
-.checkbox-input:checked + .checkbox-custom::after {
-  content: '✓';
-  position: absolute;
-  color: white;
-  font-size: 10px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.strength-medium {
+  background: #faad14;
 }
 
-.agreement-link {
-  color: #667eea;
-  text-decoration: none;
-}
-
-.agreement-link:hover {
-  text-decoration: underline;
-}
-
-/* 注册按钮 */
-.register-btn {
-  width: 100%;
-  height: 48px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.register-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-}
-
-.register-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.loading-text {
-  display: inline-block;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
-.login-link {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-
-.link {
-  color: #667eea;
-  margin-left: 8px;
-  text-decoration: none;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.link:hover {
-  text-decoration: underline;
-}
-
-/* 响应式设计 */
-@media (max-width: 480px) {
-  .register-page {
-    padding: 15px;
-  }
-  
-  .register-form-container {
-    padding: 25px 20px;
-  }
-  
-  .brand-title {
-    font-size: 24px;
-  }
-  
-  .form-title {
-    font-size: 20px;
-  }
-  
-  .form-input {
-    height: 46px;
-    font-size: 14px;
-  }
-  
-  .register-btn {
-    height: 46px;
-    font-size: 15px;
-  }
+.strength-strong {
+  background: #52c41a;
 }
 </style>

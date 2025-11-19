@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后端连接测试</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-item { 
+            margin: 15px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            background: #fafafa;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .pending { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 4px; 
+            background: #007bff; 
+            color: white; 
+            font-size: 14px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        pre { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            overflow-x: auto; 
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #e9ecef;
+        }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .status-ok { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-pending { background: #ffc107; }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        h3 { color: #555; margin-top: 0; }
+        .info-grid { display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center; }
+        .info-label { font-weight: bold; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 后端连接测试</h1>
+        
+        <div class="test-item">
+            <h3>📊 环境检查</h3>
+            <div class="info-grid">
+                <div class="info-label">当前模式:</div>
+                <div><span class="status-indicator status-pending"></span><span id="current-mode">检查中...</span></div>
+                
+                <div class="info-label">API地址:</div>
+                <div id="api-url">检查中...</div>
+                
+                <div class="info-label">前端地址:</div>
+                <div id="frontend-url">检查中...</div>
+                
+                <div class="info-label">测试时间:</div>
+                <div id="test-time">-</div>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <h3>🔗 连接测试</h3>
+            <button onclick="testConnection()" id="btn-connection">测试后端连接</button>
+            <button onclick="testAuth()" id="btn-auth">测试认证接口</button>
+            <button onclick="testTeams()" id="btn-teams">测试团队接口</button>
+            <button onclick="testActivities()" id="btn-activities">测试活动接口</button>
+            <button onclick="runAllTests()" id="btn-all">运行所有测试</button>
+            <div id="connection-result" style="margin-top: 15px;"></div>
+        </div>
+
+        <div class="test-item">
+            <h3>📝 测试结果</h3>
+            <div id="test-summary">
+                <p>点击上方按钮开始测试...</p>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <h3>📋 详细日志</h3>
+            <button onclick="clearLog()" style="background: #6c757d;">清空日志</button>
+            <button onclick="exportLog()" style="background: #28a745;">导出日志</button>
+            <pre id="log" style="max-height: 300px; margin-top: 10px;"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        let testResults = {
+            connection: null,
+            auth: null,
+            teams: null,
+            activities: null
+        };
+        
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logEl.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateEnvironment() {
+            const useMock = localStorage.getItem('VITE_USE_MOCK') === 'true' || 
+                           (import.meta.env?.VITE_USE_MOCK === 'true');
+            
+            document.getElementById('current-mode').innerHTML = 
+                `<span class="status-indicator ${useMock ? 'status-pending' : 'status-ok'}"></span>${useMock ? 'Mock模式' : '后端模式'}`;
+            document.getElementById('api-url').textContent = useMock ? '/' : API_BASE;
+            document.getElementById('frontend-url').textContent = window.location.origin;
+            document.getElementById('test-time').textContent = new Date().toLocaleString();
+            
+            log(`环境检查完成 - 模式: ${useMock ? 'Mock' : '后端'}, API: ${useMock ? '/' : API_BASE}`);
+        }
+
+        async function testConnection() {
+            const resultEl = document.getElementById('connection-result');
+            const btn = document.getElementById('btn-connection');
+            
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+            resultEl.innerHTML = '<div class="pending"><span class="status-indicator status-pending"></span>正在测试后端连接...</div>';
+            
+            try {
+                log(`🔍 测试后端连接: ${API_BASE}`);
+                
+                // 测试基础连接
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultEl.innerHTML = '<div class="success"><span class="status-indicator status-ok"></span>✅ 后端连接成功</div>';
+                    log(`连接成功: ${JSON.stringify(data)}`, 'success');
+                    testResults.connection = { success: true, data };
+                } else {
+                    resultEl.innerHTML = `<div class="error"><span class="status-indicator status-error"></span>❌ 后端响应错误: ${response.status}</div>`;
+                    log(`响应错误: ${response.status} ${response.statusText}`, 'error');
+                    testResults.connection = { success: false, error: `${response.status} ${response.statusText}` };
+                }
+            } catch (error) {
+                resultEl.innerHTML = '<div class="error"><span class="status-indicator status-error"></span>❌ 无法连接到后端</div>';
+                log(`连接失败: ${error.message}`, 'error');
+                log('💡 请确保后端服务在 http://localhost:8080 运行', 'warning');
+                testResults.connection = { success: false, error: error.message };
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '测试后端连接';
+                updateTestSummary();
+            }
+        }
+
+        async function testAuth() {
+            const btn = document.getElementById('btn-auth');
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+            
+            log('🔍 测试认证接口...');
+            try {
+                const response = await fetch(`${API_BASE}/auth/userinfo`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'
+                    }
+                });
+                
+                log(`认证接口响应: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`认证数据: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.auth = { success: true, data };
+                } else {
+                    log(`认证接口错误: ${response.status} ${response.statusText}`, 'error');
+                    testResults.auth = { success: false, error: `${response.status} ${response.statusText}` };
+                }
+            } catch (error) {
+                log(`认证接口错误: ${error.message}`, 'error');
+                testResults.auth = { success: false, error: error.message };
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '测试认证接口';
+                updateTestSummary();
+            }
+        }
+
+        async function testTeams() {
+            const btn = document.getElementById('btn-teams');
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+            
+            log('🔍 测试团队接口...');
+            try {
+                const response = await fetch(`${API_BASE}/team/my-teams`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'
+                    }
+                });
+                
+                log(`团队接口响应: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`团队数据: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.teams = { success: true, data };
+                } else {
+                    log(`团队接口错误: ${response.status} ${response.statusText}`, 'error');
+                    testResults.teams = { success: false, error: `${response.status} ${response.statusText}` };
+                }
+            } catch (error) {
+                log(`团队接口错误: ${error.message}`, 'error');
+                testResults.teams = { success: false, error: error.message };
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '测试团队接口';
+                updateTestSummary();
+            }
+        }
+
+        async function testActivities() {
+            const btn = document.getElementById('btn-activities');
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+            
+            log('🔍 测试活动接口...');
+            try {
+                const response = await fetch(`${API_BASE}/activity/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'
+                    }
+                });
+                
+                log(`活动接口响应: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`活动数据: ${JSON.stringify(data, null, 2)}`, 'success');
+                    testResults.activities = { success: true, data };
+                } else {
+                    log(`活动接口错误: ${response.status} ${response.statusText}`, 'error');
+                    testResults.activities = { success: false, error: `${response.status} ${response.statusText}` };
+                }
+            } catch (error) {
+                log(`活动接口错误: ${error.message}`, 'error');
+                testResults.activities = { success: false, error: error.message };
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '测试活动接口';
+                updateTestSummary();
+            }
+        }
+
+        async function runAllTests() {
+            const btn = document.getElementById('btn-all');
+            btn.disabled = true;
+            btn.textContent = '运行中...';
+            
+            log('🚀 开始运行所有测试...');
+            
+            await testConnection();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testAuth();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testTeams();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testActivities();
+            
+            btn.disabled = false;
+            btn.textContent = '运行所有测试';
+            log('🏁 所有测试完成', 'success');
+        }
+
+        function updateTestSummary() {
+            const summaryEl = document.getElementById('test-summary');
+            const results = [];
+            
+            if (testResults.connection !== null) {
+                results.push(`<div><span class="status-indicator ${testResults.connection.success ? 'status-ok' : 'status-error'}"></span>后端连接: ${testResults.connection.success ? '成功' : '失败'}</div>`);
+            }
+            if (testResults.auth !== null) {
+                results.push(`<div><span class="status-indicator ${testResults.auth.success ? 'status-ok' : 'status-error'}"></span>认证接口: ${testResults.auth.success ? '成功' : '失败'}</div>`);
+            }
+            if (testResults.teams !== null) {
+                results.push(`<div><span class="status-indicator ${testResults.teams.success ? 'status-ok' : 'status-error'}"></span>团队接口: ${testResults.teams.success ? '成功' : '失败'}</div>`);
+            }
+            if (testResults.activities !== null) {
+                results.push(`<div><span class="status-indicator ${testResults.activities.success ? 'status-ok' : 'status-error'}"></span>活动接口: ${testResults.activities.success ? '成功' : '失败'}</div>`);
+            }
+            
+            if (results.length === 0) {
+                summaryEl.innerHTML = '<p>点击上方按钮开始测试...</p>';
+            } else {
+                summaryEl.innerHTML = results.join('');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+            log('日志已清空');
+        }
+
+        function exportLog() {
+            const logContent = document.getElementById('log').textContent;
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backend-test-log-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            log('日志已导出');
+        }
+
+        // 初始化
+        updateEnvironment();
+        log('🚀 后端连接测试页面已加载');
+        log('💡 请确保后端服务在 http://localhost:8080 运行');
+        log('📝 点击按钮开始测试各项功能');
+    </script>
+</body>
+</html>

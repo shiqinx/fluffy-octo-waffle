@@ -1,176 +1,191 @@
 <template>
   <div class="location-picker">
     <van-nav-bar
-      :title="title"
+      title="选择地点"
       left-text="取消"
       right-text="确认"
-      @click-left="$emit('cancel')"
+      left-arrow
+      @click-left="$emit('close')"
       @click-right="confirmLocation"
     />
-    
-    <div class="map-container">
-      <div id="picker-map" class="picker-map"></div>
-      
-      <!-- 中心标记 -->
-      <div class="center-marker">
-        <van-icon name="location-o" />
-      </div>
-      
-      <!-- 位置信息 -->
-      <div class="location-info">
-        <div class="address">{{ currentAddress }}</div>
-        <div class="coordinates">{{ coordinates }}</div>
-      </div>
-    </div>
 
-    <!-- 搜索框 -->
-    <div class="search-section">
-      <van-search
-        v-model="searchKeyword"
-        placeholder="搜索地点..."
-        @search="onSearch"
-        @clear="clearSearch"
-      />
-      
-      <!-- 搜索结果 -->
-      <div v-if="searchResults.length > 0" class="search-results">
-        <div
-          v-for="place in searchResults"
-          :key="place.id"
-          class="search-result-item"
-          @click="selectPlace(place)"
-        >
-          <van-icon name="location-o" />
-          <div class="place-info">
-            <div class="place-name">{{ place.name }}</div>
-            <div class="place-address">{{ place.address }}</div>
-          </div>
+    <div class="picker-content">
+      <!-- 搜索栏 -->
+      <div class="search-section">
+        <van-search
+          v-model="searchKeyword"
+          placeholder="搜索地点..."
+          @search="onSearchLocation"
+          @clear="onClearSearch"
+        />
+      </div>
+
+      <!-- 地图 -->
+      <div class="map-section">
+        <div id="picker-map" class="map"></div>
+        <div class="map-center-marker">
+          <van-icon name="location-o" color="#1989fa" size="24" />
         </div>
+      </div>
+
+      <!-- 地点列表 -->
+      <div class="location-list">
+        <van-radio-group v-model="selectedLocationId">
+          <van-cell-group>
+            <van-cell
+              v-for="location in filteredLocations"
+              :key="location.id"
+              :title="location.name"
+              :label="location.address"
+              clickable
+              @click="onLocationClick(location)"
+            >
+              <template #right-icon>
+                <van-radio :name="location.id" />
+              </template>
+            </van-cell>
+          </van-cell-group>
+        </van-radio-group>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useMapStore } from '@/stores/map'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { showToast } from 'vant'
+import { campusBuildings, campusCenter } from '@/config/map'
 
-const props = defineProps({
-  title: {
-    type: String,
-    default: '选择位置'
-  },
-  initialLocation: {
-    type: Object,
-    default: () => ({ lng: 116.310316, lat: 39.992807 })
-  }
-})
+const emit = defineEmits(['location-select', 'close'])
 
-const emit = defineEmits(['confirm', 'cancel'])
-
-const mapStore = useMapStore()
 const searchKeyword = ref('')
-const searchResults = ref([])
-const selectedLocation = ref({ ...props.initialLocation })
-const currentAddress = ref('正在获取地址...')
-const pickerMap = ref(null)
+const selectedLocationId = ref('')
+const currentCenter = ref(campusCenter)
 
-const coordinates = computed(() => {
-  const loc = selectedLocation.value
-  return `${loc.lng.toFixed(6)}, ${loc.lat.toFixed(6)}`
+// 将建筑物数据转换为地点列表
+const locationList = computed(() => {
+  return Object.entries(campusBuildings).map(([key, building]) => ({
+    id: key,
+    name: building.name,
+    address: building.address,
+    coords: building.coords,
+    type: building.type
+  }))
 })
 
-onMounted(async () => {
-  await initializePickerMap()
-  await reverseGeocode(selectedLocation.value.lng, selectedLocation.value.lat)
+const filteredLocations = computed(() => {
+  if (!searchKeyword.value) {
+    return locationList.value
+  }
+  
+  const keyword = searchKeyword.value.toLowerCase()
+  return locationList.value.filter(location => 
+    location.name.toLowerCase().includes(keyword) ||
+    location.address.toLowerCase().includes(keyword)
+  )
 })
 
-const initializePickerMap = async () => {
-  try {
-    await mapStore.loadAMapScript()
-    
-    pickerMap.value = new AMap.Map('picker-map', {
-      zoom: 16,
-      center: [selectedLocation.value.lng, selectedLocation.value.lat],
-      viewMode: '3D'
+const selectedLocation = computed(() => {
+  return locationList.value.find(loc => loc.id === selectedLocationId.value)
+})
+
+let map = null
+let marker = null
+
+onMounted(() => {
+  initMap()
+})
+
+onUnmounted(() => {
+  if (map) {
+    map.destroy()
+  }
+})
+
+const initMap = () => {
+  if (!window.AMap) {
+    showToast('地图加载失败')
+    return
+  }
+
+  map = new window.AMap.Map('picker-map', {
+    zoom: 16,
+    center: campusCenter,
+    mapStyle: 'amap://styles/normal'
+  })
+
+  // 添加所有地点标记
+  locationList.value.forEach(location => {
+    const locationMarker = new window.AMap.Marker({
+      position: location.coords,
+      title: location.name,
+      content: createMarkerContent(location)
     })
     
-    // 监听地图移动事件
-    pickerMap.value.on('moveend', onMapMove)
-    
-    // 添加标记
-    addLocationMarker()
-  } catch (error) {
-    console.error('地图初始化失败:', error)
-  }
-}
-
-const onMapMove = () => {
-  const center = pickerMap.value.getCenter()
-  selectedLocation.value = {
-    lng: center.lng,
-    lat: center.lat
-  }
-  reverseGeocode(center.lng, center.lat)
-}
-
-const addLocationMarker = () => {
-  if (pickerMap.value) {
-    new AMap.Marker({
-      position: [selectedLocation.value.lng, selectedLocation.value.lat],
-      map: pickerMap.value
+    locationMarker.on('click', () => {
+      onLocationClick(location)
     })
+    
+    map.add(locationMarker)
+  })
+
+  // 监听地图移动
+  map.on('moveend', () => {
+    const center = map.getCenter()
+    currentCenter.value = [center.lng, center.lat]
+  })
+}
+
+const createMarkerContent = (location) => {
+  return `
+    <div style="
+      background: #1989fa; 
+      color: white; 
+      padding: 4px 8px; 
+      border-radius: 12px; 
+      font-size: 12px;
+      white-space: nowrap;
+    ">
+      ${location.name}
+    </div>
+  `
+}
+
+const onSearchLocation = () => {
+  if (!searchKeyword.value.trim()) return
+  
+  // 这里可以调用高德地图的搜索API
+  // 暂时使用本地搜索
+  const found = filteredLocations.value[0]
+  if (found) {
+    onLocationClick(found)
+    map.setCenter(found.coords)
+    map.setZoom(18)
+  } else {
+    showToast('未找到相关地点')
   }
 }
 
-const reverseGeocode = async (lng, lat) => {
-  try {
-    const result = await mapStore.reverseGeocode(lng, lat)
-    if (result) {
-      currentAddress.value = result.address
-    }
-  } catch (error) {
-    currentAddress.value = '获取地址失败'
-  }
-}
-
-const onSearch = async (keyword) => {
-  if (!keyword.trim()) return
-  
-  try {
-    const results = await mapStore.searchPlace(keyword)
-    searchResults.value = results
-  } catch (error) {
-    console.error('搜索失败:', error)
-    searchResults.value = []
-  }
-}
-
-const selectPlace = (place) => {
-  selectedLocation.value = {
-    lng: place.lng,
-    lat: place.lat
-  }
-  
-  // 移动地图到选择的位置
-  if (pickerMap.value) {
-    pickerMap.value.setCenter([place.lng, place.lat])
-    pickerMap.value.setZoom(17)
-  }
-  
-  searchResults.value = []
+const onClearSearch = () => {
   searchKeyword.value = ''
 }
 
-const clearSearch = () => {
-  searchResults.value = []
+const onLocationClick = (location) => {
+  selectedLocationId.value = location.id
+  
+  // 移动地图到选中位置
+  map.setCenter(location.coords)
+  map.setZoom(18)
 }
 
 const confirmLocation = () => {
-  emit('confirm', {
-    ...selectedLocation.value,
-    address: currentAddress.value
-  })
+  if (!selectedLocation.value) {
+    showToast('请选择一个地点')
+    return
+  }
+  
+  emit('location-select', selectedLocation.value)
+  emit('close')
 }
 </script>
 
@@ -181,93 +196,38 @@ const confirmLocation = () => {
   flex-direction: column;
 }
 
-.map-container {
+.picker-content {
   flex: 1;
-  position: relative;
-}
-
-.picker-map {
-  width: 100%;
-  height: 100%;
-}
-
-.center-marker {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #07c160;
-  font-size: 32px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  pointer-events: none;
-}
-
-.location-info {
-  position: absolute;
-  bottom: 20px;
-  left: 0;
-  right: 0;
-  background: white;
-  margin: 0 16px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  text-align: center;
-}
-
-.address {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
-  color: #333;
-}
-
-.coordinates {
-  font-size: 12px;
-  color: #969799;
+  display: flex;
+  flex-direction: column;
 }
 
 .search-section {
   background: white;
-  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #ebedf0;
 }
 
-.search-results {
-  max-height: 200px;
-  overflow-y: auto;
+.map-section {
+  height: 300px;
+  position: relative;
+  flex-shrink: 0;
 }
 
-.search-result-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f5f5f5;
-  cursor: pointer;
+.map {
+  width: 100%;
+  height: 100%;
 }
 
-.search-result-item:last-child {
-  border-bottom: none;
+.map-center-marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
-.search-result-item .van-icon {
-  color: #07c160;
-  margin-right: 12px;
-  font-size: 18px;
-}
-
-.place-info {
+.location-list {
   flex: 1;
-}
-
-.place-name {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 2px;
-  color: #333;
-}
-
-.place-address {
-  font-size: 12px;
-  color: #969799;
+  overflow-y: auto;
 }
 </style>

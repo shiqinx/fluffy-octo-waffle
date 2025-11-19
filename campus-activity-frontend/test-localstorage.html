@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试localStorage清除</title>
+</head>
+<body>
+    <h1>localStorage测试</h1>
+    <button onclick="clearLocalStorage()">清除localStorage</button>
+    <button onclick="showLocalStorage()">显示localStorage内容</button>
+    <button onclick="goToActivityList()">前往活动列表</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function clearLocalStorage() {
+            localStorage.removeItem('campus_activities');
+            document.getElementById('output').innerHTML = '已清除campus_activities';
+        }
+        
+        function showLocalStorage() {
+            const activities = localStorage.getItem('campus_activities');
+            if (activities) {
+                const parsed = JSON.parse(activities);
+                let output = `活动数量: ${parsed.length}<br>`;
+                parsed.forEach((activity, index) => {
+                    output += `${index + 1}. ${activity.title} - ${activity.type}<br>`;
+                });
+                document.getElementById('output').innerHTML = output;
+            } else {
+                document.getElementById('output').innerHTML = 'localStorage中没有campus_activities';
+            }
+        }
+        
+        function goToActivityList() {
+            window.location.href = 'http://localhost:3000';
+        }
+    </script>
+</body>
+</html>

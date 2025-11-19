@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题深度调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .section { border: 1px solid #ddd; margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .section h3 { margin-top: 0; color: #333; }
+        .log { background: #f5f5f5; padding: 10px; border-radius: 3px; font-family: monospace; white-space: pre-wrap; margin: 10px 0; max-height: 300px; overflow-y: auto; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .warning { background: #fff3e0; color: #f57c00; }
+        .info { background: #e3f2fd; color: #1976d2; }
+        button { background: #1976d2; color: white; border: none; padding: 10px 20px; border-radius: 3px; cursor: pointer; margin: 5px; }
+        button:hover { background: #1565c0; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 3px; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+        .form-group { margin: 10px 0; }
+        label { display: inline-block; width: 80px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 登录问题深度调试工具</h1>
+    
+    <div class="section">
+        <h3>📊 环境检查</h3>
+        <div id="environment-info"></div>
+    </div>
+
+    <div class="section">
+        <h3>👥 用户数据检查</h3>
+        <button onclick="checkUserData()">检查用户数据</button>
+        <div id="user-data-info"></div>
+    </div>
+
+    <div class="section">
+        <h3>🔐 登录测试</h3>
+        <div class="form-group">
+            <label>学号:</label>
+            <input type="text" id="test-studentId" value="2330502134" placeholder="输入学号">
+        </div>
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="test-password" value="test123456" placeholder="输入密码">
+        </div>
+        <button onclick="testLogin()">测试登录</button>
+        <button onclick="testBothUsers()">测试两个用户</button>
+        <div id="login-result"></div>
+    </div>
+
+    <div class="section">
+        <h3>📝 详细日志</h3>
+        <button onclick="clearLogs()">清除日志</button>
+        <div id="detailed-logs" class="log"></div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { globalDataManager } from './src/api/global-data.js';
+        import { mockLogin } from './src/api/mock.js';
+        import { convertToUserLoginRequest } from './src/utils/dataModelConverter.js';
+
+        // 全局日志函数
+        window.addLog = function(message, type = 'info') {
+            const logs = document.getElementById('detailed-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        };
+
+        window.clearLogs = function() {
+            document.getElementById('detailed-logs').innerHTML = '';
+        };
+
+        // 检查环境
+        window.checkEnvironment = function() {
+            const envInfo = document.getElementById('environment-info');
+            const info = {
+                'VITE_USE_MOCK': import.meta.env.VITE_USE_MOCK,
+                'VITE_API_BASE_URL': import.meta.env.VITE_API_BASE_URL,
+                'MODE': import.meta.env.MODE,
+                'DEV': import.meta.env.DEV,
+                'PROD': import.meta.env.PROD
+            };
+            
+            envInfo.innerHTML = '<pre>' + JSON.stringify(info, null, 2) + '</pre>';
+            addLog('环境信息已检查', 'info');
+        };
+
+        // 检查用户数据
+        window.checkUserData = function() {
+            const userInfo = document.getElementById('user-data-info');
+            
+            try {
+                const users = globalDataManager.getUsers();
+                addLog(`获取到 ${users.length} 个用户`, 'info');
+                
+                let html = '<h4>用户列表:</h4>';
+                users.forEach(user => {
+                    html += `<div class="test-result">
+                        <strong>ID:</strong> ${user.id}<br>
+                        <strong>学号:</strong> ${user.studentId} (类型: ${typeof user.studentId})<br>
+                        <strong>姓名:</strong> ${user.realName}<br>
+                        <strong>密码:</strong> ${user.password} (类型: ${typeof user.password}, 长度: ${user.password.length})<br>
+                        <strong>院系:</strong> ${user.department}<br>
+                    </div>`;
+                });
+                
+                userInfo.innerHTML = html;
+                addLog('用户数据检查完成', 'success');
+            } catch (error) {
+                userInfo.innerHTML = `<div class="error">获取用户数据失败: ${error.message}</div>`;
+                addLog(`获取用户数据失败: ${error.message}`, 'error');
+            }
+        };
+
+        // 测试登录
+        window.testLogin = async function() {
+            const studentId = document.getElementById('test-studentId').value;
+            const password = document.getElementById('test-password').value;
+            const resultDiv = document.getElementById('login-result');
+            
+            addLog(`开始登录测试 - 学号: ${studentId}, 密码: ${password}`, 'info');
+            
+            try {
+                // 1. 检查输入参数
+                addLog(`输入参数检查 - 学号类型: ${typeof studentId}, 密码类型: ${typeof password}`, 'info');
+                
+                // 2. 转换数据格式
+                const loginRequest = convertToUserLoginRequest({
+                    userId: studentId,
+                    password: password,
+                    userPassword: password,
+                    rememberMe: false
+                });
+                addLog(`转换后的登录请求: ${JSON.stringify(loginRequest, null, 2)}`, 'info');
+                
+                // 3. 调用登录API
+                addLog('调用 mockLogin 函数...', 'info');
+                const response = await mockLogin(loginRequest);
+                
+                // 4. 检查响应
+                addLog(`登录响应: ${JSON.stringify(response, null, 2)}`, 'success');
+                
+                resultDiv.innerHTML = `<div class="test-result success">
+                    <h4>✅ 登录成功!</h4>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                </div>`;
+                
+            } catch (error) {
+                addLog(`登录失败: ${JSON.stringify(error, null, 2)}`, 'error');
+                
+                resultDiv.innerHTML = `<div class="test-result error">
+                    <h4>❌ 登录失败!</h4>
+                    <p><strong>错误类型:</strong> ${typeof error}</p>
+                    <p><strong>错误消息:</strong> ${error.message}</p>
+                    <p><strong>错误对象:</strong></p>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                </div>`;
+            }
+        };
+
+        // 测试两个用户
+        window.testBothUsers = async function() {
+            const resultDiv = document.getElementById('login-result');
+            const testUsers = [
+                { studentId: '2330502143', password: '123456', name: '孙金瑶' },
+                { studentId: '2330502134', password: 'test123456', name: '卢敏婷' }
+            ];
+            
+            let html = '<h4>两个用户登录测试结果:</h4>';
+            
+            for (const user of testUsers) {
+                addLog(`测试用户: ${user.name} (${user.studentId})`, 'info');
+                
+                try {
+                    const loginRequest = convertToUserLoginRequest({
+                        userId: user.studentId,
+                        password: user.password,
+                        userPassword: user.password,
+                        rememberMe: false
+                    });
+                    
+                    const response = await mockLogin(loginRequest);
+                    
+                    html += `<div class="test-result success">
+                        <strong>✅ ${user.name} 登录成功</strong><br>
+                        学号: ${user.studentId}<br>
+                        Token: ${response.data.token}<br>
+                        用户ID: ${response.data.user.id}<br>
+                    </div>`;
+                    
+                    addLog(`${user.name} 登录成功`, 'success');
+                    
+                } catch (error) {
+                    html += `<div class="test-result error">
+                        <strong>❌ ${user.name} 登录失败</strong><br>
+                        学号: ${user.studentId}<br>
+                        错误: ${error.message}<br>
+                    </div>`;
+                    
+                    addLog(`${user.name} 登录失败: ${error.message}`, 'error');
+                }
+            }
+            
+            resultDiv.innerHTML = html;
+        };
+
+        // 页面加载时自动检查
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('页面加载完成，开始初始化...', 'info');
+            checkEnvironment();
+            checkUserData();
+        });
+    </script>
+</body>
+</html>

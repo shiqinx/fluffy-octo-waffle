@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建数据流调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #40a9ff;
+        }
+        .button.danger {
+            background: #ff4d4f;
+        }
+        .button.danger:hover {
+            background: #ff7875;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #52c41a;
+            font-weight: bold;
+        }
+        .error {
+            color: #ff4d4f;
+            font-weight: bold;
+        }
+        .warning {
+            color: #faad14;
+            font-weight: bold;
+        }
+        .info {
+            color: #1890ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 活动创建数据流调试工具</h1>
+    
+    <div class="container">
+        <div class="section">
+            <h3>📊 localStorage 数据检查</h3>
+            <button class="button" onclick="checkLocalStorageData()">检查 localStorage 数据</button>
+            <button class="button danger" onclick="clearAllData()">清空所有数据</button>
+            <div id="localStorageDisplay" class="data-display"></div>
+        </div>
+        
+        <div class="section">
+            <h3>🧪 模拟活动创建</h3>
+            <button class="button" onclick="simulateCreateActivity()">模拟创建活动</button>
+            <button class="button" onclick="simulateMultipleActivities()">创建多个测试活动</button>
+            <div id="creationResult" class="data-display"></div>
+        </div>
+        
+        <div class="section">
+            <h3>📋 活动列表获取测试</h3>
+            <button class="button" onclick="testGetActivityList()">测试获取活动列表</button>
+            <button class="button" onclick="testStoreLoadActivities()">测试 Store 加载活动</button>
+            <div id="listResult" class="data-display"></div>
+        </div>
+        
+        <div class="section">
+            <h3>🔄 数据同步检查</h3>
+            <button class="button" onclick="checkDataSync()">检查数据同步状态</button>
+            <button class="button" onclick="forceDataSync()">强制数据同步</button>
+            <div id="syncResult" class="data-display"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 模拟 API 和 Store 逻辑
+        window.calculateActivityStatus = (startTime, endTime) => {
+            const now = new Date();
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            
+            if (now < start) return 'recruiting';
+            if (now >= start && now <= end) return 'ongoing';
+            return 'ended';
+        };
+
+        window.mockCreateActivity = async (activityData) => {
+            console.log('🔧 Mock API: 创建活动', activityData);
+            
+            const newActivity = {
+                id: `act_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                creatorId: 1,
+                creatorName: "测试用户",
+                createTime: new Date().toISOString(),
+                ...activityData,
+                currentParticipants: 1,
+                status: calculateActivityStatus(activityData.startTime, activityData.endTime)
+            };
+            
+            // 获取现有活动
+            const existingActivities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+            existingActivities.unshift(newActivity);
+            localStorage.setItem('campus_activities', JSON.stringify(existingActivities));
+            
+            return {
+                success: true,
+                data: newActivity,
+                message: '活动创建成功'
+            };
+        };
+
+        window.mockGetActivityList = async (params = {}) => {
+            console.log('🔧 Mock API: 获取活动列表', params);
+            
+            const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+            
+            let filteredActivities = activities;
+            
+            if (params.keyword) {
+                const keyword = params.keyword.toLowerCase();
+                filteredActivities = filteredActivities.filter(activity => 
+                    activity.title.toLowerCase().includes(keyword) ||
+                    activity.description.toLowerCase().includes(keyword)
+                );
+            }
+            
+            if (params.creatorId) {
+                filteredActivities = filteredActivities.filter(activity => 
+                    activity.creatorId === params.creatorId
+                );
+            }
+            
+            const page = params.page || 1;
+            const pageSize = params.pageSize || 20;
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            
+            return {
+                success: true,
+                data: {
+                    items: filteredActivities.slice(startIndex, endIndex),
+                    total: filteredActivities.length,
+                    page: page,
+                    pageSize: pageSize,
+                    totalPages: Math.ceil(filteredActivities.length / pageSize)
+                }
+            };
+        };
+
+        // 模拟 Store 逻辑
+        window.loadActivitiesFromStorage = () => {
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+                
+                // 默认活动数据
+                const defaultActivities = [
+                    {
+                        id: "default_1",
+                        title: "默认活动1",
+                        description: "这是一个默认活动",
+                        startTime: new Date(Date.now() + 86400000).toISOString(),
+                        endTime: new Date(Date.now() + 86400000 + 7200000).toISOString(),
+                        locationName: "默认地点",
+                        status: "recruiting",
+                        currentParticipants: 5,
+                        maxParticipants: 20,
+                        creatorId: 1,
+                        creatorName: "系统管理员"
+                    }
+                ];
+                
+                localStorage.setItem('campus_activities', JSON.stringify(defaultActivities));
+                return defaultActivities;
+            } catch (error) {
+                console.error('加载活动数据失败:', error);
+                return [];
+            }
+        };
+
+        // 全局函数
+        window.checkLocalStorageData = function() {
+            const display = document.getElementById('localStorageDisplay');
+            const data = {};
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('activity') || key.includes('campus')) {
+                    try {
+                        data[key] = JSON.parse(localStorage.getItem(key));
+                    } catch (e) {
+                        data[key] = localStorage.getItem(key);
+                    }
+                }
+            }
+            
+            display.innerHTML = `<div class="info">localStorage 数据:</div>${JSON.stringify(data, null, 2)}`;
+        };
+
+        window.clearAllData = function() {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('activity') || key.includes('campus') || key.includes('draft')) {
+                    keysToRemove.push(key);
+                }
+            }
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            
+            const display = document.getElementById('localStorageDisplay');
+            display.innerHTML = '<div class="success">已清空所有活动相关数据</div>';
+        };
+
+        window.simulateCreateActivity = async function() {
+            const display = document.getElementById('creationResult');
+            
+            try {
+                const activityData = {
+                    title: `测试活动_${new Date().toLocaleTimeString()}`,
+                    description: '这是一个通过调试工具创建的测试活动',
+                    category: 'test',
+                    startTime: new Date(Date.now() + 86400000).toISOString(),
+                    endTime: new Date(Date.now() + 86400000 + 7200000).toISOString(),
+                    location: {
+                        name: '测试地点',
+                        address: '测试地址'
+                    },
+                    maxParticipants: 10
+                };
+                
+                display.innerHTML = '<div class="info">正在创建活动...</div>';
+                
+                const result = await mockCreateActivity(activityData);
+                
+                display.innerHTML = `
+                    <div class="success">✅ 活动创建成功!</div>
+                    <div>活动ID: ${result.data.id}</div>
+                    <div>活动标题: ${result.data.title}</div>
+                    <div>创建时间: ${result.data.createTime}</div>
+                    <div>详细信息:</div>
+                    <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                `;
+                
+                // 自动检查数据
+                setTimeout(() => checkLocalStorageData(), 500);
+                
+            } catch (error) {
+                display.innerHTML = `<div class="error">❌ 创建失败: ${error.message}</div>`;
+            }
+        };
+
+        window.simulateMultipleActivities = async function() {
+            const display = document.getElementById('creationResult');
+            display.innerHTML = '<div class="info">正在创建多个测试活动...</div>';
+            
+            const activities = [
+                { title: '技术分享会', category: 'lecture', maxParticipants: 30 },
+                { title: '篮球比赛', category: 'sports', maxParticipants: 20 },
+                { title: '桌游聚会', category: 'game', maxParticipants: 15 }
+            ];
+            
+            for (let i = 0; i < activities.length; i++) {
+                const activityData = {
+                    ...activities[i],
+                    description: `这是第${i+1}个测试活动`,
+                    startTime: new Date(Date.now() + (i+1) * 86400000).toISOString(),
+                    endTime: new Date(Date.now() + (i+1) * 86400000 + 7200000).toISOString(),
+                    location: {
+                        name: `测试地点${i+1}`,
+                        address: `测试地址${i+1}`
+                    }
+                };
+                
+                try {
+                    await mockCreateActivity(activityData);
+                    display.innerHTML += `<div class="success">✅ 创建活动: ${activityData.title}</div>`;
+                } catch (error) {
+                    display.innerHTML += `<div class="error">❌ 创建失败: ${activityData.title} - ${error.message}</div>`;
+                }
+            }
+            
+            display.innerHTML += '<div class="success">🎉 所有活动创建完成!</div>';
+            setTimeout(() => checkLocalStorageData(), 500);
+        };
+
+        window.testGetActivityList = async function() {
+            const display = document.getElementById('listResult');
+            
+            try {
+                display.innerHTML = '<div class="info">正在获取活动列表...</div>';
+                
+                const result = await mockGetActivityList({ page: 1, pageSize: 20 });
+                
+                display.innerHTML = `
+                    <div class="success">✅ 获取活动列表成功!</div>
+                    <div>总数: ${result.data.total}</div>
+                    <div>当前页: ${result.data.page}</div>
+                    <div>每页大小: ${result.data.pageSize}</div>
+                    <div>活动列表:</div>
+                    <pre>${JSON.stringify(result.data.items, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                display.innerHTML = `<div class="error">❌ 获取失败: ${error.message}</div>`;
+            }
+        };
+
+        window.testStoreLoadActivities = function() {
+            const display = document.getElementById('listResult');
+            
+            try {
+                const activities = loadActivitiesFromStorage();
+                
+                display.innerHTML = `
+                    <div class="success">✅ Store 加载活动成功!</div>
+                    <div>活动数量: ${activities.length}</div>
+                    <div>活动列表:</div>
+                    <pre>${JSON.stringify(activities, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                display.innerHTML = `<div class="error">❌ 加载失败: ${error.message}</div>`;
+            }
+        };
+
+        window.checkDataSync = function() {
+            const display = document.getElementById('syncResult');
+            
+            // 检查不同数据源的一致性
+            const localStorageData = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+            const storeData = loadActivitiesFromStorage();
+            
+            const isConsistent = JSON.stringify(localStorageData) === JSON.stringify(storeData);
+            
+            display.innerHTML = `
+                <div class="${isConsistent ? 'success' : 'warning'}">
+                    ${isConsistent ? '✅ 数据同步正常' : '⚠️ 数据同步异常'}
+                </div>
+                <div>localStorage 数据量: ${localStorageData.length}</div>
+                <div>Store 数据量: ${storeData.length}</div>
+                <div>一致性检查: ${isConsistent ? '通过' : '失败'}</div>
+            `;
+        };
+
+        window.forceDataSync = function() {
+            const display = document.getElementById('syncResult');
+            
+            try {
+                // 强制重新加载数据
+                const activities = loadActivitiesFromStorage();
+                localStorage.setItem('campus_activities', JSON.stringify(activities));
+                
+                display.innerHTML = '<div class="success">✅ 强制数据同步完成</div>';
+                
+                setTimeout(() => checkDataSync(), 100);
+                
+            } catch (error) {
+                display.innerHTML = `<div class="error">❌ 同步失败: ${error.message}</div>`;
+            }
+        };
+
+        // 页面加载时自动检查数据
+        setTimeout(() => {
+            checkLocalStorageData();
+            checkDataSync();
+        }, 100);
+    </script>
+</body>
+</html>
