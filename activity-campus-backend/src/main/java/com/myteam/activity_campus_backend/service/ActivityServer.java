@@ -166,10 +166,10 @@ public class ActivityServer {
    public CheckInActivityResponse checkInActivity(CheckInActivityRequest checkInActivityRequest) {
         Optional<Userlocation> userl=userlocationRepository.findByUserId(checkInActivityRequest.getUserId());
         if(userl.isEmpty()){
-            return new CheckInActivityResponse(checkInActivityRequest,false);
+            return new CheckInActivityResponse(checkInActivityRequest,false,"用户不存在");
         }
         Location location= activityRepository.findLocationByActivityId(checkInActivityRequest.getActivityId());
        boolean result=geoUtil.isInArea(userl.get().getLatitude(), userl.get().getLongitude(),location.getCenterLatitude(),location.getCenterLongitude(),location.getRegionRadius());
-        return new CheckInActivityResponse(checkInActivityRequest,result);
+        return new CheckInActivityResponse(checkInActivityRequest,result,"签到结果");
    }
 }

@@ -10,10 +10,20 @@ import com.myteam.activity_campus_backend.dto.TeamDTO;
 public class TeamCreateResponse {
     private TeamDTO team;
     private boolean success;
-    public TeamCreateResponse(TeamDTO team, boolean success) {
+    private String message;
+    public TeamCreateResponse(TeamDTO team, boolean success, String message) {
         this.team = team;
         this.success = success;
+        this.message = message;
     }
+
+    public String getMessage() {
+        return message;
+    }
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
     public TeamDTO getTeam() {
         return team;
     }

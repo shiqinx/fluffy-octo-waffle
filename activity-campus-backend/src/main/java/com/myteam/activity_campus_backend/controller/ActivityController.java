@@ -38,11 +38,20 @@ public class ActivityController {
     public ResponseEntity<simpleActivityResponse> createActivity(
             HttpServletRequest httpRequest,
             @RequestBody CreateActivityRequest createRequest) {
-        String currentUserId = (String) httpRequest.getAttribute("currentUserId");
-        User currentUser = userRepository.findById(Integer.valueOf(currentUserId)).orElseThrow();
-        createRequest.setPublisherName(currentUser.getUserName());
-        simpleActivityResponse response = activityServer.getsimpleActivityResponse(createRequest);
-        return ResponseEntity.ok(response);
+        Object currentUserId =httpRequest.getAttribute("currentUserId");
+        if(currentUserId instanceof Integer){
+            Integer userNum = (Integer) currentUserId;
+            User currentUser = userRepository.findById(userNum).orElseThrow();
+            createRequest.setPublisherName(currentUser.getUserName());
+            simpleActivityResponse response = activityServer.getsimpleActivityResponse(createRequest);
+            return ResponseEntity.ok(response);
+        }else{
+            String errorMsg = "用户ID类型错误，期望Integer，实际类型: " +
+                    (currentUserId != null ? currentUserId.getClass().getSimpleName() : "null");
+            return ResponseEntity.badRequest()
+                    .body(new simpleActivityResponse(null, false, errorMsg));
+        }
+
     }
 
     /**
@@ -80,10 +89,18 @@ public class ActivityController {
     public ResponseEntity<ParticipateInActivityResponse> joinActivity(
             HttpServletRequest httpRequest,
             @RequestBody ParticipateInActivityRequest joinRequest) {
-        String currentUserId = (String) httpRequest.getAttribute("currentUserId");
-        joinRequest.setuserId(Integer.valueOf(currentUserId));
-        ParticipateInActivityResponse response = activityServer.participateInActivityResponse(joinRequest);
-        return ResponseEntity.ok(response);
+        Object currentUserId = httpRequest.getAttribute("currentUserId");
+        if(currentUserId instanceof Integer){
+            Integer userNum = (Integer) currentUserId;
+            joinRequest.setuserId(userNum);
+            ParticipateInActivityResponse response = activityServer.participateInActivityResponse(joinRequest);
+            return ResponseEntity.ok(response);
+        }else{
+            String errorMsg = "用户ID类型错误，期望Integer，实际类型: " +
+                    (currentUserId != null ? currentUserId.getClass().getSimpleName() : "null");
+            return ResponseEntity.badRequest()
+                    .body(new ParticipateInActivityResponse(null,null,errorMsg));
+        }
     }
 
     /**
@@ -109,10 +126,18 @@ public class ActivityController {
     public ResponseEntity<CheckInActivityResponse> checkIn(
             HttpServletRequest httpRequest,
             @RequestBody CheckInActivityRequest checkInRequest) {
-        String currentUserId = (String) httpRequest.getAttribute("currentUserId");
-        checkInRequest.setUserId(Integer.valueOf(currentUserId));
-        CheckInActivityResponse response = activityServer.checkInActivity(checkInRequest);
-        return ResponseEntity.ok(response);
+        Object currentUserId = httpRequest.getAttribute("currentUserId");
+        if(currentUserId instanceof Integer){
+            Integer userNum = (Integer) currentUserId;
+            checkInRequest.setUserId(userNum);
+            CheckInActivityResponse response = activityServer.checkInActivity(checkInRequest);
+            return ResponseEntity.ok(response);
+        }else{
+            String errorMsg = "用户ID类型错误，期望Integer，实际类型: " +
+                    (currentUserId != null ? currentUserId.getClass().getSimpleName() : "null");
+            return ResponseEntity.badRequest()
+                    .body(new CheckInActivityResponse(checkInRequest,false,errorMsg));
+        }
     }
 
     // ---------------------- 活动聊天室功能 ----------------------
@@ -129,14 +154,22 @@ public class ActivityController {
             HttpServletRequest httpRequest,
             @RequestParam Integer activityId,
             @RequestBody String content) {
-        String currentUserId = (String) httpRequest.getAttribute("currentUserId");
-        User sender = userRepository.findById(Integer.valueOf(currentUserId)).orElseThrow();
+        Object currentUserId = httpRequest.getAttribute("currentUserId");
+        if(currentUserId instanceof Integer){
+            Integer userNum = (Integer) currentUserId;
+            User sender = userRepository.findById(Integer.valueOf(userNum)).orElseThrow();
 
-        MessageSendDTO messageDTO = new MessageSendDTO(content,
-                Integer.valueOf(currentUserId),
-                Integer.valueOf(activityId.toString()));
-        String result = new MessageServer().sendMessage(messageDTO);
-        return ResponseEntity.ok(result);
+            MessageSendDTO messageDTO = new MessageSendDTO(content,
+                    Integer.valueOf(userNum),
+                    Integer.valueOf(activityId.toString()));
+            String result = new MessageServer().sendMessage(messageDTO);
+            return ResponseEntity.ok(result);
+        }else{
+            String errorMsg = "用户ID类型错误，期望Integer，实际类型: " +
+                    (currentUserId != null ? currentUserId.getClass().getSimpleName() : "null");
+            return ResponseEntity.badRequest()
+                    .body(errorMsg);
+        }
     }
 
     /**

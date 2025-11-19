@@ -40,7 +40,7 @@ public class TeamServer {
     public TeamCreateResponse createTeam(TeamCreateRequest team) {
         User user = userRepository.findById(team.getUserId()).orElse(null);
         if (user == null) {
-            return new TeamCreateResponse(null,false);
+            return new TeamCreateResponse(null,false,"找不到用户");
         }
         Team teamEntity = new Team();
         teamEntity.setTeamName(team.getTeamName());
@@ -54,7 +54,7 @@ public class TeamServer {
         teamDTO.setId(teamId);
         teamDTO.setTeamName(team.getTeamName());
         teamDTO.setUser(userDTO);
-        return new TeamCreateResponse(teamDTO,true);
+        return new TeamCreateResponse(teamDTO,true,"创建成功");
     }
     //团队报名发送给团队主理人
     public BelongTeamResponse belongTeam(BelongTeamRequest teamrequest) {

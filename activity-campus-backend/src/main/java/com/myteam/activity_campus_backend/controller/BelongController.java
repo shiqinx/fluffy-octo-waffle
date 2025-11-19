@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,12 +41,28 @@ public class BelongController {
     @GetMapping("/my-teams")
     public ResponseEntity<UserBelongResponse> getMyTeams(HttpServletRequest httpRequest) {
         // 从请求属性中获取当前登录用户ID（JWT拦截器已提前解析）
-        String currentUserId = (String) httpRequest.getAttribute("currentUserId");
-        // 实例化请求对象（命名避免冲突，语义明确）
-        UserBelongRequest userBelongRequest = new UserBelongRequest();
-        userBelongRequest.setUserId(Integer.valueOf(currentUserId));
-        UserBelongResponse response = belongServer.getUserBelong(userBelongRequest);
-        return ResponseEntity.ok(response);
+        Object currentUserId =httpRequest.getAttribute("currentUserId");
+        if (currentUserId instanceof Integer) {
+            Integer userNum = (Integer) currentUserId; // 安全的强制转换
+            // 接下来可以使用num
+            // 实例化请求对象（命名避免冲突，语义明确）
+            UserBelongRequest userBelongRequest = new UserBelongRequest();
+            userBelongRequest.setUserId(userNum);
+            UserBelongResponse response = belongServer.getUserBelong(userBelongRequest);
+            return ResponseEntity.ok(response);
+        } else {
+            String errorMessage = "用户ID类型错误，期望Integer，实际类型: " +
+                    (currentUserId != null ? currentUserId.getClass().getName() : "null");
+            System.out.println(errorMessage);
+
+            // 返回完整的错误响应
+            UserBelongResponse errorResponse = new UserBelongResponse();
+            errorResponse.setSuccess(false);
+            errorResponse.setMessage(errorMessage);
+            errorResponse.setBelongs(Collections.emptyList()); // 设置为空列表而不是null
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     /**

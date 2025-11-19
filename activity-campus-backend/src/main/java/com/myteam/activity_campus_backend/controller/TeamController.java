@@ -34,11 +34,22 @@ public class TeamController {
             HttpServletRequest httpRequest,
             @RequestBody TeamCreateRequest createRequest) {
         // 从请求属性性中获取当前登录用户ID（JWT拦截器已解析）
-        String currentUserId = (String) httpRequest.getAttribute("currentUserId");
-        // 绑定创建者为当前登录用户，防止越权
-        createRequest.setUserId(Integer.valueOf(currentUserId));
-        TeamCreateResponse response = teamServer.createTeam(createRequest);
-        return ResponseEntity.ok(response);
+        Object currentUserId =httpRequest.getAttribute("currentUserId");
+        if (currentUserId instanceof Integer){
+            Integer userNum = (Integer) currentUserId;
+            // 绑定创建者为当前登录用户，防止越权
+            createRequest.setUserId(userNum);
+            TeamCreateResponse response = teamServer.createTeam(createRequest);
+            return ResponseEntity.ok(response);
+        }else{
+            // 提供更详细的错误信息
+            String errorMsg = "用户ID类型错误，期望Integer，实际类型: " +
+                    (currentUserId != null ? currentUserId.getClass().getSimpleName() : "null");
+            return ResponseEntity.badRequest()
+                    .body(new TeamCreateResponse(null, false, errorMsg));
+        }
+
+
     }
 
     /**

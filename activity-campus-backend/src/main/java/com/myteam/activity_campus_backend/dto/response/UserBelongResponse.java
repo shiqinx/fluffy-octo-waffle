@@ -11,6 +11,28 @@ import java.util.List;
  */
 public class UserBelongResponse {
     private List<BelongDTO> belongs;
+    private boolean success;
+    private String message;
+    public UserBelongResponse() {}
+    public UserBelongResponse(List<BelongDTO> belongs, boolean success, String message) {
+        this.belongs = belongs;
+        this.success = success;
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+    public void setMessage(String message) {
+        this.message = message;
+    }
+    public boolean isSuccess() {
+        return success;
+    }
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
     public UserBelongResponse(List<BelongDTO> belongs) {
         this.belongs=belongs;
     }

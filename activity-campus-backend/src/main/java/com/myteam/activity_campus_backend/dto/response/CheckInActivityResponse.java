@@ -10,10 +10,20 @@ import com.myteam.activity_campus_backend.dto.request.CheckInActivityRequest;
 public class CheckInActivityResponse {
     private CheckInActivityRequest request;
     private Boolean success;
-    public CheckInActivityResponse (CheckInActivityRequest request, Boolean success) {
+    private String Msg;
+    public CheckInActivityResponse (CheckInActivityRequest request, Boolean success, String msg) {
         this.request = request;
         this.success = success;
+        this.Msg = msg;
     }
+
+    public String getMsg() {
+        return Msg;
+    }
+    public void setMsg(String msg) {
+        Msg = msg;
+    }
+
     public CheckInActivityRequest getRequest() {
         return request;
     }
