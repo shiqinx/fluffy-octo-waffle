@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清除登录状态</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .success {
+            color: #28a745;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 清除登录状态</h1>
+        <p>点击下面的按钮清除所有登录相关的数据，然后重新测试登录功能</p>
+        
+        <button onclick="clearAuthData()">清除登录数据</button>
+        <button onclick="goToLogin()">前往登录页面</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function clearAuthData() {
+            // 清除所有可能的登录相关数据
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('rememberedLogin');
+            localStorage.removeItem('auth');
+            
+            // 清除sessionStorage
+            sessionStorage.clear();
+            
+            document.getElementById('result').innerHTML = 
+                '<div class="success">✅ 已清除所有登录数据！现在可以重新测试登录了。</div>';
+            
+            console.log('🧹 已清除登录数据:', {
+                localStorage: JSON.stringify(localStorage),
+                sessionStorage: JSON.stringify(sessionStorage)
+            });
+        }
+        
+        function goToLogin() {
+            window.location.href = '/login';
+        }
+        
+        // 显示当前状态
+        window.onload = function() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            const remembered = localStorage.getItem('rememberedLogin');
+            
+            console.log('📊 当前存储状态:', {
+                token: token,
+                user: user,
+                rememberedLogin: remembered
+            });
+            
+            if (token) {
+                document.getElementById('result').innerHTML = 
+                    '<div class="success">⚠️ 检测到现有登录数据，建议先清除再测试。</div>';
+            }
+        };
+    </script>
+</body>
+</html>

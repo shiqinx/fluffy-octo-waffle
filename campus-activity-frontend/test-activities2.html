@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .activity { border: 1px solid #ccc; margin: 10px 0; padding: 10px; }
+        .title { font-weight: bold; font-size: 18px; }
+        .type { color: #666; }
+        .description { margin: 5px 0; }
+        .location { color: #888; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>活动数据测试</h1>
+    
+    <div>
+        <button onclick="clearLocalStorage()">清除localStorage</button>
+        <button onclick="showActivities()">显示活动数据</button>
+        <button onclick="goToActivityList()">前往活动列表</button>
+    </div>
+    
+    <div id="activities-container"></div>
+    
+    <script>
+        function clearLocalStorage() {
+            localStorage.removeItem('campus_activities');
+            alert('localStorage已清除');
+            showActivities();
+        }
+        
+        function showActivities() {
+            const container = document.getElementById('activities-container');
+            container.innerHTML = '<h2>当前活动数据:</h2>';
+            
+            // 模拟loadActivitiesFromStorage函数的逻辑
+            const activities = [
+                {
+                    id: 1,
+                    title: '中医养生讲座',
+                    type: 'study',
+                    category: 'study',
+                    locationName: '学术报告厅',
+                    description: '邀请中医专家讲解中医养生知识，分享传统保健方法。',
+                    startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 15,
+                    maxParticipants: 30,
+                    organizer: { name: '中医学院' }
+                },
+                {
+                    id: 2,
+                    title: '摄影作品展览',
+                    type: 'culture',
+                    category: 'culture',
+                    locationName: '艺术展厅',
+                    description: '展示学生摄影作品，分享摄影技巧，交流创作心得。',
+                    startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 12,
+                    maxParticipants: 25,
+                    organizer: { name: '摄影协会' }
+                },
+                {
+                    id: 3,
+                    title: '编程马拉松大赛',
+                    type: 'tech',
+                    category: 'tech',
+                    locationName: '创新实验室',
+                    description: '24小时编程挑战赛，主题为智慧校园，展示编程技能。',
+                    startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 8,
+                    maxParticipants: 20,
+                    organizer: { name: '计算机学院' }
+                },
+                {
+                    id: 4,
+                    title: '音乐节',
+                    type: 'culture',
+                    category: 'culture',
+                    locationName: '露天剧场',
+                    description: '年度校园音乐节，邀请校内外乐队演出，享受音乐盛宴。',
+                    startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 25,
+                    maxParticipants: 40,
+                    organizer: { name: '学生会' }
+                },
+                {
+                    id: 5,
+                    title: '篮球友谊赛',
+                    type: 'sports',
+                    category: 'sports',
+                    locationName: '篮球场1',
+                    description: '周末篮球比赛，欢迎所有篮球爱好者参加。',
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 4,
+                    maxParticipants: 8,
+                    organizer: { name: '篮球社' }
+                }
+            ];
+            
+            activities.forEach(activity => {
+                const div = document.createElement('div');
+                div.className = 'activity';
+                div.innerHTML = `
+                    <div class="title">${activity.title}</div>
+                    <div class="type">类型: ${activity.type}</div>
+                    <div class="description">${activity.description}</div>
+                    <div class="location">地点: ${activity.locationName}</div>
+                    <div>参与人数: ${activity.currentParticipants}/${activity.maxParticipants}</div>
+                    <div>组织者: ${activity.organizer.name}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function goToActivityList() {
+            window.location.href = 'http://localhost:3000';
+        }
+        
+        // 页面加载时显示活动
+        window.onload = function() {
+            showActivities();
+        };
+    </script>
+</body>
+</html>

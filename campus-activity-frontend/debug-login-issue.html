@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        input { margin: 5px; padding: 5px; }
+        button { padding: 10px 15px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 登录问题调试</h1>
+    
+    <div class="test-section">
+        <h2>模拟登录页面调用</h2>
+        <input type="text" id="studentId" value="" placeholder="学号">
+        <input type="password" id="password" value="123456" placeholder="密码">
+        <button onclick="simulateLogin()">模拟登录流程</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试不同学号值</h2>
+        <button onclick="testStudentIdValues()">测试学号值</button>
+        <div id="studentIdResult"></div>
+    </div>
+
+    <script type="module">
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { login } from './src/api/auth.js'
+        
+        window.simulateLogin = async function() {
+            const studentId = document.getElementById('studentId').value
+            const password = document.getElementById('password').value
+            const resultDiv = document.getElementById('loginResult')
+            
+            resultDiv.innerHTML = '<div class="result">模拟登录中...</div>'
+            
+            try {
+                console.log('🔍 步骤1: 表单数据', { studentId, password })
+                
+                // 模拟 authStore.loginUser 的逻辑
+                console.log('🔍 步骤2: 构造登录凭据对象')
+                const credentials = { studentId, password, rememberMe: false }
+                console.log('📝 登录凭据:', credentials)
+                
+                // 步骤3: 验证参数
+                console.log('🔍 步骤3: 验证登录参数')
+                const validatedCredentials = await validateLoginParams(credentials)
+                console.log('✅ 验证后的凭据:', validatedCredentials)
+                
+                // 步骤4: 调用登录API
+                console.log('🔍 步骤4: 调用登录API')
+                const loginResult = await login(validatedCredentials)
+                console.log('✅ 登录结果:', loginResult)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>登录流程测试成功!</strong><br>
+                    <pre>原始表单: ${JSON.stringify({ studentId, password }, null, 2)}
+登录凭据: ${JSON.stringify(credentials, null, 2)}
+验证后凭据: ${JSON.stringify(validatedCredentials, null, 2)}
+登录结果: ${JSON.stringify(loginResult, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ 登录流程测试失败:', error)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>登录流程测试失败!</strong><br>
+                    <pre>错误: ${error.message || error}
+错误详情: ${error.stack || '无堆栈信息'}</pre>
+                </div>`
+            }
+        }
+        
+        window.testStudentIdValues = async function() {
+            const resultDiv = document.getElementById('studentIdResult')
+            const password = '123456'
+            
+            resultDiv.innerHTML = '<div class="result">测试中...</div>'
+            
+            const testCases = [
+                { studentId: '', description: '空字符串' },
+                { studentId: null, description: 'null值' },
+                { studentId: undefined, description: 'undefined值' },
+                { studentId: '20210001', description: '有效学号' },
+                { studentId: 'abc', description: '无效学号格式' },
+                { studentId: '123', description: '太短的学号' }
+            ]
+            
+            let results = []
+            
+            for (const testCase of testCases) {
+                try {
+                    console.log(`🔍 测试学号: ${testCase.description} (${testCase.studentId})`)
+                    
+                    const credentials = { studentId: testCase.studentId, password, rememberMe: false }
+                    const validatedCredentials = await validateLoginParams(credentials)
+                    
+                    results.push({
+                        case: testCase.description,
+                        input: testCase.studentId,
+                        result: '✅ 成功',
+                        data: validatedCredentials
+                    })
+                } catch (error) {
+                    results.push({
+                        case: testCase.description,
+                        input: testCase.studentId,
+                        result: '❌ 失败',
+                        error: error.message
+                    })
+                }
+            }
+            
+            resultDiv.innerHTML = `<div class="result">
+                <strong>学号值测试完成!</strong><br>
+                <pre>${JSON.stringify(results, null, 2)}</pre>
+            </div>`
+        }
+    </script>
+</body>
+</html>

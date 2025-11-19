@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团队数据检查</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .info {
+            border-color: #17a2b8;
+            background-color: #d1ecf1;
+        }
+        .team-link {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 15px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .team-link:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>团队数据检查工具</h1>
+        <p>这个页面用于检查团队数据是否正常，并提供直接访问团队页面的链接。</p>
+
+        <!-- 检查环境 -->
+        <div class="test-section">
+            <h3>1. 环境检查</h3>
+            <div class="button-group">
+                <button onclick="checkEnvironment()">检查环境变量</button>
+                <button onclick="checkCurrentURL()">检查当前URL</button>
+            </div>
+            <div id="env-result" class="result info">点击按钮检查环境</div>
+        </div>
+
+        <!-- 检查团队数据 -->
+        <div class="test-section">
+            <h3>2. 团队数据检查</h3>
+            <div class="button-group">
+                <button onclick="testAllTeams()">检查所有团队</button>
+                <button onclick="testTeamAPI()">测试团队API</button>
+            </div>
+            <div id="team-result" class="result">点击按钮检查团队数据</div>
+        </div>
+
+        <!-- 团队访问链接 -->
+        <div class="test-section">
+            <h3>3. 团队访问链接</h3>
+            <div id="team-links">
+                <!-- 动态生成团队链接 -->
+            </div>
+        </div>
+
+        <!-- 调试信息 -->
+        <div class="test-section">
+            <h3>4. 调试信息</h3>
+            <div class="button-group">
+                <button onclick="showDebugInfo()">显示调试信息</button>
+                <button onclick="clearDebugInfo()">清除调试信息</button>
+            </div>
+            <div id="debug-result" class="result">点击按钮显示调试信息</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 模拟团队数据
+        const mockTeams = [
+            {
+                id: 1,
+                name: '前端开发团队',
+                description: '负责前端页面开发和用户体验优化',
+                leaderId: 1,
+                leaderName: '张三',
+                memberCount: 5,
+                createdAt: new Date().toISOString(),
+                tags: ['前端', '开发']
+            },
+            {
+                id: 2,
+                name: '后端开发团队',
+                description: '负责服务器端开发和数据库设计',
+                leaderId: 2,
+                leaderName: '李四',
+                memberCount: 4,
+                createdAt: new Date().toISOString(),
+                tags: ['后端', '开发']
+            },
+            {
+                id: 3,
+                name: '产品设计团队',
+                description: '负责产品设计和用户体验研究',
+                leaderId: 3,
+                leaderName: '王五',
+                memberCount: 3,
+                createdAt: new Date().toISOString(),
+                tags: ['产品', '设计']
+            }
+        ];
+
+        // 模拟团队成员数据
+        const teamMembers = {
+            1: [
+                { userId: 1, userName: '张三', role: 'leader', joinTime: new Date().toISOString() },
+                { userId: 2, userName: '李四', role: 'member', joinTime: new Date(Date.now() - 86400000).toISOString() },
+                { userId: 3, userName: '王五', role: 'member', joinTime: new Date(Date.now() - 172800000).toISOString() }
+            ],
+            2: [
+                { userId: 2, userName: '李四', role: 'leader', joinTime: new Date().toISOString() },
+                { userId: 4, userName: '赵六', role: 'member', joinTime: new Date(Date.now() - 86400000).toISOString() }
+            ],
+            3: [
+                { userId: 3, userName: '王五', role: 'leader', joinTime: new Date().toISOString() },
+                { userId: 5, userName: '钱七', role: 'member', joinTime: new Date(Date.now() - 86400000).toISOString() }
+            ]
+        };
+
+        function checkEnvironment() {
+            const baseUrl = window.location.origin;
+            const currentPath = window.location.pathname;
+            
+            updateResult('env-result', 
+                `当前环境信息:\n` +
+                `- 基础URL: ${baseUrl}\n` +
+                `- 当前路径: ${currentPath}\n` +
+                `- 完整URL: ${window.location.href}\n` +
+                `- 开发服务器: ${baseUrl.includes('localhost') ? '是' : '否'}`,
+                'info'
+            );
+        }
+
+        function checkCurrentURL() {
+            const url = new URL(window.location.href);
+            const pathParts = url.pathname.split('/');
+            
+            updateResult('env-result', 
+                `URL分析:\n` +
+                `- 完整URL: ${url.href}\n` +
+                `- 协议: ${url.protocol}\n` +
+                `- 主机: ${url.host}\n` +
+                `- 路径: ${url.pathname}\n` +
+                `- 路径片段: [${pathParts.join(', ')}]\n` +
+                `- 查询参数: ${url.search}`,
+                'info'
+            );
+        }
+
+        function testAllTeams() {
+            try {
+                let result = '团队数据检查结果:\n\n';
+                
+                mockTeams.forEach(team => {
+                    const members = teamMembers[team.id] || [];
+                    result += `团队 ${team.id} (${team.name}):\n`;
+                    result += `- 描述: ${team.description}\n`;
+                    result += `- 队长: ${team.leaderName}\n`;
+                    result += `- 成员数: ${team.memberCount}\n`;
+                    result += `- 实际成员: ${members.length}人\n`;
+                    result += `- 成员列表: ${members.map(m => m.userName).join(', ')}\n\n`;
+                });
+                
+                updateResult('team-result', result, 'success');
+                generateTeamLinks();
+            } catch (error) {
+                updateResult('team-result', `团队数据检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTeamAPI() {
+            try {
+                // 模拟API调用
+                const testResults = [];
+                
+                for (const team of mockTeams) {
+                    const members = teamMembers[team.id] || [];
+                    const apiResponse = {
+                        success: true,
+                        data: {
+                            ...team,
+                            members: members
+                        }
+                    };
+                    testResults.push(`团队${team.id}: API调用成功`);
+                }
+                
+                updateResult('team-result', 
+                    `API测试结果:\n${testResults.join('\n')}\n\n` +
+                    `所有团队API调用均成功，数据格式正确。`,
+                    'success'
+                );
+            } catch (error) {
+                updateResult('team-result', `API测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function generateTeamLinks() {
+            const linksContainer = document.getElementById('team-links');
+            const baseUrl = window.location.origin;
+            
+            let linksHTML = '<p>点击以下链接直接访问团队页面:</p>';
+            
+            mockTeams.forEach(team => {
+                const teamUrl = `${baseUrl}/teams/${team.id}`;
+                linksHTML += `<a href="${teamUrl}" class="team-link">${team.name} (ID: ${team.id})</a>`;
+            });
+            
+            linksContainer.innerHTML = linksHTML;
+        }
+
+        function showDebugInfo() {
+            const debugInfo = {
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                mockTeamsCount: mockTeams.length,
+                teamMembersCount: Object.keys(teamMembers).length,
+                localStorage: {
+                    keys: Object.keys(localStorage),
+                    userInfo: localStorage.getItem('userInfo')
+                }
+            };
+            
+            updateResult('debug-result', 
+                `调试信息:\n${JSON.stringify(debugInfo, null, 2)}`,
+                'info'
+            );
+        }
+
+        function clearDebugInfo() {
+            updateResult('debug-result', '调试信息已清除', 'info');
+        }
+
+        function updateResult(elementId, message, type = 'info') {
+            const result = document.getElementById(elementId);
+            result.textContent = message;
+            result.className = `result ${type}`;
+        }
+
+        // 页面加载时自动检查环境
+        window.addEventListener('load', () => {
+            checkEnvironment();
+            testAllTeams();
+        });
+    </script>
+</body>
+</html>

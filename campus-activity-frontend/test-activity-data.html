@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .activity { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
+        .error { color: red; }
+        .success { color: green; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>活动数据状态检查</h1>
+    
+    <div>
+        <button onclick="checkLocalStorage()">检查localStorage</button>
+        <button onclick="checkGlobalData()">检查GlobalData</button>
+        <button onclick="clearCache()">清理缓存</button>
+        <button onclick="testActivityDetail()">测试活动详情</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script type="module">
+        window.checkLocalStorage = function() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>localStorage检查结果:</h2>';
+            
+            try {
+                const activities = localStorage.getItem('campus_activities');
+                if (activities) {
+                    const parsed = JSON.parse(activities);
+                    results.innerHTML += `<div class="success">找到 ${parsed.length} 个活动</div>`;
+                    parsed.forEach((activity, index) => {
+                        results.innerHTML += `<div class="activity">
+                            <strong>活动${index + 1}:</strong> ID=${activity.id}, 标题="${activity.title}"
+                        </div>`;
+                    });
+                } else {
+                    results.innerHTML += '<div class="error">localStorage中没有活动数据</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">localStorage解析错误: ${error.message}</div>`;
+            }
+        };
+        
+        window.checkGlobalData = function() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>GlobalData检查结果:</h2>';
+            
+            // 模拟导入globalDataManager
+            import('./src/api/global-data.js').then(({ globalDataManager }) => {
+                const activities = globalDataManager.getActivities();
+                results.innerHTML += `<div class="success">GlobalData中有 ${activities.length} 个活动</div>`;
+                activities.forEach((activity, index) => {
+                    results.innerHTML += `<div class="activity">
+                        <strong>活动${index + 1}:</strong> ID=${activity.id}, 标题="${activity.title}"
+                    </div>`;
+                });
+            }).catch(error => {
+                results.innerHTML += `<div class="error">GlobalData加载错误: ${error.message}</div>`;
+            });
+        };
+        
+        window.clearCache = function() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>缓存清理结果:</h2>';
+            
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                results.innerHTML += '<div class="success">缓存已清理</div>';
+            } catch (error) {
+                results.innerHTML += `<div class="error">清理失败: ${error.message}</div>`;
+            }
+        };
+        
+        window.testActivityDetail = function() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>活动详情测试:</h2>';
+            
+            // 测试几个不同的活动ID
+            const testIds = ['1', '2', '3', '4', '5', '6'];
+            
+            import('./src/api/mock.js').then(({ mockGetActivityDetail }) => {
+                testIds.forEach(async (id) => {
+                    try {
+                        const result = await mockGetActivityDetail(id);
+                        results.innerHTML += `<div class="success">
+                            活动${id}: "${result.data.title}" - ${result.data.type}
+                        </div>`;
+                    } catch (error) {
+                        results.innerHTML += `<div class="error">
+                            活动${id}获取失败: ${error.message}
+                        </div>`;
+                    }
+                });
+            }).catch(error => {
+                results.innerHTML += `<div class="error">Mock API加载错误: ${error.message}</div>`;
+            });
+        };
+    </script>
+</body>
+</html>

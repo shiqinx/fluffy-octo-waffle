@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>底部导航测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .test-header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .test-content {
+            height: 400px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .success {
+            background: #f0f9ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        .info {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+        .test-instructions {
+            padding: 20px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>📱 底部导航测试</h1>
+            <p>测试底部导航栏的点击响应</p>
+        </div>
+        
+        <div class="test-instructions">
+            <h3>🔧 测试说明</h3>
+            <p>在下方应用中点击底部导航栏的各个选项：</p>
+            <ul>
+                <li>🏠 首页</li>
+                <li>👥 活动/团队</li>
+                <li>💬 消息</li>
+                <li>👤 我的</li>
+            </ul>
+            <p><strong>预期结果：</strong>每次点击都应该有响应，页面应该正确跳转</p>
+        </div>
+        
+        <iframe src="/#/login"></iframe>
+        
+        <div class="test-content">
+            <div id="test-status" class="status info">
+                等待测试底部导航功能...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('test-status');
+        let testStartTime = Date.now();
+        
+        function updateStatus(message, type = 'info') {
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        }
+        
+        // 监听iframe加载
+        const iframe = document.querySelector('iframe');
+        iframe.onload = function() {
+            updateStatus('✅ 应用加载完成，请登录后测试底部导航', 'success');
+            
+            // 尝试检测导航变化
+            try {
+                const iframeWindow = iframe.contentWindow;
+                let lastHash = iframeWindow.location.hash;
+                
+                setInterval(() => {
+                    try {
+                        const currentHash = iframeWindow.location.hash;
+                        if (currentHash !== lastHash) {
+                            lastHash = currentHash;
+                            updateStatus(`✅ 检测到路由变化: ${currentHash}`, 'success');
+                        }
+                    } catch (e) {
+                        // 跨域限制，忽略
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.log('由于跨域限制，无法直接监控路由变化');
+            }
+        };
+        
+        // 模拟点击测试（通过键盘快捷键）
+        document.addEventListener('keydown', function(e) {
+            const keyMap = {
+                '1': 'home',
+                '2': 'activities-teams', 
+                '3': 'messages',
+                '4': 'profile'
+            };
+            
+            if (keyMap[e.key]) {
+                updateStatus(`🔘 模拟点击: ${keyMap[e.key]}`, 'info');
+                // 这里可以添加更复杂的交互逻辑
+            }
+        });
+        
+        // 页面加载完成
+        window.addEventListener('load', function() {
+            updateStatus('🚀 测试页面加载完成', 'success');
+        });
+    </script>
+</body>
+</html>

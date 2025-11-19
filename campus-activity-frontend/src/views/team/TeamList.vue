@@ -110,6 +110,6 @@ const viewTeamDetail = (teamId) => {
 }
 
 onMounted(() => {
-  teamStore.fetchTeams()
+  teamStore.loadTeams()
 })
 </script>

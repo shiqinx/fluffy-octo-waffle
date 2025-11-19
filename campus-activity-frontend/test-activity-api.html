@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动详情API测试</h1>
+    
+    <div class="test-item">
+        <h3>测试活动详情API调用</h3>
+        <button onclick="testActivityDetail(1)">测试活动ID 1</button>
+        <button onclick="testActivityDetail(2)">测试活动ID 2</button>
+        <button onclick="testActivityDetail(3)">测试活动ID 3</button>
+        <button onclick="testActivityDetail(4)">测试活动ID 4</button>
+        <button onclick="testActivityDetail(5)">测试活动ID 5</button>
+        <button onclick="testActivityDetail(6)">测试活动ID 6</button>
+        <button onclick="testActivityDetail(999)">测试不存在的活动ID 999</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script type="module">
+        // 模拟API调用
+        const mockActivities = [
+            {
+                id: 1,
+                title: '篮球友谊赛',
+                description: '周末篮球友谊赛，欢迎所有篮球爱好者参加，一起享受运动的快乐！',
+                organizerId: 1,
+                organizerName: '张三',
+                startTime: new Date(Date.now() + 86400000 * 2).toISOString(),
+                endTime: new Date(Date.now() + 86400000 * 2 + 10800000).toISOString(),
+                location: '学校篮球场',
+                maxParticipants: 10,
+                currentParticipants: 8,
+                status: 'recruiting',
+                tags: ['运动', '篮球', '友谊赛'],
+                coverImage: '/activity-cover-1.png',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                title: '中医养生讲座',
+                description: '邀请中医专家讲解中医养生知识，了解传统中医文化，学习健康养生方法。',
+                organizerId: 1,
+                organizerName: '张三',
+                startTime: new Date(Date.now() + 86400000 * 5).toISOString(),
+                endTime: new Date(Date.now() + 86400000 * 5 + 7200000).toISOString(),
+                location: '教学楼A101',
+                maxParticipants: 50,
+                currentParticipants: 25,
+                status: 'recruiting',
+                tags: ['讲座', '中医', '养生'],
+                coverImage: '/activity-cover-2.png',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 3,
+                title: '摄影作品展览',
+                description: '展示学生摄影作品，分享摄影技巧和心得，欢迎摄影爱好者交流学习。',
+                organizerId: 1,
+                organizerName: '张三',
+                startTime: new Date(Date.now() + 86400000 * 7).toISOString(),
+                endTime: new Date(Date.now() + 86400000 * 7 + 28800000).toISOString(),
+                location: '艺术楼展厅',
+                maxParticipants: 100,
+                currentParticipants: 35,
+                status: 'ongoing',
+                tags: ['艺术', '摄影', '展览'],
+                coverImage: '/activity-cover-3.png',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 4,
+                title: '图书馆学习小组',
+                description: '组织学习小组，一起复习期末考试，互相帮助，共同进步。欢迎所有同学参加！',
+                organizerId: 2,
+                organizerName: '李四',
+                startTime: new Date(Date.now() + 86400000 * 1).toISOString(),
+                endTime: new Date(Date.now() + 86400000 * 1 + 10800000).toISOString(),
+                location: '图书馆三楼自习室',
+                maxParticipants: 20,
+                currentParticipants: 12,
+                status: 'recruiting',
+                tags: ['学习', '期末复习', '小组'],
+                coverImage: '/activity-cover-4.png',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 5,
+                title: '网球友谊赛',
+                description: '网球爱好者友谊赛，不限水平，重在参与和交流。提供球拍和网球。',
+                organizerId: 3,
+                organizerName: '王五',
+                startTime: new Date(Date.now() + 86400000 * 3).toISOString(),
+                endTime: new Date(Date.now() + 86400000 * 3 + 9000000).toISOString(),
+                location: '学校网球场',
+                maxParticipants: 8,
+                currentParticipants: 6,
+                status: 'recruiting',
+                tags: ['运动', '网球', '友谊赛'],
+                coverImage: '/activity-cover-5.png',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 6,
+                title: '宿舍联谊活动',
+                description: '宿舍间联谊活动，包含桌游、电影欣赏、美食分享等环节，增进宿舍友谊。',
+                organizerId: 1,
+                organizerName: '张三',
+                startTime: new Date(Date.now() + 86400000 * 4).toISOString(),
+                endTime: new Date(Date.now() + 86400000 * 4 + 10800000).toISOString(),
+                location: '学生活动中心',
+                maxParticipants: 60,
+                currentParticipants: 45,
+                status: 'recruiting',
+                tags: ['社交', '联谊', '娱乐'],
+                coverImage: '/activity-cover-6.png',
+                createdAt: new Date().toISOString()
+            }
+        ];
+
+        const activityParticipants = {
+            1: [
+                { userId: 1, userName: '孙金瑶', status: 'approved', joinTime: new Date().toISOString() },
+                { userId: 2, userName: '卢敏婷', status: 'approved', joinTime: new Date().toISOString() }
+            ],
+            2: [
+                { userId: 1, userName: '孙金瑶', status: 'approved', joinTime: new Date().toISOString() }
+            ],
+            3: [],
+            4: [
+                { userId: 1, userName: '孙金瑶', status: 'approved', joinTime: new Date().toISOString() },
+                { userId: 2, userName: '卢敏婷', status: 'approved', joinTime: new Date().toISOString() }
+            ],
+            5: [
+                { userId: 1, userName: '孙金瑶', status: 'approved', joinTime: new Date().toISOString() }
+            ],
+            6: [
+                { userId: 1, userName: '孙金瑶', status: 'approved', joinTime: new Date().toISOString() },
+                { userId: 2, userName: '卢敏婷', status: 'approved', joinTime: new Date().toISOString() }
+            ]
+        };
+
+        const getCurrentUserId = () => {
+            return 1; // 模拟当前用户ID
+        };
+
+        const mockGetActivityDetail = async (activityId) => {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const activity = mockActivities.find(act => act.id == activityId);
+            if (!activity) {
+                throw { success: false, message: '活动不存在' };
+            }
+            
+            const participants = activityParticipants[activityId] || [];
+            const currentUserId = getCurrentUserId();
+            
+            return {
+                success: true,
+                data: {
+                    ...activity,
+                    participants,
+                    isOrganizer: activity.organizerId === currentUserId,
+                    userStatus: participants.find(p => p.userId === currentUserId)?.status || 'not_joined'
+                },
+                message: '获取活动详情成功'
+            };
+        };
+
+        window.testActivityDetail = async function(activityId) {
+            const resultsDiv = document.getElementById('results');
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-item';
+            
+            try {
+                const result = await mockGetActivityDetail(activityId);
+                testDiv.className = 'test-item success';
+                testDiv.innerHTML = `
+                    <h4>✅ 活动ID ${activityId} - 测试成功</h4>
+                    <p><strong>活动标题:</strong> ${result.data.title}</p>
+                    <p><strong>活动描述:</strong> ${result.data.description}</p>
+                    <p><strong>组织者:</strong> ${result.data.organizerName}</p>
+                    <p><strong>地点:</strong> ${result.data.location}</p>
+                    <p><strong>状态:</strong> ${result.data.status}</p>
+                    <p><strong>参与人数:</strong> ${result.data.currentParticipants}/${result.data.maxParticipants}</p>
+                    <p><strong>是否为组织者:</strong> ${result.data.isOrganizer ? '是' : '否'}</p>
+                    <p><strong>用户状态:</strong> ${result.data.userStatus}</p>
+                    <details>
+                        <summary>完整响应数据</summary>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                testDiv.className = 'test-item error';
+                testDiv.innerHTML = `
+                    <h4>❌ 活动ID ${activityId} - 测试失败</h4>
+                    <p><strong>错误信息:</strong> ${error.message}</p>
+                    <details>
+                        <summary>完整错误信息</summary>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    </details>
+                `;
+            }
+            
+            resultsDiv.appendChild(testDiv);
+            testDiv.scrollIntoView({ behavior: 'smooth' });
+        };
+    </script>
+</body>
+</html>

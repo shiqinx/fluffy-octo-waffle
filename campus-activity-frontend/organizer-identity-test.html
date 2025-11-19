@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>组织者身份测试工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #0056CC;
+        }
+        .button.success {
+            background: #34C759;
+        }
+        .button.success:hover {
+            background: #28A745;
+        }
+        .button.warning {
+            background: #FF9500;
+        }
+        .button.warning:hover {
+            background: #E67E00;
+        }
+        .data-display {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .user-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .user-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .user-info {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        .activity-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .activity-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .organizer-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .result {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .result.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👤 组织者身份测试工具</h1>
+        
+        <div class="section">
+            <h2>📋 测试说明</h2>
+            <p>此工具用于测试活动详情弹窗中的组织者身份检测功能。通过模拟不同的用户和活动数据，验证组织者操作界面是否正确显示。</p>
+        </div>
+
+        <div class="section">
+            <h2>👤 当前用户信息</h2>
+            <div id="currentUserInfo" class="user-card">
+                <h3>用户信息</h3>
+                <div class="user-info" id="userInfoDisplay">未设置用户信息</div>
+            </div>
+            <button class="button" onclick="setUser1()">设置用户1 (张三)</button>
+            <button class="button" onclick="setUser2()">设置用户2 (李四)</button>
+            <button class="button" onclick="setUser3()">设置用户3 (篮球社)</button>
+            <button class="button warning" onclick="clearUser()">清除用户</button>
+        </div>
+
+        <div class="section">
+            <h2>🎯 测试活动</h2>
+            <div id="testActivities"></div>
+            <button class="button success" onclick="loadTestActivities()">加载测试活动</button>
+        </div>
+
+        <div class="section">
+            <h2>🧪 身份验证测试</h2>
+            <div id="testResults"></div>
+            <button class="button" onclick="runIdentityTest()">运行身份验证测试</button>
+        </div>
+
+        <div class="section">
+            <h2>🔧 数据操作</h2>
+            <button class="button" onclick="openActivityList()">打开活动列表</button>
+            <button class="button success" onclick="openFixTool()">打开修复工具</button>
+            <button class="button warning" onclick="exportTestData()">导出测试数据</button>
+        </div>
+
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        // 测试用户数据
+        const testUsers = {
+            user1: {
+                id: '1',
+                realName: '张三',
+                name: '张三',
+                studentId: '2022001001',
+                department: '计算机科学与技术学院',
+                avatar: 'https://via.placeholder.com/150',
+                email: 'zhangsan@example.com',
+                creditScore: 95
+            },
+            user2: {
+                id: '2',
+                realName: '李四',
+                name: '李四',
+                studentId: '2022001002',
+                department: '电子工程学院',
+                avatar: 'https://via.placeholder.com/150',
+                email: 'lisi@example.com',
+                creditScore: 88
+            },
+            user3: {
+                id: '3',
+                realName: '篮球社',
+                name: '篮球社',
+                studentId: 'org001',
+                department: '学生组织',
+                avatar: 'https://via.placeholder.com/150',
+                email: 'basketball@club.com',
+                creditScore: 92
+            }
+        }
+
+        // 测试活动数据
+        const testActivities = [
+            {
+                id: 'activity1',
+                title: '篮球友谊赛',
+                type: 'sports',
+                locationName: '篮球场1',
+                description: '周末篮球比赛，欢迎所有篮球爱好者参加。',
+                startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 4,
+                maxParticipants: 8,
+                organizer: { 
+                    id: '3', 
+                    name: '篮球社', 
+                    avatar: 'https://via.placeholder.com/150', 
+                    role: '组织者', 
+                    creditScore: 92 
+                },
+                distance: 0.5,
+                isEnrolled: false,
+                isApproved: false,
+                status: 'open'
+            },
+            {
+                id: 'activity2',
+                title: '英语角交流活动',
+                type: 'study',
+                locationName: '学生活动中心301',
+                description: '每周五晚上的英语角活动，欢迎所有英语爱好者参加。',
+                startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 12,
+                maxParticipants: 25,
+                organizer: { 
+                    id: '1', 
+                    name: '张三', 
+                    avatar: 'https://via.placeholder.com/150', 
+                    role: '组织者', 
+                    creditScore: 95 
+                },
+                distance: 0.2,
+                isEnrolled: false,
+                isApproved: false,
+                status: 'open'
+            },
+            {
+                id: 'activity3',
+                title: '编程马拉松大赛',
+                type: 'tech',
+                locationName: '创新实验室',
+                description: '24小时编程挑战赛，主题为智慧校园。',
+                startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                registrationDeadline: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                currentParticipants: 8,
+                maxParticipants: 20,
+                organizer: { 
+                    id: '2', 
+                    name: '李四', 
+                    avatar: 'https://via.placeholder.com/150', 
+                    role: '组织者', 
+                    creditScore: 88 
+                },
+                distance: 1.2,
+                isEnrolled: false,
+                isApproved: false,
+                status: 'open'
+            }
+        ]
+
+        function showMessage(message, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `result ${type}`;
+            messageDiv.textContent = message;
+            messagesDiv.appendChild(messageDiv);
+            setTimeout(() => messageDiv.remove(), 5000);
+        }
+
+        function updateUserDisplay() {
+            const userInfo = localStorage.getItem('userInfo');
+            const displayDiv = document.getElementById('userInfoDisplay');
+            
+            if (userInfo) {
+                const user = JSON.parse(userInfo);
+                displayDiv.innerHTML = `
+                    <strong>姓名:</strong> ${user.realName || user.name}<br>
+                    <strong>ID:</strong> ${user.id}<br>
+                    <strong>学号:</strong> ${user.studentId || '无'}<br>
+                    <strong>院系:</strong> ${user.department || '无'}<br>
+                    <strong>邮箱:</strong> ${user.email || '无'}<br>
+                    <strong>信誉分:</strong> ${user.creditScore || '无'}
+                `;
+            } else {
+                displayDiv.textContent = '未设置用户信息';
+            }
+        }
+
+        function setUser1() {
+            localStorage.setItem('userInfo', JSON.stringify(testUsers.user1));
+            updateUserDisplay();
+            showMessage('✅ 已设置用户1：张三', 'success');
+        }
+
+        function setUser2() {
+            localStorage.setItem('userInfo', JSON.stringify(testUsers.user2));
+            updateUserDisplay();
+            showMessage('✅ 已设置用户2：李四', 'success');
+        }
+
+        function setUser3() {
+            localStorage.setItem('userInfo', JSON.stringify(testUsers.user3));
+            updateUserDisplay();
+            showMessage('✅ 已设置用户3：篮球社', 'success');
+        }
+
+        function clearUser() {
+            localStorage.removeItem('userInfo');
+            updateUserDisplay();
+            showMessage('⚠️ 已清除用户信息', 'warning');
+        }
+
+        function loadTestActivities() {
+            localStorage.setItem('campus_activities', JSON.stringify(testActivities));
+            displayTestActivities();
+            showMessage('✅ 已加载测试活动数据', 'success');
+        }
+
+        function displayTestActivities() {
+            const activitiesDiv = document.getElementById('testActivities');
+            activitiesDiv.innerHTML = '';
+            
+            testActivities.forEach((activity, index) => {
+                const activityDiv = document.createElement('div');
+                activityDiv.className = 'activity-card';
+                activityDiv.innerHTML = `
+                    <h3>${index + 1}. ${activity.title}</h3>
+                    <div class="organizer-info">
+                        <strong>组织者信息:</strong><br>
+                        ID: ${activity.organizer.id}<br>
+                        姓名: ${activity.organizer.name}<br>
+                        信誉分: ${activity.organizer.creditScore}
+                    </div>
+                    <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                        类型: ${activity.type} | 地点: ${activity.locationName} | 
+                        参与者: ${activity.currentParticipants}/${activity.maxParticipants}
+                    </div>
+                `;
+                activitiesDiv.appendChild(activityDiv);
+            });
+        }
+
+        function isOrganizer(activity, user) {
+            if (!activity || !activity.organizer || !user) {
+                return false;
+            }
+            
+            const organizerId = activity.organizer.id?.toString();
+            const currentUserId = user.id?.toString();
+            const organizerName = activity.organizer.name;
+            const currentUserName = user.realName || user.name;
+            
+            console.log('组织者检查:', {
+                organizerId,
+                currentUserId,
+                organizerName,
+                currentUserName,
+                isMatch: organizerId === currentUserId || organizerName === currentUserName
+            });
+            
+            return organizerId === currentUserId || organizerName === currentUserName;
+        }
+
+        function runIdentityTest() {
+            const userInfo = localStorage.getItem('userInfo');
+            const currentUser = userInfo ? JSON.parse(userInfo) : null;
+            const resultsDiv = document.getElementById('testResults');
+            
+            resultsDiv.innerHTML = '<h3>测试结果:</h3>';
+            
+            if (!currentUser) {
+                resultsDiv.innerHTML += '<div class="result warning">⚠️ 请先设置用户信息</div>';
+                return;
+            }
+            
+            testActivities.forEach((activity, index) => {
+                const isOrg = isOrganizer(activity, currentUser);
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `result ${isOrg ? 'success' : 'error'}`;
+                resultDiv.innerHTML = `
+                    <strong>活动 ${index + 1}: ${activity.title}</strong><br>
+                    当前用户: ${currentUser.realName || currentUser.name} (ID: ${currentUser.id})<br>
+                    活动组织者: ${activity.organizer.name} (ID: ${activity.organizer.id})<br>
+                    结果: ${isOrg ? '✅ 是组织者 - 应显示管理界面' : '❌ 不是组织者 - 应显示报名界面'}
+                `;
+                resultsDiv.appendChild(resultDiv);
+            });
+            
+            showMessage('🧪 身份验证测试完成', 'success');
+        }
+
+        function openActivityList() {
+            window.open('http://localhost:3000/activities', '_blank');
+            showMessage('📱 已打开活动列表页面', 'success');
+        }
+
+        function openFixTool() {
+            window.open('ultimate-activity-fix-v2.html', '_blank');
+            showMessage('🔧 已打开修复工具', 'success');
+        }
+
+        function exportTestData() {
+            const testData = {
+                users: testUsers,
+                activities: testActivities,
+                currentUser: localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null
+            };
+            
+            const blob = new Blob([JSON.stringify(testData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `organizer_test_data_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showMessage('📤 测试数据已导出', 'success');
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            updateUserDisplay();
+            displayTestActivities();
+        };
+    </script>
+</body>
+</html>

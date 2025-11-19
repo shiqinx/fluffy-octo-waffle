@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>快速修复</title>
+</head>
+<body>
+    <h1>正在修复活动数据...</h1>
+    <script>
+        // 清理污染数据
+        localStorage.removeItem('campus_activities');
+        
+        // 设置正确的默认数据
+        const defaultActivities = [
+            {id: 1, title: '中医养生讲座', type: 'study'},
+            {id: 2, title: '摄影作品展览', type: 'culture'},
+            {id: 3, title: '编程马拉松大赛', type: 'tech'},
+            {id: 4, title: '音乐节', type: 'culture'},
+            {id: 5, title: '篮球友谊赛', type: 'sports'}
+        ];
+        
+        localStorage.setItem('campus_activities', JSON.stringify(defaultActivities));
+        console.log('✅ 数据修复完成');
+        
+        // 立即跳转到活动列表
+        window.location.href = '/activities';
+    </script>
+</body>
+</html>

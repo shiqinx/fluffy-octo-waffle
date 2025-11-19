@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+        }
+        .section h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+        .success {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .activity-list {
+            margin-top: 20px;
+        }
+        .activity-item {
+            padding: 12px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .activity-info {
+            font-size: 14px;
+            color: #666;
+        }
+        .new-activity {
+            border: 2px solid #52c41a;
+            background: #f6ffed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>活动功能完整测试</h2>
+        
+        <div class="section">
+            <h3>1. 模拟应用启动 - 加载活动数据</h3>
+            <button onclick="simulateAppStart()">模拟应用启动</button>
+            <div id="start-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>2. 模拟创建新活动</h3>
+            <button onclick="simulateCreateActivity()">创建新活动</button>
+            <div id="create-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>3. 模拟返回活动列表页面</h3>
+            <button onclick="simulateReturnToList()">返回列表页面</button>
+            <div id="return-result" class="result"></div>
+        </div>
+
+        <div class="activity-list">
+            <h3>4. 当前活动列表 (模拟ActivityList.vue)</h3>
+            <div id="activities-display"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量模拟store
+        let mockActivityStore = {
+            activities: [],
+            loading: false
+        };
+
+        // 模拟 loadActivitiesFromStorage 函数
+        function loadActivitiesFromStorage() {
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    const activities = JSON.parse(stored);
+                    console.log('🔄 从localStorage加载活动:', activities.length, '个');
+                    return activities;
+                }
+            } catch (error) {
+                console.error('从localStorage加载活动失败:', error);
+            }
+            
+            // 返回默认活动数据
+            return [
+                {
+                    id: 1,
+                    title: '周末篮球友谊赛',
+                    type: 'sports',
+                    category: 'sports',
+                    locationName: '篮球场1',
+                    location: {
+                        name: '篮球场1',
+                        address: '学校篮球场1'
+                    },
+                    description: '周末篮球比赛，欢迎所有篮球爱好者参加',
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 4,
+                    maxParticipants: 8,
+                    organizer: {
+                        id: 1,
+                        name: '篮球社',
+                        avatar: ''
+                    },
+                    distance: 0.5,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: [],
+                    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString() // 1小时前创建
+                },
+                {
+                    id: 2,
+                    title: '学习互助小组',
+                    type: 'study',
+                    category: 'study',
+                    locationName: '图书馆',
+                    location: {
+                        name: '图书馆',
+                        address: '学校图书馆三楼'
+                    },
+                    description: '互相帮助，共同进步的学习小组',
+                    startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 6,
+                    maxParticipants: 12,
+                    organizer: {
+                        id: 2,
+                        name: '学习部',
+                        avatar: ''
+                    },
+                    distance: 0.8,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: [],
+                    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2小时前创建
+                }
+            ];
+        }
+
+        // 模拟 saveActivitiesToStorage 函数
+        function saveActivitiesToStorage(activities) {
+            try {
+                localStorage.setItem('campus_activities', JSON.stringify(activities));
+                console.log('✅ 活动数据已保存到localStorage');
+                return true;
+            } catch (error) {
+                console.error('❌ 保存活动数据失败:', error);
+                return false;
+            }
+        }
+
+        // 模拟 activityStore.loadActivities()
+        async function simulateStoreLoadActivities() {
+            mockActivityStore.loading = true;
+            try {
+                console.log('🔄 模拟 activityStore.loadActivities()');
+                // 强制重新从localStorage加载最新数据
+                mockActivityStore.activities = loadActivitiesFromStorage();
+                console.log('✅ 活动数据加载完成，当前活动数量:', mockActivityStore.activities.length);
+                return mockActivityStore.activities;
+            } catch (error) {
+                console.error('❌ 加载活动列表失败:', error);
+                throw error;
+            } finally {
+                mockActivityStore.loading = false;
+            }
+        }
+
+        // 模拟创建新活动
+        async function simulateStoreCreateActivity(activityData) {
+            try {
+                console.log('🔄 模拟创建活动:', activityData.title);
+                
+                const newActivity = {
+                    ...activityData,
+                    id: Date.now(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                // 添加到本地活动列表开头
+                mockActivityStore.activities.unshift(newActivity);
+                
+                // 保存到localStorage
+                saveActivitiesToStorage(mockActivityStore.activities);
+                
+                console.log('✅ 活动创建成功:', newActivity.title);
+                return newActivity;
+            } catch (error) {
+                console.error('❌ 创建活动失败:', error);
+                throw error;
+            }
+        }
+
+        // 模拟应用启动
+        async function simulateAppStart() {
+            const result = document.getElementById('start-result');
+            result.innerHTML = '正在启动应用...';
+            
+            try {
+                console.log('🚀 模拟应用启动');
+                
+                // 模拟 ActivityList.vue 的 loadData 方法
+                await simulateStoreLoadActivities();
+                
+                result.className = 'result success';
+                result.innerHTML = `✅ 应用启动成功<br>
+                    加载活动数量: ${mockActivityStore.activities.length}<br>
+                    <pre>${JSON.stringify(mockActivityStore.activities.slice(0, 2), null, 2)}</pre>`;
+                
+                displayActivities();
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ 应用启动失败: ${error.message}`;
+            }
+        }
+
+        // 模拟创建新活动
+        async function simulateCreateActivity() {
+            const result = document.getElementById('create-result');
+            
+            try {
+                const activityData = {
+                    title: '新创建的测试活动 - ' + new Date().toLocaleTimeString(),
+                    type: 'sports',
+                    category: 'sports',
+                    locationName: '测试地点',
+                    location: {
+                        name: '测试地点',
+                        address: '测试地址'
+                    },
+                    description: '这是新创建的测试活动',
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 1,
+                    maxParticipants: 20,
+                    organizer: {
+                        id: 1,
+                        name: '测试组织者',
+                        avatar: ''
+                    },
+                    distance: 0.5,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: []
+                };
+
+                result.innerHTML = '正在创建活动...';
+                
+                // 模拟 CreateActivity.vue 的创建流程
+                const newActivity = await simulateStoreCreateActivity(activityData);
+                
+                // 模拟 200ms 延迟后刷新数据
+                setTimeout(async () => {
+                    await simulateStoreLoadActivities();
+                    displayActivities();
+                }, 200);
+                
+                result.className = 'result success';
+                result.innerHTML = `✅ 活动创建成功<br>
+                    活动标题: ${newActivity.title}<br>
+                    活动ID: ${newActivity.id}<br>
+                    当前活动总数: ${mockActivityStore.activities.length}<br>
+                    新活动在数组中的位置: 第${mockActivityStore.activities.findIndex(a => a.id === newActivity.id)}位`;
+                
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ 创建活动失败: ${error.message}`;
+            }
+        }
+
+        // 模拟返回活动列表页面
+        async function simulateReturnToList() {
+            const result = document.getElementById('return-result');
+            result.innerHTML = '正在返回列表页面...';
+            
+            try {
+                console.log('🔄 模拟返回活动列表页面');
+                
+                // 模拟 ActivityList.vue 页面加载时的数据刷新
+                await simulateStoreLoadActivities();
+                
+                result.className = 'result success';
+                result.innerHTML = `✅ 返回列表页面成功<br>
+                    重新加载活动数量: ${mockActivityStore.activities.length}<br>
+                    第一个活动: ${mockActivityStore.activities[0]?.title || '无'}`;
+                
+                displayActivities();
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ 返回列表页面失败: ${error.message}`;
+            }
+        }
+
+        // 显示活动列表
+        function displayActivities() {
+            const display = document.getElementById('activities-display');
+            
+            if (mockActivityStore.activities.length === 0) {
+                display.innerHTML = '<p style="color: #999;">暂无活动</p>';
+                return;
+            }
+            
+            display.innerHTML = mockActivityStore.activities.map((activity, index) => {
+                const isNewActivity = activity.title.includes('新创建的测试活动');
+                const itemClass = isNewActivity ? 'activity-item new-activity' : 'activity-item';
+                
+                return `
+                    <div class="${itemClass}">
+                        <div class="activity-title">
+                            ${activity.title}
+                            ${isNewActivity ? ' 🆕' : ''}
+                        </div>
+                        <div class="activity-info">
+                            📍 ${activity.locationName} | 
+                            👥 ${activity.currentParticipants}/${activity.maxParticipants}人 | 
+                            🏷️ ${activity.type} |
+                            🕐 ${new Date(activity.createdAt).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 页面加载时自动执行应用启动
+        window.onload = function() {
+            simulateAppStart();
+        };
+    </script>
+</body>
+</html>

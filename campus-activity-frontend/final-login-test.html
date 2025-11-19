@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题最终测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        input { margin: 5px; padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; margin: 5px; background: #1989fa; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1677ff; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; max-height: 300px; overflow-y: auto; border-radius: 4px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .test-case { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🎯 登录问题最终测试</h1>
+    
+    <div class="test-section">
+        <h2>🧪 自动化测试用例</h2>
+        <button onclick="runAllTests()">运行所有测试</button>
+        <div id="testResults"></div>
+    </div>
+
+    <script type="module">
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { validatedApi } from './src/api/index.js'
+        
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults')
+            const resultDiv = document.createElement('div')
+            resultDiv.className = `result ${type}`
+            resultDiv.innerHTML = message
+            resultsDiv.appendChild(resultDiv)
+        }
+        
+        async function runTest(testName, credentials, expectedResult = 'success') {
+            addResult(`<div class="test-case"><strong>🧪 测试: ${testName}</strong><br>参数: ${JSON.stringify(credentials)}</div>`)
+            
+            try {
+                const validatedParams = await validateLoginParams(credentials)
+                addResult(`✅ 验证成功: ${JSON.stringify(validatedParams)}`, 'success')
+                
+                if (expectedResult === 'error') {
+                    addResult(`⚠️ 预期应该失败，但验证成功了`, 'warning')
+                }
+                
+                return { success: true, data: validatedParams }
+            } catch (error) {
+                addResult(`❌ 验证失败: ${error.message}`, 'error')
+                
+                if (expectedResult === 'success') {
+                    addResult(`⚠️ 预期应该成功，但验证失败了`, 'warning')
+                }
+                
+                return { success: false, error: error.message }
+            }
+        }
+        
+        window.runAllTests = async function() {
+            document.getElementById('testResults').innerHTML = ''
+            addResult('<h2>🚀 开始运行所有测试用例</h2>')
+            
+            const testCases = [
+                {
+                    name: '正常学号登录',
+                    credentials: { studentId: '20210001', password: '123456' },
+                    expected: 'success'
+                },
+                {
+                    name: '空学号',
+                    credentials: { studentId: '', password: '123456' },
+                    expected: 'error'
+                },
+                {
+                    name: '空密码',
+                    credentials: { studentId: '20210001', password: '' },
+                    expected: 'error'
+                },
+                {
+                    name: '用户名登录',
+                    credentials: { username: 'testuser', password: '123456' },
+                    expected: 'success'
+                },
+                {
+                    name: '空用户名和学号',
+                    credentials: { password: '123456' },
+                    expected: 'error'
+                },
+                {
+                    name: '学号和用户名都存在',
+                    credentials: { studentId: '20210001', username: 'testuser', password: '123456' },
+                    expected: 'success'
+                },
+                {
+                    name: '带记住密码选项',
+                    credentials: { studentId: '20210001', password: '123456', rememberMe: true },
+                    expected: 'success'
+                }
+            ]
+            
+            let passedTests = 0
+            let totalTests = testCases.length
+            
+            for (const testCase of testCases) {
+                const result = await runTest(testCase.name, testCase.credentials, testCase.expected)
+                if (result.success && testCase.expected === 'success') {
+                    passedTests++
+                } else if (!result.success && testCase.expected === 'error') {
+                    passedTests++
+                }
+            }
+            
+            addResult(`<h2>📊 测试结果统计</h2>`)
+            addResult(`通过: ${passedTests}/${totalTests} (${Math.round(passedTests/totalTests*100)}%)`, 
+                     passedTests === totalTests ? 'success' : 'warning')
+            
+            if (passedTests === totalTests) {
+                addResult('🎉 所有测试通过！登录问题已修复！', 'success')
+            } else {
+                addResult('⚠️ 部分测试失败，需要进一步检查', 'warning')
+            }
+        }
+    </script>
+</body>
+</html>

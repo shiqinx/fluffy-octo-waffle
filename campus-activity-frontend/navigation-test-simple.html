@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 24px;
+            background: #1989fa;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .test-button:hover {
+            background: #1677ff;
+        }
+        .test-button:visited {
+            color: white;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background: #f0f9ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        .info {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #1989fa;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧭 导航功能测试</h1>
+        <p>此页面用于测试Vue应用的导航功能是否正常工作</p>
+        
+        <div class="test-section">
+            <h3>📱 移动端模拟测试</h3>
+            <p>在下方iframe中测试应用的导航功能：</p>
+            <iframe src="/" id="app-frame"></iframe>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔗 直接链接测试</h3>
+            <p>点击以下链接测试各个页面是否可以正常访问：</p>
+            
+            <div>
+                <h4>认证相关页面：</h4>
+                <a href="/#/login" class="test-button" target="_blank">登录页面</a>
+                <a href="/#/register" class="test-button" target="_blank">注册页面</a>
+            </div>
+            
+            <div>
+                <h4>主要功能页面：</h4>
+                <a href="/#/home" class="test-button" target="_blank">首页</a>
+                <a href="/#/activities-teams" class="test-button" target="_blank">活动/团队</a>
+                <a href="/#/messages" class="test-button" target="_blank">消息</a>
+                <a href="/#/profile" class="test-button" target="_blank">个人中心</a>
+            </div>
+            
+            <div>
+                <h4>活动相关页面：</h4>
+                <a href="/#/activities" class="test-button" target="_blank">活动列表</a>
+                <a href="/#/activities/create" class="test-button" target="_blank">创建活动</a>
+                <a href="/#/activities/1" class="test-button" target="_blank">活动详情</a>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 测试结果</h3>
+            <div id="test-results">
+                <div class="status info">请在上方iframe或新窗口中测试导航功能</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔧 测试指南</h3>
+            <ol>
+                <li><strong>底部导航测试</strong>：在iframe中点击底部导航栏的各个选项</li>
+                <li><strong>页面跳转测试</strong>：点击页面内的各种链接和按钮</li>
+                <li><strong>认证流程测试</strong>：尝试访问需要登录的页面，检查是否正确重定向</li>
+                <li><strong>返回功能测试</strong>：使用浏览器的返回按钮</li>
+                <li><strong>直接访问测试</strong>：使用上方的直接链接测试各个页面</li>
+            </ol>
+            
+            <h4>预期结果：</h4>
+            <ul>
+                <li>✅ 底部导航栏点击应该能正常切换页面</li>
+                <li>✅ 页面内链接和按钮应该有响应</li>
+                <li>✅ 未登录时访问需要认证的页面应该重定向到登录页</li>
+                <li>✅ 已登录时访问登录页应该重定向到首页</li>
+                <li>✅ 所有页面应该能正常加载和显示</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 监听iframe加载状态
+        const iframe = document.getElementById('app-frame');
+        const testResults = document.getElementById('test-results');
+        
+        iframe.onload = function() {
+            addStatus('info', '✅ 应用iframe加载完成，可以开始测试导航功能');
+        };
+        
+        iframe.onerror = function() {
+            addStatus('error', '❌ 应用iframe加载失败，请检查开发服务器是否正常运行');
+        };
+        
+        function addStatus(type, message) {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            testResults.appendChild(statusDiv);
+        }
+        
+        // 检测用户交互
+        let interactionCount = 0;
+        iframe.addEventListener('load', function() {
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // 监听iframe内的点击事件
+                iframeDoc.addEventListener('click', function(e) {
+                    interactionCount++;
+                    if (interactionCount <= 5) {
+                        addStatus('success', `✅ 检测到点击交互 #${interactionCount} - 导航功能正常`);
+                    }
+                });
+                
+                // 检查路由变化
+                let currentHash = iframe.contentWindow.location.hash;
+                setInterval(function() {
+                    if (iframe.contentWindow.location.hash !== currentHash) {
+                        currentHash = iframe.contentWindow.location.hash;
+                        addStatus('success', `✅ 路由变化检测: ${currentHash}`);
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                // 跨域限制，无法访问iframe内容
+                console.log('由于跨域限制，无法直接监控iframe内的交互');
+            }
+        });
+        
+        // 页面加载完成后的初始化
+        window.addEventListener('load', function() {
+            addStatus('info', '🚀 导航测试页面加载完成');
+            
+            // 检查开发服务器状态
+            fetch('/').then(response => {
+                if (response.ok) {
+                    addStatus('success', '✅ 开发服务器运行正常');
+                } else {
+                    addStatus('error', '❌ 开发服务器响应异常');
+                }
+            }).catch(error => {
+                addStatus('error', '❌ 无法连接到开发服务器');
+            });
+        });
+    </script>
+</body>
+</html>

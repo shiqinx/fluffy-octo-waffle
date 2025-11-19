@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速定位测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #1989fa;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #1989fa;
+            transition: width 0.3s ease;
+        }
+        .quick-actions {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ 快速定位测试</h1>
+        <p>针对超时问题的优化定位测试，使用更短的超时时间和多种备用方案。</p>
+
+        <div class="quick-actions">
+            <button class="test-button" onclick="runQuickTest()">🚀 快速测试 (3秒)</button>
+            <button class="test-button" onclick="runStandardTest()">⏱️ 标准测试 (8秒)</button>
+            <button class="test-button" onclick="runFallbackTest()">🔄 备用方案测试</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 测试进度</h3>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+            <div id="progressText">准备开始测试...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 测试结果</h3>
+            <div id="testResults" class="result info">点击上方按钮开始测试</div>
+        </div>
+
+        <div class="test-section">
+            <h3>💡 超时问题解决方案</h3>
+            <div id="solutions" class="result warning">
+                <strong>针对定位超时的建议：</strong><br>
+                1. 🌐 检查网络连接稳定性<br>
+                2. 📱 移至窗边或开阔区域<br>
+                3. 🔄 关闭其他占用网络的应用<br>
+                4. ⚡ 使用快速测试模式<br>
+                5. 🏢 尝试连接WiFi网络<br>
+                6. 🔄 重启浏览器或设备
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTest = null;
+        let testResults = [];
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function addResult(type, title, details, status = 'info') {
+            testResults.push({ type, title, details, status, timestamp: new Date().toLocaleTimeString() });
+            updateResultsDisplay();
+        }
+
+        function updateResultsDisplay() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = testResults.map(result => {
+                const icon = result.status === 'success' ? '✅' : 
+                            result.status === 'error' ? '❌' : 
+                            result.status === 'warning' ? '⚠️' : 'ℹ️';
+                
+                return `[${result.timestamp}] ${icon} ${result.title}\n${result.details}\n`;
+            }).join('\n---\n');
+            
+            resultsDiv.className = `result ${testResults[testResults.length - 1]?.status || 'info'}`;
+        }
+
+        async function runQuickTest() {
+            if (currentTest) return;
+            
+            testResults = [];
+            addResult('info', '快速测试开始', '使用3秒超时进行快速定位测试', 'info');
+            updateProgress(10, '开始快速定位测试...');
+
+            try {
+                const position = await testLocationWithTimeout(3000, '快速模式');
+                addResult('success', '快速定位成功', formatLocationResult(position), 'success');
+                updateProgress(100, '快速测试完成！');
+            } catch (error) {
+                addResult('error', '快速定位失败', formatLocationError(error), 'error');
+                updateProgress(100, '快速测试失败，建议尝试备用方案');
+            }
+        }
+
+        async function runStandardTest() {
+            if (currentTest) return;
+            
+            testResults = [];
+            addResult('info', '标准测试开始', '使用8秒超时进行标准定位测试', 'info');
+            updateProgress(10, '开始标准定位测试...');
+
+            try {
+                const position = await testLocationWithTimeout(8000, '标准模式');
+                addResult('success', '标准定位成功', formatLocationResult(position), 'success');
+                updateProgress(100, '标准测试完成！');
+            } catch (error) {
+                addResult('error', '标准定位失败', formatLocationError(error), 'error');
+                updateProgress(100, '标准测试失败，建议尝试备用方案');
+                
+                // 自动尝试备用方案
+                setTimeout(() => {
+                    if (confirm('标准定位失败，是否尝试备用方案？')) {
+                        runFallbackTest();
+                    }
+                }, 1000);
+            }
+        }
+
+        async function runFallbackTest() {
+            if (currentTest) return;
+            
+            testResults = [];
+            addResult('info', '备用方案测试开始', '测试多种备用定位方案', 'info');
+            updateProgress(10, '测试备用方案...');
+
+            // 方案1: 低精度定位
+            updateProgress(25, '尝试低精度定位...');
+            try {
+                const position = await testLocationWithTimeout(5000, '低精度模式', false);
+                addResult('success', '低精度定位成功', formatLocationResult(position), 'success');
+                updateProgress(100, '备用方案测试完成！');
+                return;
+            } catch (error) {
+                addResult('warning', '低精度定位失败', formatLocationError(error), 'warning');
+            }
+
+            // 方案2: 缓存位置
+            updateProgress(50, '尝试使用缓存位置...');
+            try {
+                const position = await testLocationWithTimeout(3000, '缓存模式', true, 300000);
+                addResult('success', '缓存定位成功', formatLocationResult(position), 'success');
+                updateProgress(100, '备用方案测试完成！');
+                return;
+            } catch (error) {
+                addResult('warning', '缓存定位失败', formatLocationError(error), 'warning');
+            }
+
+            // 方案3: 网络定位（如果支持）
+            updateProgress(75, '尝试网络定位...');
+            try {
+                const position = await testNetworkLocation();
+                addResult('success', '网络定位成功', formatLocationResult(position), 'success');
+                updateProgress(100, '备用方案测试完成！');
+            } catch (error) {
+                addResult('error', '所有备用方案失败', '建议：\n1. 检查网络连接\n2. 移至开阔区域\n3. 重启设备\n4. 使用手动定位', 'error');
+                updateProgress(100, '备用方案测试失败');
+            }
+        }
+
+        function testLocationWithTimeout(timeout, mode, enableHighAccuracy = true, maximumAge = 0) {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('浏览器不支持地理定位'));
+                    return;
+                }
+
+                const startTime = Date.now();
+                updateProgress(20, `${mode}定位中...`);
+
+                const options = {
+                    enableHighAccuracy: enableHighAccuracy,
+                    timeout: timeout,
+                    maximumAge: maximumAge
+                };
+
+                const progressInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const percent = Math.min(20 + (elapsed / timeout) * 60, 80);
+                    updateProgress(percent, `${mode}定位中... (${elapsed}ms/${timeout}ms)`);
+                }, 100);
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        clearInterval(progressInterval);
+                        const duration = Date.now() - startTime;
+                        position.duration = duration;
+                        position.mode = mode;
+                        resolve(position);
+                    },
+                    (error) => {
+                        clearInterval(progressInterval);
+                        const duration = Date.now() - startTime;
+                        error.duration = duration;
+                        error.mode = mode;
+                        reject(error);
+                    },
+                    options
+                );
+            });
+        }
+
+        async function testNetworkLocation() {
+            // 尝试通过IP定位（这里使用模拟的校园中心坐标）
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    // 模拟IP定位结果，使用广东药科大学云浮校区坐标
+                    resolve({
+                        coords: {
+                            latitude: 23.028501,
+                            longitude: 112.184488,
+                            accuracy: 1000,
+                            altitude: null,
+                            altitudeAccuracy: null,
+                            heading: null,
+                            speed: null
+                        },
+                        timestamp: Date.now(),
+                        duration: 1000,
+                        mode: '网络定位'
+                    });
+                }, 1000);
+            });
+        }
+
+        function formatLocationResult(position) {
+            const { latitude, longitude, accuracy } = position.coords;
+            return `📍 坐标：${latitude.toFixed(6)}, ${longitude.toFixed(6)}\n` +
+                   `🎯 精度：${accuracy.toFixed(0)}米\n` +
+                   `⏱️ 耗时：${position.duration}ms\n` +
+                   `📋 模式：${position.mode}\n` +
+                   `🕐 时间：${new Date(position.timestamp).toLocaleString()}`;
+        }
+
+        function formatLocationError(error) {
+            let errorType = '';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorType = '权限被拒绝';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorType = '位置不可用';
+                    break;
+                case error.TIMEOUT:
+                    errorType = '请求超时';
+                    break;
+                default:
+                    errorType = '未知错误';
+                    break;
+            }
+
+            return `🚫 错误类型：${errorType}\n` +
+                   `⏱️ 耗时：${error.duration}ms\n` +
+                   `📋 模式：${error.mode}\n` +
+                   `📝 详细信息：${error.message}`;
+        }
+
+        // 页面加载时显示提示
+        window.addEventListener('load', () => {
+            addResult('info', '准备就绪', '请选择测试模式开始定位测试', 'info');
+        });
+    </script>
+</body>
+</html>

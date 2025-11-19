@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动API联调测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .test-section-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .test-section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .test-section-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success {
+            background: #28a745;
+        }
+        
+        .status-error {
+            background: #dc3545;
+        }
+        
+        .status-warning {
+            background: #ffc107;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 活动API联调测试</h1>
+            <p>测试前端与后端Activity模块接口对接</p>
+        </div>
+        
+        <div class="content">
+            <!-- 环境检查 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="env-status"></span>
+                        环境检查
+                    </div>
+                    <button class="btn btn-primary" onclick="checkEnvironment()">检查环境</button>
+                </div>
+                <div class="test-section-body">
+                    <div id="environment-result"></div>
+                </div>
+            </div>
+            
+            <!-- 创建活动测试 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="create-status"></span>
+                        创建活动测试
+                    </div>
+                    <button class="btn btn-success" onclick="testCreateActivity()">创建活动</button>
+                </div>
+                <div class="test-section-body">
+                    <div class="two-column">
+                        <div class="form-group">
+                            <label>活动标题</label>
+                            <input type="text" id="activity-title" value="API测试活动" placeholder="输入活动标题">
+                        </div>
+                        <div class="form-group">
+                            <label>活动地点</label>
+                            <input type="text" id="activity-location" value="测试地点" placeholder="输入活动地点">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>活动描述</label>
+                        <textarea id="activity-description" placeholder="输入活动描述">这是一个用于API联调测试的活动</textarea>
+                    </div>
+                    <div class="two-column">
+                        <div class="form-group">
+                            <label>开始时间</label>
+                            <input type="datetime-local" id="activity-start-time" value="2024-12-20T10:00">
+                        </div>
+                        <div class="form-group">
+                            <label>结束时间</label>
+                            <input type="datetime-local" id="activity-end-time" value="2024-12-20T12:00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>最大参与人数</label>
+                        <input type="number" id="activity-max-participants" value="50" min="1" placeholder="输入最大参与人数">
+                    </div>
+                    <div id="create-result"></div>
+                </div>
+            </div>
+            
+            <!-- 获取活动列表测试 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="list-status"></span>
+                        获取活动列表测试
+                    </div>
+                    <button class="btn btn-primary" onclick="testGetActivityList()">获取列表</button>
+                </div>
+                <div class="test-section-body">
+                    <div class="form-group">
+                        <label>搜索关键词</label>
+                        <input type="text" id="search-keyword" placeholder="输入搜索关键词（可选）">
+                    </div>
+                    <div id="list-result"></div>
+                </div>
+            </div>
+            
+            <!-- 获取活动详情测试 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="detail-status"></span>
+                        获取活动详情测试
+                    </div>
+                    <button class="btn btn-primary" onclick="testGetActivityDetail()">获取详情</button>
+                </div>
+                <div class="test-section-body">
+                    <div class="form-group">
+                        <label>活动ID</label>
+                        <input type="number" id="detail-activity-id" value="1" min="1" placeholder="输入活动ID">
+                    </div>
+                    <div id="detail-result"></div>
+                </div>
+            </div>
+            
+            <!-- 加入活动测试 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="join-status"></span>
+                        加入活动测试
+                    </div>
+                    <button class="btn btn-warning" onclick="testJoinActivity()">加入活动</button>
+                </div>
+                <div class="test-section-body">
+                    <div class="form-group">
+                        <label>活动ID</label>
+                        <input type="number" id="join-activity-id" value="1" min="1" placeholder="输入活动ID">
+                    </div>
+                    <div class="form-group">
+                        <label>申请消息</label>
+                        <textarea id="join-message" placeholder="输入申请消息">我想参加这个活动</textarea>
+                    </div>
+                    <div id="join-result"></div>
+                </div>
+            </div>
+            
+            <!-- 同意加入测试 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="agree-status"></span>
+                        同意加入测试
+                    </div>
+                    <button class="btn btn-success" onclick="testAgreeJoinActivity()">同意加入</button>
+                </div>
+                <div class="test-section-body">
+                    <div class="two-column">
+                        <div class="form-group">
+                            <label>活动ID</label>
+                            <input type="number" id="agree-activity-id" value="1" min="1" placeholder="输入活动ID">
+                        </div>
+                        <div class="form-group">
+                            <label>用户ID</label>
+                            <input type="number" id="agree-user-id" value="2" min="1" placeholder="输入用户ID">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select id="agree-status-select">
+                            <option value="approved">通过</option>
+                            <option value="rejected">拒绝</option>
+                        </select>
+                    </div>
+                    <div id="agree-result"></div>
+                </div>
+            </div>
+            
+            <!-- 活动签到测试 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="checkin-status"></span>
+                        活动签到测试
+                    </div>
+                    <button class="btn btn-primary" onclick="testCheckInActivity()">活动签到</button>
+                </div>
+                <div class="test-section-body">
+                    <div class="form-group">
+                        <label>活动ID</label>
+                        <input type="number" id="checkin-activity-id" value="1" min="1" placeholder="输入活动ID">
+                    </div>
+                    <div id="checkin-result"></div>
+                </div>
+            </div>
+            
+            <!-- 聊天功能测试 -->
+            <div class="test-section">
+                <div class="test-section-header">
+                    <div class="test-section-title">
+                        <span class="status-indicator" id="chat-status"></span>
+                        聊天功能测试
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="testSendChatMessage()">发送消息</button>
+                        <button class="btn btn-warning" onclick="testGetChatHistory()">获取历史</button>
+                    </div>
+                </div>
+                <div class="test-section-body">
+                    <div class="form-group">
+                        <label>活动ID</label>
+                        <input type="number" id="chat-activity-id" value="1" min="1" placeholder="输入活动ID">
+                    </div>
+                    <div class="form-group">
+                        <label>消息内容</label>
+                        <textarea id="chat-content" placeholder="输入消息内容">Hello, 这是测试消息!</textarea>
+                    </div>
+                    <div id="chat-result"></div>
+                </div>
+            </div>
+            
+            <!-- 全局操作 -->
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-danger" onclick="clearAllResults()">清空所有结果</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 获取当前环境配置
+        function getEnvironmentConfig() {
+            // 在浏览器环境中，我们无法直接访问Vite环境变量
+            // 通过检查当前URL和localStorage来推断配置
+            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const useMock = localStorage.getItem('VITE_USE_MOCK') === 'true';
+            const apiBaseUrl = localStorage.getItem('VITE_API_BASE_URL') || 'http://localhost:8080/api';
+            
+            return {
+                isDev,
+                useMock,
+                apiBaseUrl,
+                frontendUrl: window.location.origin
+            };
+        }
+
+        // 显示结果
+        function showResult(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            const statusIndicator = document.getElementById(elementId.replace('-result', '-status'));
+            
+            let resultClass = isSuccess ? 'success' : 'error';
+            let statusClass = isSuccess ? 'status-success' : 'status-error';
+            
+            element.innerHTML = `<div class="result ${resultClass}">${JSON.stringify(data, null, 2)}</div>`;
+            statusIndicator.className = `status-indicator ${statusClass}`;
+        }
+
+        // 显示信息
+        function showInfo(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="result info">${message}</div>`;
+        }
+
+        // 清空结果
+        function clearAllResults() {
+            const resultElements = document.querySelectorAll('[id$="-result"]');
+            resultElements.forEach(element => {
+                element.innerHTML = '';
+            });
+            
+            const statusIndicators = document.querySelectorAll('.status-indicator');
+            statusIndicators.forEach(indicator => {
+                indicator.className = 'status-indicator';
+            });
+        }
+
+        // 检查环境
+        async function checkEnvironment() {
+            try {
+                const config = getEnvironmentConfig();
+                const envInfo = `
+当前环境配置：
+- 开发模式: ${config.isDev}
+- 使用Mock: ${config.useMock}
+- API地址: ${config.apiBaseUrl}
+- 前端地址: ${config.frontendUrl}
+
+⚠️  联调要求：
+- VITE_USE_MOCK 应该为 false
+- VITE_API_BASE_URL 应该指向后端服务
+                `.trim();
+                
+                showInfo('environment-result', envInfo);
+                document.getElementById('env-status').className = `status-indicator ${config.useMock ? 'status-warning' : 'status-success'}`;
+            } catch (error) {
+                showResult('environment-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试创建活动
+        async function testCreateActivity() {
+            try {
+                const activityData = {
+                    title: document.getElementById('activity-title').value,
+                    description: document.getElementById('activity-description').value,
+                    location: document.getElementById('activity-location').value,
+                    startTime: document.getElementById('activity-start-time').value,
+                    endTime: document.getElementById('activity-end-time').value,
+                    maxParticipants: parseInt(document.getElementById('activity-max-participants').value)
+                };
+
+                const response = await fetch('/api/activity/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(activityData)
+                });
+
+                const result = await response.json();
+                showResult('create-result', result, response.ok);
+            } catch (error) {
+                showResult('create-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试获取活动列表
+        async function testGetActivityList() {
+            try {
+                const keyword = document.getElementById('search-keyword').value;
+                const params = new URLSearchParams();
+                if (keyword) {
+                    params.append('keyword', keyword);
+                }
+
+                const response = await fetch(`/api/activity/list?${params}`);
+                const result = await response.json();
+                showResult('list-result', result, response.ok);
+            } catch (error) {
+                showResult('list-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试获取活动详情
+        async function testGetActivityDetail() {
+            try {
+                const activityId = document.getElementById('detail-activity-id').value;
+                const response = await fetch(`/api/activity/detail/${activityId}`);
+                const result = await response.json();
+                showResult('detail-result', result, response.ok);
+            } catch (error) {
+                showResult('detail-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试加入活动
+        async function testJoinActivity() {
+            try {
+                const activityId = document.getElementById('join-activity-id').value;
+                const message = document.getElementById('join-message').value;
+
+                const response = await fetch('/api/activity/join', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        activityId: parseInt(activityId),
+                        message: message
+                    })
+                });
+
+                const result = await response.json();
+                showResult('join-result', result, response.ok);
+            } catch (error) {
+                showResult('join-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试同意加入
+        async function testAgreeJoinActivity() {
+            try {
+                const activityId = document.getElementById('agree-activity-id').value;
+                const userId = document.getElementById('agree-user-id').value;
+                const status = document.getElementById('agree-status-select').value;
+
+                const response = await fetch('/api/activity/agree-join', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        activityId: parseInt(activityId),
+                        userId: parseInt(userId),
+                        status: status,
+                        message: status === 'approved' ? '申请已通过' : '申请已拒绝'
+                    })
+                });
+
+                const result = await response.json();
+                showResult('agree-result', result, response.ok);
+            } catch (error) {
+                showResult('agree-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试活动签到
+        async function testCheckInActivity() {
+            try {
+                const activityId = document.getElementById('checkin-activity-id').value;
+
+                const response = await fetch('/api/activity/check-in', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        activityId: parseInt(activityId)
+                    })
+                });
+
+                const result = await response.json();
+                showResult('checkin-result', result, response.ok);
+            } catch (error) {
+                showResult('checkin-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试发送聊天消息
+        async function testSendChatMessage() {
+            try {
+                const activityId = document.getElementById('chat-activity-id').value;
+                const content = document.getElementById('chat-content').value;
+
+                // 使用FormData发送，因为后端混合使用@RequestParam和@RequestBody
+                const formData = new FormData();
+                formData.append('activityId', activityId);
+                formData.append('content', content);
+
+                const response = await fetch('/api/activity/chat/send', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.text();
+                showResult('chat-result', { result }, response.ok);
+            } catch (error) {
+                showResult('chat-result', { error: error.message }, false);
+            }
+        }
+
+        // 测试获取聊天历史
+        async function testGetChatHistory() {
+            try {
+                const activityId = document.getElementById('chat-activity-id').value;
+                const response = await fetch(`/api/activity/chat/history/${activityId}`);
+                const result = await response.json();
+                showResult('chat-result', result, response.ok);
+            } catch (error) {
+                showResult('chat-result', { error: error.message }, false);
+            }
+        }
+
+        // 页面加载时自动检查环境
+        document.addEventListener('DOMContentLoaded', function() {
+            checkEnvironment();
+        });
+    </script>
+</body>
+</html>

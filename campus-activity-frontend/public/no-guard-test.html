@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无路由守卫测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .nav-button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 无路由守卫导航测试</h1>
+        <p>测试在禁用路由守卫的情况下，导航是否正常工作</p>
+        
+        <div class="status info">
+            <strong>当前状态：</strong>路由守卫已禁用，使用调试版本路由
+        </div>
+
+        <h2>🔗 导航测试</h2>
+        <a href="/home" class="nav-button" target="test-frame">首页</a>
+        <a href="/activities-teams" class="nav-button" target="test-frame">活动/团队</a>
+        <a href="/messages" class="nav-button" target="test-frame">消息</a>
+        <a href="/profile" class="nav-button" target="test-frame">个人中心</a>
+        <a href="/login" class="nav-button" target="test-frame">登录</a>
+        <a href="/register" class="nav-button" target="test-frame">注册</a>
+
+        <h2>📊 测试结果</h2>
+        <div id="test-results"></div>
+
+        <h2>🖼️ 应用预览</h2>
+        <iframe name="test-frame" src="/home"></iframe>
+    </div>
+
+    <script>
+        let testResults = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            testResults.push({ timestamp, message, type });
+            updateResults();
+        }
+
+        function updateResults() {
+            const container = document.getElementById('test-results');
+            container.innerHTML = testResults.map(result => 
+                `<div class="status ${result.type}">
+                    [${result.timestamp}] ${result.message}
+                </div>`
+            ).join('');
+        }
+
+        // 监听iframe加载
+        document.querySelector('iframe').addEventListener('load', function() {
+            try {
+                const iframe = this.contentWindow;
+                const currentPath = iframe.location.pathname;
+                log(`✅ 成功加载: ${currentPath}`, 'success');
+            } catch (error) {
+                log(`❌ iframe加载错误: ${error.message}`, 'error');
+            }
+        });
+
+        // 监听iframe错误
+        document.querySelector('iframe').addEventListener('error', function() {
+            log('❌ iframe加载失败', 'error');
+        });
+
+        // 初始化测试
+        log('🚀 无路由守卫测试开始', 'info');
+        log('📍 路由守卫状态: 已禁用', 'info');
+        log('🔧 使用调试版本路由配置', 'info');
+
+        // 测试按钮点击
+        document.querySelectorAll('.nav-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const href = this.getAttribute('href');
+                log(`🔗 尝试导航到: ${href}`, 'info');
+            });
+        });
+    </script>
+</body>
+</html>

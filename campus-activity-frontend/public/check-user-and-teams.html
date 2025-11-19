@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户状态和团队数据检查</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+        }
+        .info-item {
+            margin: 10px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .info-item strong {
+            color: #007bff;
+        }
+        .team-item {
+            margin: 10px 0;
+            padding: 12px;
+            background: #e8f4fd;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+        .member-item {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f0f8ff;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>用户状态和团队数据检查</h1>
+        
+        <div class="section">
+            <h3>1. 环境检查</h3>
+            <div id="environment-check"></div>
+        </div>
+        
+        <div class="section">
+            <h3>2. 当前用户信息</h3>
+            <div id="user-info"></div>
+        </div>
+        
+        <div class="section">
+            <h3>3. Mock团队数据</h3>
+            <div id="mock-teams"></div>
+        </div>
+        
+        <div class="section">
+            <h3>4. 团队成员关系</h3>
+            <div id="team-members"></div>
+        </div>
+        
+        <div class="section">
+            <h3>5. 我的团队数据（API调用）</h3>
+            <div id="my-teams-api"></div>
+            <button class="btn" onclick="testMyTeamsAPI()">测试我的团队API</button>
+        </div>
+        
+        <div class="section">
+            <h3>6. 问题诊断</h3>
+            <div id="diagnosis"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 检查环境
+        function checkEnvironment() {
+            const envDiv = document.getElementById('environment-check');
+            
+            // 检查是否在开发环境
+            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            envDiv.innerHTML = `
+                <div class="info-item">
+                    <strong>开发模式:</strong> ${isDev ? '是' : '否'}
+                </div>
+                <div class="info-item">
+                    <strong>当前域名:</strong> ${window.location.hostname}
+                </div>
+                <div class="info-item">
+                    <strong>当前时间:</strong> ${new Date().toLocaleString()}
+                </div>
+            `;
+        }
+
+        // 模拟获取用户信息
+        async function getCurrentUser() {
+            try {
+                // 尝试从localStorage获取token
+                const token = localStorage.getItem('token');
+                const userInfo = localStorage.getItem('userInfo');
+                
+                let userDiv = document.getElementById('user-info');
+                
+                if (token && userInfo) {
+                    const user = JSON.parse(userInfo);
+                    userDiv.innerHTML = `
+                        <div class="success">已找到登录用户信息</div>
+                        <div class="info-item">
+                            <strong>用户ID:</strong> ${user.id}
+                        </div>
+                        <div class="info-item">
+                            <strong>姓名:</strong> ${user.realName}
+                        </div>
+                        <div class="info-item">
+                            <strong>学号:</strong> ${user.studentId}
+                        </div>
+                        <div class="info-item">
+                            <strong>院系:</strong> ${user.department}
+                        </div>
+                        <div class="info-item">
+                            <strong>Token:</strong> ${token.substring(0, 20)}...
+                        </div>
+                    `;
+                    return user;
+                } else {
+                    userDiv.innerHTML = `
+                        <div class="error">未找到登录用户信息</div>
+                        <div class="info-item">
+                            <strong>Token:</strong> ${token || '无'}
+                        </div>
+                        <div class="info-item">
+                            <strong>用户信息:</strong> ${userInfo || '无'}
+                        </div>
+                    `;
+                    return null;
+                }
+            } catch (error) {
+                document.getElementById('user-info').innerHTML = `
+                    <div class="error">获取用户信息失败: ${error.message}</div>
+                `;
+                return null;
+            }
+        }
+
+        // 显示Mock团队数据
+        function showMockTeams() {
+            const mockTeams = [
+                {
+                    id: 1,
+                    name: '编程竞赛队',
+                    description: '专注于各类编程竞赛的团队',
+                    leaderId: 1,
+                    leaderName: '孙金瑶',
+                    memberCount: 5
+                },
+                {
+                    id: 2,
+                    name: '摄影爱好者',
+                    description: '一起交流摄影技巧，分享摄影作品',
+                    leaderId: 2,
+                    leaderName: '卢敏婷',
+                    memberCount: 8
+                },
+                {
+                    id: 3,
+                    name: '运动健身团',
+                    description: '每天锻炼一小时，健康生活一辈子',
+                    leaderId: 1,
+                    leaderName: '孙金瑶',
+                    memberCount: 12
+                }
+            ];
+
+            const teamsDiv = document.getElementById('mock-teams');
+            teamsDiv.innerHTML = mockTeams.map(team => `
+                <div class="team-item">
+                    <strong>${team.name}</strong> (ID: ${team.id})
+                    <div class="info-item">描述: ${team.description}</div>
+                    <div class="info-item">队长: ${team.leaderName} (ID: ${team.leaderId})</div>
+                    <div class="info-item">成员数: ${team.memberCount}</div>
+                </div>
+            `).join('');
+        }
+
+        // 显示团队成员关系
+        function showTeamMembers() {
+            const teamMembers = {
+                1: [
+                    { userId: 1, userName: '孙金瑶', role: 'leader' },
+                    { userId: 2, userName: '卢敏婷', role: 'member' }
+                ],
+                2: [
+                    { userId: 2, userName: '卢敏婷', role: 'leader' }
+                ],
+                3: [
+                    { userId: 1, userName: '孙金瑶', role: 'leader' }
+                ]
+            };
+
+            const membersDiv = document.getElementById('team-members');
+            let html = '';
+            
+            for (const [teamId, members] of Object.entries(teamMembers)) {
+                html += `
+                    <div class="team-item">
+                        <strong>团队 ${teamId} 成员:</strong>
+                        ${members.map(member => `
+                            <div class="member-item">
+                                ${member.userName} (ID: ${member.userId}) - ${member.role === 'leader' ? '队长' : '成员'}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            membersDiv.innerHTML = html;
+        }
+
+        // 测试我的团队API
+        window.testMyTeamsAPI = async function() {
+            const apiDiv = document.getElementById('my-teams-api');
+            apiDiv.innerHTML = '<div class="info-item">正在测试API...</div>';
+
+            try {
+                // 导入team API
+                const { getMyTeams } = await import('/src/api/team.js');
+                
+                // 测试获取我创建的团队
+                const ownedResponse = await getMyTeams({
+                    userId: 1, // 假设当前用户ID为1
+                    role: 'owner'
+                });
+                
+                // 测试获取我加入的团队
+                const joinedResponse = await getMyTeams({
+                    userId: 1,
+                    role: 'member'
+                });
+
+                let html = `
+                    <div class="success">API调用成功</div>
+                    <div class="team-item">
+                        <strong>我创建的团队:</strong>
+                        <pre>${JSON.stringify(ownedResponse, null, 2)}</pre>
+                    </div>
+                    <div class="team-item">
+                        <strong>我加入的团队:</strong>
+                        <pre>${JSON.stringify(joinedResponse, null, 2)}</pre>
+                    </div>
+                `;
+                
+                apiDiv.innerHTML = html;
+                
+                // 更新诊断信息
+                updateDiagnosis(ownedResponse, joinedResponse);
+                
+            } catch (error) {
+                apiDiv.innerHTML = `
+                    <div class="error">API调用失败: ${error.message}</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        };
+
+        // 更新诊断信息
+        function updateDiagnosis(ownedResponse, joinedResponse) {
+            const diagnosisDiv = document.getElementById('diagnosis');
+            
+            const ownedTeams = ownedResponse?.data?.list || [];
+            const joinedTeams = joinedResponse?.data?.list || [];
+            
+            let diagnosis = '<div class="info-item"><strong>诊断结果:</strong></div>';
+            
+            if (ownedTeams.length === 0 && joinedTeams.length === 0) {
+                diagnosis += `
+                    <div class="error">
+                        <strong>问题确认:</strong> 当前用户确实没有任何团队数据
+                    </div>
+                    <div class="info-item">
+                        <strong>可能原因:</strong>
+                        <ul>
+                            <li>用户未登录</li>
+                            <li>Mock数据中用户ID不匹配</li>
+                            <li>API实现有问题</li>
+                            <li>团队成员关系数据错误</li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                diagnosis += `
+                    <div class="success">
+                        <strong>数据正常:</strong> 找到 ${ownedTeams.length} 个创建的团队，${joinedTeams.length} 个加入的团队
+                    </div>
+                `;
+            }
+            
+            diagnosisDiv.innerHTML = diagnosis;
+        }
+
+        // 初始化
+        async function init() {
+            checkEnvironment();
+            await getCurrentUser();
+            showMockTeams();
+            showTeamMembers();
+        }
+
+        // 页面加载完成后执行
+        init();
+    </script>
+</body>
+</html>

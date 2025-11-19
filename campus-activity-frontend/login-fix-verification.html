@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录修复验证</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 登录修复验证测试</h1>
+    <p>验证修复后的登录API功能</p>
+    
+    <div class="test-case info">
+        <h3>测试说明</h3>
+        <p>点击下面的按钮测试不同的登录场景</p>
+    </div>
+    
+    <div class="test-case">
+        <h3>测试用例</h3>
+        <button onclick="testLogin1()">测试用户1 (孙金瑶)</button>
+        <button onclick="testLogin2()">测试用户2 (卢敏婷)</button>
+        <button onclick="testLogin3()">测试错误用户</button>
+        <button onclick="clearResults()">清除结果</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        import { login } from './src/api/auth.js';
+        
+        function addResult(title, result, isSuccess) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-case ${isSuccess ? 'success' : 'error'}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            resultDiv.innerHTML = `
+                <h4>${title} - ${timestamp}</h4>
+                <p><strong>结果:</strong> ${isSuccess ? '✅ 成功' : '❌ 失败'}</p>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+            
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        window.testLogin1 = async function() {
+            try {
+                console.log('🧪 测试用户1登录...');
+                const result = await login({
+                    studentId: '2330502143',
+                    password: 'abc123456'
+                });
+                addResult('用户1 (孙金瑶) 登录测试', result, result.success);
+            } catch (error) {
+                addResult('用户1 (孙金瑶) 登录测试', { error: error.message }, false);
+            }
+        };
+        
+        window.testLogin2 = async function() {
+            try {
+                console.log('🧪 测试用户2登录...');
+                const result = await login({
+                    studentId: '2330502134',
+                    password: 'test123456'
+                });
+                addResult('用户2 (卢敏婷) 登录测试', result, result.success);
+            } catch (error) {
+                addResult('用户2 (卢敏婷) 登录测试', { error: error.message }, false);
+            }
+        };
+        
+        window.testLogin3 = async function() {
+            try {
+                console.log('🧪 测试错误用户登录...');
+                const result = await login({
+                    studentId: '9999999999',
+                    password: 'wrongpassword'
+                });
+                addResult('错误用户登录测试', result, result.success);
+            } catch (error) {
+                addResult('错误用户登录测试', { error: error.message }, false);
+            }
+        };
+        
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+        };
+        
+        // 页面加载完成后自动运行测试
+        window.addEventListener('load', () => {
+            console.log('📋 页面加载完成，可以开始测试登录功能');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录流程完整测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 登录流程完整测试</h1>
+    
+    <div class="test-container">
+        <h2>📋 测试清单</h2>
+        <div class="test-section">
+            <h3>1. 认证状态检查</h3>
+            <div id="auth-status">检查中...</div>
+            <button onclick="checkAuthStatus()">重新检查</button>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 登录测试</h3>
+            <div class="form-group">
+                <label>学号:</label>
+                <input type="text" id="studentId" value="2021001" placeholder="请输入学号">
+            </div>
+            <div class="form-group">
+                <label>密码:</label>
+                <input type="password" id="password" value="password123" placeholder="请输入密码">
+            </div>
+            <button onclick="testLogin()">执行登录</button>
+            <button onclick="testLoginWithInvalidCredentials()">测试错误凭据</button>
+            <div id="login-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 用户状态验证</h3>
+            <div id="user-status">未登录</div>
+            <button onclick="checkUserStatus()">检查用户状态</button>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 页面跳转测试</h3>
+            <button onclick="testRedirectToHome()">测试跳转到首页</button>
+            <button onclick="testProtectedRoute()">测试受保护路由</button>
+            <div id="redirect-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Token持久化测试</h3>
+            <button onclick="testTokenPersistence()">测试Token持久化</button>
+            <button onclick="testTokenExpiration()">测试Token过期</button>
+            <div id="token-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>6. 退出登录测试</h3>
+            <button onclick="testLogout()">测试退出登录</button>
+            <div id="logout-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 测试日志</h3>
+            <div id="test-log" class="log"></div>
+            <button onclick="clearLog()">清除日志</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let testResults = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('test-log');
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(logMessage.trim());
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function checkAuthStatus() {
+            log('🔍 检查当前认证状态...');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                const loginTime = localStorage.getItem('loginTime');
+
+                if (token && user) {
+                    const userData = JSON.parse(user);
+                    const currentTime = Date.now();
+                    const fourHours = 4 * 60 * 60 * 1000;
+                    const isExpired = currentTime - parseInt(loginTime) > fourHours;
+
+                    if (isExpired) {
+                        showResult('auth-status', '❌ Token已过期', 'error');
+                        log('Token已过期，需要重新登录');
+                    } else {
+                        showResult('auth-status', `✅ 已登录 - ${userData.name || userData.studentId}`, 'success');
+                        log(`当前用户: ${userData.name || userData.studentId}`);
+                    }
+                } else {
+                    showResult('auth-status', '❌ 未登录', 'warning');
+                    log('未找到有效的认证信息');
+                }
+            } catch (error) {
+                showResult('auth-status', '❌ 认证状态检查失败', 'error');
+                log(`认证状态检查错误: ${error.message}`);
+            }
+        }
+
+        async function testLogin() {
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+
+            log(`🔐 开始登录测试 - 学号: ${studentId}`);
+            showResult('login-result', '登录中...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ studentId, password })
+                });
+
+                const result = await response.json();
+                log(`登录API响应: ${JSON.stringify(result, null, 2)}`);
+
+                if (result.success && result.data) {
+                    // 保存认证信息到localStorage（模拟前端行为）
+                    localStorage.setItem('token', result.data.token);
+                    localStorage.setItem('user', JSON.stringify(result.data.user));
+                    localStorage.setItem('loginTime', Date.now().toString());
+
+                    showResult('login-result', `✅ 登录成功 - ${result.data.user.name || result.data.user.studentId}`, 'success');
+                    log(`登录成功，用户: ${result.data.user.name || result.data.user.studentId}`);
+                    
+                    // 自动检查用户状态
+                    setTimeout(checkUserStatus, 1000);
+                } else {
+                    showResult('login-result', `❌ 登录失败: ${result.message || '未知错误'}`, 'error');
+                    log(`登录失败: ${result.message || '未知错误'}`);
+                }
+            } catch (error) {
+                showResult('login-result', `❌ 登录请求失败: ${error.message}`, 'error');
+                log(`登录请求错误: ${error.message}`);
+            }
+        }
+
+        async function testLoginWithInvalidCredentials() {
+            log('🔐 测试无效凭据登录...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ studentId: 'invalid', password: 'invalid' })
+                });
+
+                const result = await response.json();
+                log(`无效凭据响应: ${JSON.stringify(result, null, 2)}`);
+
+                if (!result.success) {
+                    showResult('login-result', '✅ 正确拒绝了无效凭据', 'success');
+                    log('✅ 安全测试通过：无效凭据被正确拒绝');
+                } else {
+                    showResult('login-result', '❌ 安全漏洞：接受了无效凭据', 'error');
+                    log('❌ 安全警告：无效凭据被错误接受');
+                }
+            } catch (error) {
+                showResult('login-result', `❌ 测试失败: ${error.message}`, 'error');
+                log(`无效凭据测试错误: ${error.message}`);
+            }
+        }
+
+        function checkUserStatus() {
+            log('👤 检查用户状态...');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+
+                if (!token || !user) {
+                    showResult('user-status', '❌ 用户未登录', 'warning');
+                    log('用户状态：未登录');
+                    return;
+                }
+
+                const userData = JSON.parse(user);
+                const statusHTML = `
+                    <div class="status success">
+                        ✅ 用户已登录<br>
+                        姓名: ${userData.name || '未设置'}<br>
+                        学号: ${userData.studentId}<br>
+                        Token: ${token.substring(0, 20)}...
+                    </div>
+                `;
+                document.getElementById('user-status').innerHTML = statusHTML;
+                log(`用户状态: ${userData.name || userData.studentId} 已登录`);
+            } catch (error) {
+                showResult('user-status', '❌ 用户状态检查失败', 'error');
+                log(`用户状态检查错误: ${error.message}`);
+            }
+        }
+
+        function testRedirectToHome() {
+            log('🏠 测试页面跳转到首页...');
+            
+            const token = localStorage.getItem('token');
+            if (token) {
+                showResult('redirect-result', '✅ 可以跳转到首页 (已登录)', 'success');
+                log('跳转测试：已登录用户可以访问首页');
+                // 在实际应用中，这里会执行 router.push('/home')
+                window.open('http://localhost:3000/home', '_blank');
+            } else {
+                showResult('redirect-result', '❌ 需要先登录才能访问首页', 'warning');
+                log('跳转测试：未登录用户需要先登录');
+                // 在实际应用中，这里会执行 router.push('/login')
+                window.open('http://localhost:3000/login', '_blank');
+            }
+        }
+
+        function testProtectedRoute() {
+            log('🔒 测试受保护路由访问...');
+            
+            const token = localStorage.getItem('token');
+            if (token) {
+                showResult('redirect-result', '✅ 可以访问受保护路由 (已登录)', 'success');
+                log('受保护路由测试：已登录用户可以访问');
+                window.open('http://localhost:3000/profile', '_blank');
+            } else {
+                showResult('redirect-result', '❌ 需要先登录才能访问受保护路由', 'warning');
+                log('受保护路由测试：未登录用户被拒绝访问');
+                window.open('http://localhost:3000/login', '_blank');
+            }
+        }
+
+        function testTokenPersistence() {
+            log('💾 测试Token持久化...');
+            
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            const loginTime = localStorage.getItem('loginTime');
+
+            if (token && user && loginTime) {
+                showResult('token-result', '✅ Token持久化正常', 'success');
+                log(`Token持久化测试通过: ${token.substring(0, 20)}...`);
+                log(`用户数据: ${JSON.stringify(JSON.parse(user), null, 2)}`);
+                log(`登录时间: ${new Date(parseInt(loginTime)).toLocaleString()}`);
+            } else {
+                showResult('token-result', '❌ Token持久化失败', 'error');
+                log('Token持久化测试失败：数据不完整');
+            }
+        }
+
+        function testTokenExpiration() {
+            log('⏰ 测试Token过期处理...');
+            
+            // 模拟过期时间
+            const oldLoginTime = (Date.now() - 5 * 60 * 60 * 1000).toString(); // 5小时前
+            localStorage.setItem('loginTime', oldLoginTime);
+
+            const token = localStorage.getItem('token');
+            const loginTime = localStorage.getItem('loginTime');
+            const currentTime = Date.now();
+            const fourHours = 4 * 60 * 60 * 1000;
+            const isExpired = currentTime - parseInt(loginTime) > fourHours;
+
+            if (isExpired) {
+                showResult('token-result', '✅ Token过期检测正常', 'success');
+                log('Token过期测试：已正确检测到Token过期');
+                // 清除模拟的过期时间
+                localStorage.setItem('loginTime', Date.now().toString());
+            } else {
+                showResult('token-result', '❌ Token过期检测失败', 'error');
+                log('Token过期测试：未能正确检测到过期');
+            }
+        }
+
+        async function testLogout() {
+            log('🚪 测试退出登录...');
+            
+            try {
+                // 清除本地存储（模拟前端退出登录）
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('loginTime');
+
+                showResult('logout-result', '✅ 退出登录成功', 'success');
+                log('退出登录测试：本地数据已清除');
+
+                // 重新检查认证状态
+                setTimeout(checkAuthStatus, 500);
+            } catch (error) {
+                showResult('logout-result', `❌ 退出登录失败: ${error.message}`, 'error');
+                log(`退出登录错误: ${error.message}`);
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').textContent = '';
+            log('测试日志已清除');
+        }
+
+        // 页面加载时自动检查认证状态
+        window.onload = function() {
+            log('🚀 登录流程测试页面已加载');
+            checkAuthStatus();
+        };
+    </script>
+</body>
+</html>

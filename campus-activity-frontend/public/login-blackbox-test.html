@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录页面黑盒测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+
+        .test-section h2 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-section h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: #4f46e5;
+            border-radius: 2px;
+        }
+
+        .test-case {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: white;
+        }
+
+        .test-case h3 {
+            color: #374151;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result.success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+
+        .result.error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .result.info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+
+        .test-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .test-status.pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .test-status.fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .test-status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .iframe-container {
+            margin-top: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        .expected-result {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .expected-result strong {
+            color: #0c4a6e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 登录页面黑盒测试</h1>
+            <p>模拟用户操作，验证登录功能的正确性</p>
+        </div>
+
+        <div class="content">
+            <!-- 测试用例1: 不存在的用户名 -->
+            <div class="test-section">
+                <h2>测试用例 1: LOGIN-003 不存在的用户名</h2>
+                <div class="test-case">
+                    <h3>测试描述 <span class="test-status pending" id="status1">待测试</span></h3>
+                    <div class="expected-result">
+                        <strong>预期结果:</strong> 登录失败，提示"用户不存在"
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>学号:</label>
+                        <input type="text" id="username1" placeholder="输入不存在的学号" value="999999999">
+                    </div>
+                    <div class="form-group">
+                        <label>密码:</label>
+                        <input type="password" id="password1" placeholder="输入任意密码" value="test123456">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="testLogin1()">
+                            🔍 执行测试
+                        </button>
+                        <button class="btn btn-secondary" onclick="openLoginPage1()">
+                            🌐 打开登录页面
+                        </button>
+                        <button class="btn btn-danger" onclick="clearResult1()">
+                            🗑️ 清除结果
+                        </button>
+                    </div>
+                    
+                    <div class="iframe-container" id="iframe1" style="display: none;">
+                        <iframe src="http://localhost:5173/login" id="loginFrame1"></iframe>
+                    </div>
+                    
+                    <div class="result" id="result1" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- 测试用例2: 正确的用户名错误的密码 -->
+            <div class="test-section">
+                <h2>测试用例 2: LOGIN-002 正确用户名错误密码</h2>
+                <div class="test-case">
+                    <h3>测试描述 <span class="test-status pending" id="status2">待测试</span></h3>
+                    <div class="expected-result">
+                        <strong>预期结果:</strong> 登录失败，提示"密码错误"
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>学号:</label>
+                        <input type="text" id="username2" placeholder="输入存在的学号" value="2021001">
+                    </div>
+                    <div class="form-group">
+                        <label>密码:</label>
+                        <input type="password" id="password2" placeholder="输入错误密码" value="wrongpassword">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="testLogin2()">
+                            🔍 执行测试
+                        </button>
+                        <button class="btn btn-secondary" onclick="openLoginPage2()">
+                            🌐 打开登录页面
+                        </button>
+                        <button class="btn btn-danger" onclick="clearResult2()">
+                            🗑️ 清除结果
+                        </button>
+                    </div>
+                    
+                    <div class="iframe-container" id="iframe2" style="display: none;">
+                        <iframe src="http://localhost:5173/login" id="loginFrame2"></iframe>
+                    </div>
+                    
+                    <div class="result" id="result2" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- 测试用例3: 空用户名和密码 -->
+            <div class="test-section">
+                <h2>测试用例 3: LOGIN-001 空用户名和密码</h2>
+                <div class="test-case">
+                    <h3>测试描述 <span class="test-status pending" id="status3">待测试</span></h3>
+                    <div class="expected-result">
+                        <strong>预期结果:</strong> 登录失败，提示"请输入学号和密码"
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>学号:</label>
+                        <input type="text" id="username3" placeholder="留空测试" value="">
+                    </div>
+                    <div class="form-group">
+                        <label>密码:</label>
+                        <input type="password" id="password3" placeholder="留空测试" value="">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="testLogin3()">
+                            🔍 执行测试
+                        </button>
+                        <button class="btn btn-secondary" onclick="openLoginPage3()">
+                            🌐 打开登录页面
+                        </button>
+                        <button class="btn btn-danger" onclick="clearResult3()">
+                            🗑️ 清除结果
+                        </button>
+                    </div>
+                    
+                    <div class="iframe-container" id="iframe3" style="display: none;">
+                        <iframe src="http://localhost:5173/login" id="loginFrame3"></iframe>
+                    </div>
+                    
+                    <div class="result" id="result3" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- 测试用例4: 正确登录 -->
+            <div class="test-section">
+                <h2>测试用例 4: LOGIN-004 正确登录</h2>
+                <div class="test-case">
+                    <h3>测试描述 <span class="test-status pending" id="status4">待测试</span></h3>
+                    <div class="expected-result">
+                        <strong>预期结果:</strong> 登录成功，跳转到首页
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>学号:</label>
+                        <input type="text" id="username4" placeholder="输入正确学号" value="2021001">
+                    </div>
+                    <div class="form-group">
+                        <label>密码:</label>
+                        <input type="password" id="password4" placeholder="输入正确密码" value="password123">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="testLogin4()">
+                            🔍 执行测试
+                        </button>
+                        <button class="btn btn-secondary" onclick="openLoginPage4()">
+                            🌐 打开登录页面
+                        </button>
+                        <button class="btn btn-danger" onclick="clearResult4()">
+                            🗑️ 清除结果
+                        </button>
+                    </div>
+                    
+                    <div class="iframe-container" id="iframe4" style="display: none;">
+                        <iframe src="http://localhost:5173/login" id="loginFrame4"></iframe>
+                    </div>
+                    
+                    <div class="result" id="result4" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API基础URL
+        const API_BASE = 'http://localhost:3000/api';
+        
+        // 显示结果
+        function showResult(resultId, message, type = 'info') {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+        
+        // 更新测试状态
+        function updateStatus(statusId, status) {
+            const statusDiv = document.getElementById(statusId);
+            statusDiv.className = `test-status ${status}`;
+            statusDiv.textContent = status === 'pass' ? '通过' : status === 'fail' ? '失败' : '待测试';
+        }
+        
+        // 打开登录页面
+        function openLoginPage(frameId) {
+            const iframeContainer = document.getElementById(frameId);
+            iframeContainer.style.display = 'block';
+        }
+        
+        function openLoginPage1() { openLoginPage('iframe1'); }
+        function openLoginPage2() { openLoginPage('iframe2'); }
+        function openLoginPage3() { openLoginPage('iframe3'); }
+        function openLoginPage4() { openLoginPage('iframe4'); }
+        
+        // 清除结果
+        function clearResult(resultId, statusId) {
+            document.getElementById(resultId).style.display = 'none';
+            updateStatus(statusId, 'pending');
+        }
+        
+        function clearResult1() { clearResult('result1', 'status1'); }
+        function clearResult2() { clearResult('result2', 'status2'); }
+        function clearResult3() { clearResult('result3', 'status3'); }
+        function clearResult4() { clearResult('result4', 'status4'); }
+        
+        // 测试登录API调用
+        async function testLoginAPI(studentId, password, resultId, statusId, expectedResult) {
+            try {
+                showResult(resultId, '🔄 正在测试登录API...', 'info');
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ studentId, password })
+                });
+                
+                const data = await response.json();
+                
+                let resultMessage = `📊 API测试结果:\n`;
+                resultMessage += `状态码: ${response.status}\n`;
+                resultMessage += `响应数据: ${JSON.stringify(data, null, 2)}\n\n`;
+                
+                // 判断测试结果
+                let testPassed = false;
+                let testAnalysis = '';
+                
+                if (response.status === 200 && data.success) {
+                    if (expectedResult === 'success') {
+                        testPassed = true;
+                        testAnalysis = '✅ 测试通过: 登录成功，符合预期';
+                    } else {
+                        testAnalysis = '❌ 测试失败: 预期登录失败，但实际登录成功';
+                    }
+                } else {
+                    if (expectedResult === 'fail_user_not_exist' && data.message && data.message.includes('用户不存在')) {
+                        testPassed = true;
+                        testAnalysis = '✅ 测试通过: 正确提示用户不存在';
+                    } else if (expectedResult === 'fail_wrong_password' && data.message && data.message.includes('密码错误')) {
+                        testPassed = true;
+                        testAnalysis = '✅ 测试通过: 正确提示密码错误';
+                    } else if (expectedResult === 'fail_empty_fields' && data.message && data.message.includes('请输入')) {
+                        testPassed = true;
+                        testAnalysis = '✅ 测试通过: 正确提示输入字段';
+                    } else {
+                        testAnalysis = `❌ 测试失败: 错误信息不符合预期\n实际错误: ${data.message || '未知错误'}`;
+                    }
+                }
+                
+                resultMessage += testAnalysis;
+                
+                showResult(resultId, resultMessage, testPassed ? 'success' : 'error');
+                updateStatus(statusId, testPassed ? 'pass' : 'fail');
+                
+                return testPassed;
+                
+            } catch (error) {
+                const errorMessage = `❌ API调用失败:\n${error.message}\n\n请确保:\n1. 后端服务器正在运行 (localhost:3000)\n2. CORS配置正确\n3. 网络连接正常`;
+                showResult(resultId, errorMessage, 'error');
+                updateStatus(statusId, 'fail');
+                return false;
+            }
+        }
+        
+        // 测试用例1: 不存在的用户名
+        async function testLogin1() {
+            const username = document.getElementById('username1').value;
+            const password = document.getElementById('password1').value;
+            
+            if (!username || !password) {
+                showResult('result1', '❌ 请输入测试用的学号和密码', 'error');
+                return;
+            }
+            
+            await testLoginAPI(username, password, 'result1', 'status1', 'fail_user_not_exist');
+        }
+        
+        // 测试用例2: 正确用户名错误密码
+        async function testLogin2() {
+            const username = document.getElementById('username2').value;
+            const password = document.getElementById('password2').value;
+            
+            if (!username || !password) {
+                showResult('result2', '❌ 请输入测试用的学号和密码', 'error');
+                return;
+            }
+            
+            await testLoginAPI(username, password, 'result2', 'status2', 'fail_wrong_password');
+        }
+        
+        // 测试用例3: 空用户名和密码
+        async function testLogin3() {
+            const username = document.getElementById('username3').value;
+            const password = document.getElementById('password3').value;
+            
+            await testLoginAPI(username, password, 'result3', 'status3', 'fail_empty_fields');
+        }
+        
+        // 测试用例4: 正确登录
+        async function testLogin4() {
+            const username = document.getElementById('username4').value;
+            const password = document.getElementById('password4').value;
+            
+            if (!username || !password) {
+                showResult('result4', '❌ 请输入测试用的学号和密码', 'error');
+                return;
+            }
+            
+            await testLoginAPI(username, password, 'result4', 'status4', 'success');
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 登录页面黑盒测试工具已加载');
+            console.log('📝 使用说明:');
+            console.log('1. 确保后端服务器运行在 localhost:3000');
+            console.log('2. 确保前端开发服务器运行在 localhost:5173');
+            console.log('3. 填写测试数据后点击"执行测试"按钮');
+            console.log('4. 可以点击"打开登录页面"进行手动测试');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题诊断</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .quick-test {
+            background: #28a745;
+        }
+        .quick-test:hover {
+            background: #1e7e34;
+        }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+        .warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 登录问题诊断工具</h1>
+        
+        <div class="form-group">
+            <label for="studentId">学号:</label>
+            <input type="text" id="studentId" placeholder="请输入学号" value="2330502143">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" placeholder="请输入密码" value="abc123456">
+        </div>
+        
+        <div class="form-group">
+            <button onclick="testLogin()">🔍 测试登录</button>
+            <button class="quick-test" onclick="quickTestUser1()">⚡ 快速测试: 孙金瑶</button>
+            <button class="quick-test" onclick="quickTestUser2()">⚡ 快速测试: 卢敏婷</button>
+            <button onclick="clearLogs()">🗑️ 清空日志</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📋 诊断日志</h2>
+        <div id="logArea" class="log-area">等待测试...</div>
+    </div>
+
+    <script type="module">
+        // 模拟用户数据
+        const mockUsers = [
+            {
+                id: 1,
+                realName: '孙金瑶',
+                studentId: '2330502143',
+                password: 'abc123456',
+                department: '计算机科学与技术学院',
+                avatar: '',
+                creditScore: 100
+            },
+            {
+                id: 2,
+                realName: '卢敏婷',
+                studentId: '2330502134',
+                password: 'test123456',
+                department: '软件工程学院',
+                avatar: '',
+                creditScore: 95
+            }
+        ];
+
+        let currentToken = null;
+
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logArea.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logArea').innerHTML = '日志已清空...\n';
+        }
+
+        // 模拟延迟函数
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 模拟登录函数
+        async function mockLogin(studentId, password) {
+            await delay(500);
+            
+            log(`🔍 开始匹配用户: ${studentId}`, 'info');
+            log(`🔍 输入密码: ${password}`, 'info');
+            
+            let user = null;
+            
+            // 查找匹配的用户
+            for (const mockUser of mockUsers) {
+                log(`🔍 检查用户: ${mockUser.realName} (学号: ${mockUser.studentId})`, 'info');
+                log(`🔍 学号严格匹配: ${mockUser.studentId === studentId}`, 'info');
+                log(`🔍 学号宽松匹配: ${mockUser.studentId == studentId}`, 'info');
+                log(`🔍 密码严格匹配: ${mockUser.password === password}`, 'info');
+                log(`🔍 密码宽松匹配: ${mockUser.password == password}`, 'info');
+                
+                if (mockUser.studentId == studentId && mockUser.password == password) {
+                    user = mockUser;
+                    break;
+                }
+            }
+            
+            if (user) {
+                currentToken = 'mock_jwt_token_' + Date.now();
+                const response = {
+                    success: true,
+                    data: {
+                        token: currentToken,
+                        user: {
+                            id: user.id,
+                            realName: user.realName,
+                            studentId: user.studentId,
+                            department: user.department,
+                            avatar: user.avatar,
+                            creditScore: user.creditScore
+                        }
+                    },
+                    message: '登录成功'
+                };
+                
+                log(`✅ 登录成功: ${user.realName}`, 'success');
+                log(`📋 返回数据: ${JSON.stringify(response, null, 2)}`, 'info');
+                return response;
+            } else {
+                log(`❌ 登录失败: 学号或密码错误`, 'error');
+                throw {
+                    success: false,
+                    message: '学号或密码错误'
+                };
+            }
+        }
+
+        // 测试登录函数
+        window.testLogin = async function() {
+            const studentId = document.getElementById('studentId').value;
+            const password = document.getElementById('password').value;
+            
+            log(`🚀 开始测试登录`, 'info');
+            log(`📝 学号: ${studentId} (类型: ${typeof studentId}, 长度: ${studentId.length})`, 'info');
+            log(`📝 密码: ${password} (类型: ${typeof password}, 长度: ${password.length})`, 'info');
+            
+            try {
+                const result = await mockLogin(studentId, password);
+                log(`🎉 登录测试成功!`, 'success');
+                
+                // 模拟存储token
+                try {
+                    localStorage.setItem('test_token', result.data.token);
+                    localStorage.setItem('test_user', JSON.stringify(result.data.user));
+                    log(`💾 Token已保存到localStorage`, 'success');
+                } catch (error) {
+                    log(`⚠️ 保存localStorage失败: ${error.message}`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`💥 登录测试失败: ${error.message}`, 'error');
+                log(`🔍 错误对象: ${JSON.stringify(error)}`, 'error');
+            }
+        };
+
+        // 快速测试用户1
+        window.quickTestUser1 = async function() {
+            document.getElementById('studentId').value = '2330502143';
+            document.getElementById('password').value = 'abc123456';
+            log(`⚡ 快速测试: 孙金瑶`, 'info');
+            await testLogin();
+        };
+
+        // 快速测试用户2
+        window.quickTestUser2 = async function() {
+            document.getElementById('studentId').value = '2330502134';
+            document.getElementById('password').value = 'test123456';
+            log(`⚡ 快速测试: 卢敏婷`, 'info');
+            await testLogin();
+        };
+
+        // 页面加载时的初始化
+        log('🔧 登录诊断工具已加载', 'success');
+        log('📋 可用测试用户:', 'info');
+        log('   1. 孙金瑶 - 学号: 2330502143, 密码: abc123456', 'info');
+        log('   2. 卢敏婷 - 学号: 2330502134, 密码: test123456', 'info');
+    </script>
+</body>
+</html>

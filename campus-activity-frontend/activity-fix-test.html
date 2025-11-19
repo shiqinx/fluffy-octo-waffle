@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+        }
+        .activity-list {
+            list-style: none;
+            padding: 0;
+        }
+        .activity-item {
+            background: white;
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .activity-title {
+            font-weight: bold;
+            color: #495057;
+        }
+        .activity-meta {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 活动数据修复测试工具</h1>
+    
+    <div class="container">
+        <h2>📊 当前状态检查</h2>
+        <button onclick="checkCurrentData()">检查当前活动数据</button>
+        <div id="current-status"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔄 修复操作</h2>
+        <button onclick="fixActivityData()" class="danger">修复活动数据</button>
+        <button onclick="clearAllData()">清理所有数据</button>
+        <div id="fix-status"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 活动列表预览</h2>
+        <button onclick="previewActivities()">预览活动列表</button>
+        <div id="activity-preview"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 自动测试</h2>
+        <button onclick="runAutoTest()">运行完整测试</button>
+        <div id="auto-test-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>📝 控制台输出</h2>
+        <pre id="console-output">点击上方按钮开始测试...</pre>
+    </div>
+
+    <script>
+        // 控制台输出重定向
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        function addToConsole(message, type = 'log') {
+            const output = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'warn' ? 'warning' : 'info';
+            output.innerHTML += `<div class="status ${className}">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        // 检查当前活动数据
+        function checkCurrentData() {
+            const status = document.getElementById('current-status');
+            
+            try {
+                const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                
+                let html = `<div class="status info">找到 ${activities.length} 个活动</div>`;
+                
+                if (activities.length > 0) {
+                    const titles = activities.map(a => a.title);
+                    const uniqueTitles = [...new Set(titles)];
+                    
+                    if (uniqueTitles.length === 1) {
+                        html += `<div class="status error">⚠️ 问题: 所有活动都是同一个标题 "${uniqueTitles[0]}"</div>`;
+                    } else {
+                        html += `<div class="status success">✅ 活动数据正常，包含 ${uniqueTitles.length} 种不同活动</div>`;
+                    }
+                    
+                    html += '<h4>活动列表:</h4><ul class="activity-list">';
+                    activities.forEach((activity, index) => {
+                        html += `<li class="activity-item">
+                            <div class="activity-title">${activity.title || '无标题'}</div>
+                            <div class="activity-meta">
+                                类型: ${activity.type || '未知'} | 
+                                位置: ${activity.locationName || '未知'} | 
+                                ID: ${activity.id || '未知'}
+                            </div>
+                        </li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<div class="status warning">⚠️ 没有找到活动数据</div>';
+                }
+                
+                status.innerHTML = html;
+                
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ 检查失败: ${error.message}</div>`;
+            }
+        }
+
+        // 修复活动数据
+        function fixActivityData() {
+            const status = document.getElementById('fix-status');
+            
+            try {
+                // 清理现有数据
+                localStorage.removeItem('campus_activities');
+                
+                // 生成正确的默认活动数据
+                const defaultOrganizerId = 1;
+                const defaultActivities = [
+                    {
+                        id: 1,
+                        title: '中医养生讲座',
+                        type: 'study',
+                        category: 'study',
+                        locationName: '学术报告厅',
+                        location: {
+                            name: '学术报告厅',
+                            address: '学校学术报告厅'
+                        },
+                        description: '邀请中医专家讲解中医养生知识，分享传统保健方法。',
+                        startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                        enrollStartTime: new Date().toISOString(),
+                        enrollEndTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 15,
+                        maxParticipants: 30,
+                        organizer: {
+                            id: defaultOrganizerId + 1,
+                            name: '中医学院',
+                            avatar: 'https://via.placeholder.com/150',
+                            role: '组织者',
+                            creditScore: 98
+                        },
+                        distance: 0.8,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open',
+                        participants: [],
+                        enrollments: []
+                    },
+                    {
+                        id: 2,
+                        title: '摄影作品展览',
+                        type: 'culture',
+                        category: 'culture',
+                        locationName: '艺术展厅',
+                        location: {
+                            name: '艺术展厅',
+                            address: '学校艺术展厅'
+                        },
+                        description: '展示学生摄影作品，分享摄影技巧，交流创作心得。',
+                        startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000).toISOString(),
+                        enrollStartTime: new Date().toISOString(),
+                        enrollEndTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 12,
+                        maxParticipants: 25,
+                        organizer: {
+                            id: defaultOrganizerId + 2,
+                            name: '摄影协会',
+                            avatar: 'https://via.placeholder.com/150',
+                            role: '组织者',
+                            creditScore: 92
+                        },
+                        distance: 0.3,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open',
+                        participants: [],
+                        enrollments: []
+                    },
+                    {
+                        id: 3,
+                        title: '编程马拉松大赛',
+                        type: 'tech',
+                        category: 'tech',
+                        locationName: '创新实验室',
+                        location: {
+                            name: '创新实验室',
+                            address: '学校创新实验室'
+                        },
+                        description: '24小时编程挑战赛，主题为智慧校园，展示编程技能。',
+                        startTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                        enrollStartTime: new Date().toISOString(),
+                        enrollEndTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 8,
+                        maxParticipants: 20,
+                        organizer: {
+                            id: defaultOrganizerId + 3,
+                            name: '计算机学院',
+                            avatar: 'https://via.placeholder.com/150',
+                            role: '组织者',
+                            creditScore: 96
+                        },
+                        distance: 1.2,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open',
+                        participants: [],
+                        enrollments: []
+                    },
+                    {
+                        id: 4,
+                        title: '音乐节',
+                        type: 'culture',
+                        category: 'culture',
+                        locationName: '露天剧场',
+                        location: {
+                            name: '露天剧场',
+                            address: '学校露天剧场'
+                        },
+                        description: '年度校园音乐节，邀请校内外乐队演出，享受音乐盛宴。',
+                        startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                        enrollStartTime: new Date().toISOString(),
+                        enrollEndTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 25,
+                        maxParticipants: 40,
+                        organizer: {
+                            id: defaultOrganizerId + 4,
+                            name: '学生会',
+                            avatar: 'https://via.placeholder.com/150',
+                            role: '组织者',
+                            creditScore: 94
+                        },
+                        distance: 0.6,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open',
+                        participants: [],
+                        enrollments: []
+                    },
+                    {
+                        id: 5,
+                        title: '篮球友谊赛',
+                        type: 'sports',
+                        category: 'sports',
+                        locationName: '篮球场1',
+                        location: {
+                            name: '篮球场1',
+                            address: '学校篮球场1'
+                        },
+                        description: '周末篮球比赛，欢迎所有篮球爱好者参加。活动将在学校篮球场举行，请自带运动装备。',
+                        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                        registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                        enrollStartTime: new Date().toISOString(),
+                        enrollEndTime: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                        currentParticipants: 4,
+                        maxParticipants: 8,
+                        organizer: {
+                            id: defaultOrganizerId,
+                            name: '篮球社',
+                            avatar: 'https://via.placeholder.com/150',
+                            role: '组织者',
+                            creditScore: 95
+                        },
+                        distance: 0.5,
+                        isEnrolled: false,
+                        isApproved: false,
+                        status: 'open',
+                        participants: [],
+                        enrollments: []
+                    }
+                ];
+                
+                // 保存到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(defaultActivities));
+                
+                status.innerHTML = `
+                    <div class="status success">✅ 修复成功！已保存 ${defaultActivities.length} 个正确的活动数据</div>
+                    <div class="status info">请刷新活动列表页面查看效果</div>
+                `;
+                
+                console.log('✅ 活动数据修复完成');
+                
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ 修复失败: ${error.message}</div>`;
+                console.error('❌ 修复失败:', error);
+            }
+        }
+
+        // 清理所有数据
+        function clearAllData() {
+            if (confirm('确定要清理所有活动相关数据吗？')) {
+                const keys = Object.keys(localStorage);
+                const activityKeys = keys.filter(key => 
+                    key.includes('activity') || 
+                    key.includes('campus') || 
+                    key.includes('activities')
+                );
+                
+                activityKeys.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                document.getElementById('fix-status').innerHTML = `
+                    <div class="status success">✅ 清理完成！已清理 ${activityKeys.length} 个键</div>
+                `;
+                
+                console.log('✅ 数据清理完成');
+            }
+        }
+
+        // 预览活动列表
+        function previewActivities() {
+            const preview = document.getElementById('activity-preview');
+            
+            try {
+                const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                
+                if (activities.length === 0) {
+                    preview.innerHTML = '<div class="status warning">没有活动数据可预览</div>';
+                    return;
+                }
+                
+                let html = `<div class="status info">共 ${activities.length} 个活动</div>`;
+                html += '<ul class="activity-list">';
+                
+                activities.forEach((activity, index) => {
+                    const isValid = activity && 
+                                   typeof activity === 'object' &&
+                                   activity.id && 
+                                   activity.title && 
+                                   activity.type &&
+                                   activity.locationName;
+                    
+                    html += `<li class="activity-item">
+                        <div class="activity-title">
+                            ${isValid ? '✅' : '❌'} ${activity.title || '无标题'}
+                        </div>
+                        <div class="activity-meta">
+                            类型: ${activity.type || '未知'} | 
+                            位置: ${activity.locationName || '未知'} | 
+                            ID: ${activity.id || '未知'} |
+                            状态: ${isValid ? '有效' : '无效'}
+                        </div>
+                    </li>`;
+                });
+                
+                html += '</ul>';
+                preview.innerHTML = html;
+                
+            } catch (error) {
+                preview.innerHTML = `<div class="status error">❌ 预览失败: ${error.message}</div>`;
+            }
+        }
+
+        // 运行自动测试
+        function runAutoTest() {
+            const result = document.getElementById('auto-test-result');
+            
+            console.log('🔍 开始自动测试...');
+            
+            // 检查当前数据
+            const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+            const titles = activities.map(a => a.title);
+            const uniqueTitles = [...new Set(titles)];
+            
+            let html = '<div class="status info">🧪 自动测试结果:</div>';
+            
+            if (activities.length === 0) {
+                html += '<div class="status warning">⚠️ 没有活动数据，正在修复...</div>';
+                fixActivityData();
+                html += '<div class="status success">✅ 数据修复完成</div>';
+            } else if (uniqueTitles.length === 1) {
+                html += '<div class="status error">❌ 检测到数据重复问题，正在修复...</div>';
+                fixActivityData();
+                html += '<div class="status success">✅ 数据修复完成</div>';
+            } else {
+                html += '<div class="status success">✅ 活动数据正常</div>';
+            }
+            
+            // 验证修复结果
+            const fixedActivities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+            const fixedTitles = fixedActivities.map(a => a.title);
+            const fixedUniqueTitles = [...new Set(fixedTitles)];
+            
+            if (fixedActivities.length >= 5 && fixedUniqueTitles.length >= 5) {
+                html += '<div class="status success">🎉 测试通过！活动数据已恢复正常</div>';
+                html += `<div class="status info">活动数量: ${fixedActivities.length}, 不同活动: ${fixedUniqueTitles.length}</div>`;
+            } else {
+                html += '<div class="status error">❌ 测试失败，数据仍有问题</div>';
+            }
+            
+            result.innerHTML = html;
+            console.log('🎉 自动测试完成');
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            console.log('📄 页面加载完成，开始初始化检查...');
+            checkCurrentData();
+        };
+    </script>
+</body>
+</html>

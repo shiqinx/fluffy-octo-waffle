@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模拟登录页面测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        input { margin: 5px; padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; margin: 5px; background: #1989fa; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1677ff; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; max-height: 300px; overflow-y: auto; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🔐 模拟登录页面测试</h1>
+    
+    <div class="test-section">
+        <h2>模拟登录表单</h2>
+        <div class="form-group">
+            <label for="studentId">学号:</label>
+            <input type="text" id="studentIdInput" placeholder="请输入学号" oninput="updateStudentId()">
+        </div>
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="passwordInput" placeholder="请输入密码" oninput="updatePassword()">
+        </div>
+        <button onclick="simulateLogin()">模拟登录</button>
+        <button onclick="clearForm()">清空表单</button>
+        <div id="formResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>当前表单状态</h2>
+        <div id="formState"></div>
+    </div>
+
+    <script type="module">
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { validatedApi } from './src/api/index.js'
+        
+        // 模拟 Vue 的响应式数据
+        let form = {
+            studentId: '',
+            password: ''
+        }
+        
+        window.updateStudentId = function() {
+            const input = document.getElementById('studentIdInput')
+            form.studentId = input.value
+            updateFormState()
+        }
+        
+        window.updatePassword = function() {
+            const input = document.getElementById('passwordInput')
+            form.password = input.value
+            updateFormState()
+        }
+        
+        window.updateFormState = function() {
+            const stateDiv = document.getElementById('formState')
+            stateDiv.innerHTML = `
+                <pre>当前表单数据:
+{
+  studentId: "${form.studentId}",
+  password: "${form.password}"
+}
+
+studentId 类型: ${typeof form.studentId}
+studentId 长度: ${form.studentId.length}
+studentId 是否为空: ${!form.studentId}
+
+password 类型: ${typeof form.password}
+password 长度: ${form.password.length}
+password 是否为空: ${!form.password}</pre>
+            `
+        }
+        
+        window.clearForm = function() {
+            form.studentId = ''
+            form.password = ''
+            document.getElementById('studentIdInput').value = ''
+            document.getElementById('passwordInput').value = ''
+            updateFormState()
+        }
+        
+        window.simulateLogin = async function() {
+            const resultDiv = document.getElementById('formResult')
+            
+            console.log('🔐 开始模拟登录流程')
+            console.log('📝 表单数据:', form)
+            
+            // 详细调试表单数据
+            console.log('🔍 详细调试:')
+            console.log('- form 类型:', typeof form)
+            console.log('- form.studentId:', form.studentId)
+            console.log('- form.studentId 类型:', typeof form.studentId)
+            console.log('- form.studentId 长度:', form.studentId ? form.studentId.length : 'N/A')
+            console.log('- form.password:', form.password)
+            console.log('- form.password 类型:', typeof form.password)
+            console.log('- form.password 长度:', form.password ? form.password.length : 'N/A')
+            
+            // 简单验证
+            if (!form.studentId) {
+                console.log('❌ 学号为空，显示提示')
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>登录失败!</strong><br>
+                    请填写学号
+                </div>`
+                return
+            }
+            if (!form.password) {
+                console.log('❌ 密码为空，显示提示')
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>登录失败!</strong><br>
+                    请填写密码
+                </div>`
+                return
+            }
+            
+            console.log('✅ 前端验证通过，开始调用登录API')
+            resultDiv.innerHTML = '<div class="result">登录中...</div>'
+            
+            try {
+                console.log('🔍 调用登录API参数:')
+                console.log('- studentId:', form.studentId)
+                console.log('- password:', form.password)
+                
+                // 构造登录凭据
+                const credentials = { studentId: form.studentId, password: form.password, rememberMe: false }
+                console.log('📝 构造的登录凭据:', credentials)
+                
+                const response = await validatedApi.login(credentials)
+                console.log('✅ 登录API响应:', response)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>登录成功!</strong><br>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ 登录错误:', error)
+                console.error('❌ 错误类型:', typeof error)
+                console.error('❌ 错误消息:', error.message)
+                console.error('❌ 错误详情:', error)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>登录失败!</strong><br>
+                    <pre>错误: ${error.message || error}
+错误详情: ${error.stack || '无堆栈信息'}</pre>
+                </div>`
+            }
+        }
+        
+        // 初始化表单状态显示
+        updateFormState()
+    </script>
+</body>
+</html>

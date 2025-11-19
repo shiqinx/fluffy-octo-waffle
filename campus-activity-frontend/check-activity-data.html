@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据检查</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .data-section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .activity-item {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007bff;
+        }
+        .activity-item.missing {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .activity-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .activity-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        .user-info {
+            background: #e8f5e8;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.danger:hover {
+            background: #c82333;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 活动数据检查工具</h1>
+        <p>检查localStorage和全局数据管理器中的活动数据</p>
+    </div>
+
+    <div class="data-section">
+        <h3>👤 当前用户信息</h3>
+        <div id="current-user" class="user-info">
+            <p>正在检查用户信息...</p>
+        </div>
+    </div>
+
+    <div class="data-section">
+        <h3>📋 localStorage中的活动数据</h3>
+        <div id="localStorage-activities">
+            <p>正在检查localStorage...</p>
+        </div>
+        <button class="button" onclick="clearLocalStorage()">清空localStorage</button>
+        <button class="button" onclick="reloadData()">重新加载数据</button>
+    </div>
+
+    <div class="data-section">
+        <h3>🗃️ 全局数据管理器中的活动</h3>
+        <div id="global-activities">
+            <p>正在检查全局数据管理器...</p>
+        </div>
+    </div>
+
+    <div class="data-section">
+        <h3>❓ 活动ID 7检查</h3>
+        <div id="activity-7-check">
+            <p>正在检查活动ID 7...</p>
+        </div>
+        <button class="button" onclick="createActivity7()">创建活动ID 7</button>
+        <button class="button danger" onclick="deleteActivity7()">删除活动ID 7</button>
+    </div>
+
+    <div class="data-section">
+        <h3>🔧 数据修复工具</h3>
+        <button class="button" onclick="fixData()">修复数据不一致</button>
+        <button class="button" onclick="showDebugInfo()">显示调试信息</button>
+        <div id="debug-info" style="margin-top: 15px;"></div>
+    </div>
+
+    <script type="module">
+        // 导入全局数据管理器
+        import { globalDataManager } from './src/api/global-data.js';
+
+        // 检查当前用户
+        function checkCurrentUser() {
+            const userDiv = document.getElementById('current-user');
+            try {
+                const currentUserId = globalDataManager.getCurrentUserId();
+                const users = globalDataManager.getUsers();
+                const currentUser = users.find(u => u.id === currentUserId);
+                
+                if (currentUser) {
+                    userDiv.innerHTML = `
+                        <h4>当前登录用户</h4>
+                        <p><strong>ID:</strong> ${currentUser.id}</p>
+                        <p><strong>姓名:</strong> ${currentUser.realName}</p>
+                        <p><strong>学号:</strong> ${currentUser.studentId}</p>
+                        <p><strong>信誉分:</strong> ${currentUser.creditScore}</p>
+                    `;
+                } else {
+                    userDiv.innerHTML = '<p style="color: red;">❌ 未找到当前用户</p>';
+                }
+            } catch (error) {
+                userDiv.innerHTML = `<p style="color: red;">❌ 获取用户信息失败: ${error.message}</p>`;
+            }
+        }
+
+        // 检查localStorage中的活动
+        function checkLocalStorageActivities() {
+            const div = document.getElementById('localStorage-activities');
+            try {
+                const activities = localStorage.getItem('campus_activities');
+                if (activities) {
+                    const parsedActivities = JSON.parse(activities);
+                    div.innerHTML = `
+                        <p><strong>找到 ${parsedActivities.length} 个活动</strong></p>
+                        ${parsedActivities.map(activity => `
+                            <div class="activity-item">
+                                <h4>ID: ${activity.id} - ${activity.title}</h4>
+                                <div class="activity-meta">
+                                    <span>📅 创建者ID: ${activity.organizerId}</span>
+                                    <span>👥 参与者: ${activity.currentParticipants}/${activity.maxParticipants}</span>
+                                    <span>🏷️ 状态: ${activity.status}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    div.innerHTML = '<p>❌ localStorage中没有活动数据</p>';
+                }
+            } catch (error) {
+                div.innerHTML = `<p style="color: red;">❌ 读取localStorage失败: ${error.message}</p>`;
+            }
+        }
+
+        // 检查全局数据管理器中的活动
+        function checkGlobalActivities() {
+            const div = document.getElementById('global-activities');
+            try {
+                const activities = globalDataManager.getActivities();
+                div.innerHTML = `
+                    <p><strong>找到 ${activities.length} 个活动</strong></p>
+                    ${activities.map(activity => `
+                        <div class="activity-item">
+                            <h4>ID: ${activity.id} - ${activity.title}</h4>
+                            <div class="activity-meta">
+                                <span>📅 创建者ID: ${activity.organizerId}</span>
+                                <span>👥 参与者: ${activity.currentParticipants}/${activity.maxParticipants}</span>
+                                <span>🏷️ 状态: ${activity.status}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                div.innerHTML = `<p style="color: red;">❌ 读取全局数据失败: ${error.message}</p>`;
+            }
+        }
+
+        // 检查活动ID 7
+        function checkActivity7() {
+            const div = document.getElementById('activity-7-check');
+            try {
+                const activities = globalDataManager.getActivities();
+                const activity7 = activities.find(a => a.id === '7' || a.id === 7);
+                
+                if (activity7) {
+                    div.innerHTML = `
+                        <div class="activity-item">
+                            <h4>✅ 找到活动ID 7</h4>
+                            <p><strong>标题:</strong> ${activity7.title}</p>
+                            <p><strong>创建者ID:</strong> ${activity7.organizerId}</p>
+                            <p><strong>描述:</strong> ${activity7.description}</p>
+                            <div class="activity-meta">
+                                <span>👥 参与者: ${activity7.currentParticipants}/${activity7.maxParticipants}</span>
+                                <span>🏷️ 状态: ${activity7.status}</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <div class="activity-item missing">
+                            <h4>❌ 活动ID 7 不存在</h4>
+                            <p>系统中没有找到ID为7的活动</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                div.innerHTML = `<p style="color: red;">❌ 检查活动ID 7失败: ${error.message}</p>`;
+            }
+        }
+
+        // 创建活动ID 7
+        window.createActivity7 = function() {
+            try {
+                const currentUserId = globalDataManager.getCurrentUserId();
+                const users = globalDataManager.getUsers();
+                const currentUser = users.find(u => u.id === currentUserId);
+                
+                if (!currentUser) {
+                    alert('请先登录');
+                    return;
+                }
+
+                const newActivity = {
+                    id: '7',
+                    title: '用户创建的活动',
+                    type: '用户活动',
+                    category: 'other',
+                    description: '这是用户创建的活动，用于测试活动ID 7的访问',
+                    organizerId: currentUserId,
+                    organizerName: currentUser.realName,
+                    startTime: new Date(Date.now() + 86400000 * 2).toISOString(),
+                    endTime: new Date(Date.now() + 86400000 * 2 + 10800000).toISOString(),
+                    location: '测试地点',
+                    locationName: '测试地点',
+                    maxParticipants: 50,
+                    currentParticipants: 1,
+                    status: 'recruiting',
+                    tags: ['测试', '用户创建'],
+                    coverImage: '/activity-cover-default.png',
+                    createdAt: new Date().toISOString(),
+                    distance: 0
+                };
+
+                globalDataManager.addActivity(newActivity);
+                
+                // 创建参与者记录
+                const participants = [{
+                    userId: currentUserId,
+                    userName: currentUser.realName,
+                    status: 'approved',
+                    joinTime: new Date().toISOString()
+                }];
+                globalDataManager.setActivityParticipants('7', participants);
+                
+                // 同步到localStorage
+                const updatedActivities = globalDataManager.getActivities();
+                localStorage.setItem('campus_activities', JSON.stringify(updatedActivities));
+                
+                alert('✅ 活动ID 7创建成功！');
+                reloadData();
+            } catch (error) {
+                alert('❌ 创建活动失败: ' + error.message);
+            }
+        };
+
+        // 删除活动ID 7
+        window.deleteActivity7 = function() {
+            try {
+                globalDataManager.removeActivity('7');
+                localStorage.removeItem('campus_activities');
+                alert('✅ 活动ID 7删除成功！');
+                reloadData();
+            } catch (error) {
+                alert('❌ 删除活动失败: ' + error.message);
+            }
+        };
+
+        // 清空localStorage
+        window.clearLocalStorage = function() {
+            localStorage.removeItem('campus_activities');
+            alert('✅ localStorage已清空');
+            reloadData();
+        };
+
+        // 重新加载数据
+        window.reloadData = function() {
+            checkCurrentUser();
+            checkLocalStorageActivities();
+            checkGlobalActivities();
+            checkActivity7();
+        };
+
+        // 修复数据不一致
+        window.fixData = function() {
+            try {
+                // 获取全局数据
+                const globalActivities = globalDataManager.getActivities();
+                
+                // 同步到localStorage
+                localStorage.setItem('campus_activities', JSON.stringify(globalActivities));
+                
+                alert('✅ 数据修复完成！localStorage已同步');
+                reloadData();
+            } catch (error) {
+                alert('❌ 数据修复失败: ' + error.message);
+            }
+        };
+
+        // 显示调试信息
+        window.showDebugInfo = function() {
+            const debugDiv = document.getElementById('debug-info');
+            try {
+                const debugInfo = {
+                    currentUserId: globalDataManager.getCurrentUserId(),
+                    globalActivitiesCount: globalDataManager.getActivities().length,
+                    localStorageExists: !!localStorage.getItem('campus_activities'),
+                    localStorageData: localStorage.getItem('campus_activities') ? JSON.parse(localStorage.getItem('campus_activities')).length : 0
+                };
+                
+                debugDiv.innerHTML = `
+                    <div class="code-block">
+${JSON.stringify(debugInfo, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                debugDiv.innerHTML = `<p style="color: red;">❌ 获取调试信息失败: ${error.message}</p>`;
+            }
+        };
+
+        // 页面加载时执行检查
+        window.addEventListener('load', function() {
+            setTimeout(reloadData, 1000);
+        });
+
+        // 导出函数供全局使用
+        window.checkCurrentUser = checkCurrentUser;
+        window.checkLocalStorageActivities = checkLocalStorageActivities;
+        window.checkGlobalActivities = checkGlobalActivities;
+        window.checkActivity7 = checkActivity7;
+    </script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>localStorage 数据检查工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .key-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .data-preview {
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        .activity-item {
+            padding: 5px;
+            margin: 2px 0;
+            background: #e9ecef;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>localStorage 数据检查工具</h1>
+    
+    <div class="section">
+        <h2>所有 localStorage 键</h2>
+        <div id="allKeys"></div>
+    </div>
+    
+    <div class="section">
+        <h2>活动相关数据</h2>
+        <div id="activityKeys"></div>
+    </div>
+    
+    <div class="section">
+        <h2>数据清理</h2>
+        <button onclick="checkAllData()">检查所有数据</button>
+        <button class="danger" onclick="cleanActivityData()">清理活动数据</button>
+        <button class="danger" onclick="cleanAllData()">清理所有数据</button>
+        <div id="cleanResult"></div>
+    </div>
+
+    <script>
+        function checkAllData() {
+            console.log('=== 检查localStorage中的所有数据 ===');
+            
+            // 获取所有键
+            const allKeys = Object.keys(localStorage);
+            document.getElementById('allKeys').innerHTML = `
+                <p>总共有 ${allKeys.length} 个键:</p>
+                ${allKeys.map(key => `<div class="key-item">${key}</div>`).join('')}
+            `;
+            
+            // 检查活动相关的键
+            const activityKeys = allKeys.filter(key => 
+                key.includes('activity') || 
+                key.includes('Activity') || 
+                key.includes('activities') ||
+                key.includes('Activities')
+            );
+            
+            let activityHtml = `<p>找到 ${activityKeys.length} 个活动相关的键:</p>`;
+            
+            activityKeys.forEach(key => {
+                try {
+                    const data = localStorage.getItem(key);
+                    let parsed = null;
+                    let preview = '';
+                    
+                    if (data) {
+                        try {
+                            parsed = JSON.parse(data);
+                            
+                            if (Array.isArray(parsed)) {
+                                preview = `数组 (${parsed.length} 项):\n`;
+                                parsed.forEach((item, index) => {
+                                    if (typeof item === 'object' && item !== null) {
+                                        preview += `[${index}] ${item.title || item.name || '无标题'} (ID: ${item.id || 'N/A'})\n`;
+                                    } else {
+                                        preview += `[${index}] ${item}\n`;
+                                    }
+                                });
+                            } else if (typeof parsed === 'object') {
+                                if (parsed.activities && Array.isArray(parsed.activities)) {
+                                    preview = `对象包含activities数组 (${parsed.activities.length} 项):\n`;
+                                    parsed.activities.forEach((item, index) => {
+                                        preview += `[${index}] ${item.title || item.name || '无标题'} (ID: ${item.id || 'N/A'})\n`;
+                                    });
+                                } else {
+                                    preview = `对象: ${JSON.stringify(parsed, null, 2).substring(0, 500)}...`;
+                                }
+                            } else {
+                                preview = `${parsed}`;
+                            }
+                        } catch (e) {
+                            preview = `原始数据: ${data.substring(0, 200)}...`;
+                        }
+                    } else {
+                        preview = 'null';
+                    }
+                    
+                    activityHtml += `
+                        <div class="key-item">
+                            <strong>${key}</strong>
+                            <div class="data-preview">${preview}</div>
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    activityHtml += `
+                        <div class="key-item">
+                            <strong>${key}</strong>
+                            <div style="color: red;">解析错误: ${error.message}</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            document.getElementById('activityKeys').innerHTML = activityHtml;
+        }
+        
+        function cleanActivityData() {
+            const allKeys = Object.keys(localStorage);
+            const activityKeys = allKeys.filter(key => 
+                key.includes('activity') || 
+                key.includes('Activity') || 
+                key.includes('activities') ||
+                key.includes('Activities')
+            );
+            
+            let cleanedCount = 0;
+            activityKeys.forEach(key => {
+                localStorage.removeItem(key);
+                cleanedCount++;
+            });
+            
+            document.getElementById('cleanResult').innerHTML = `
+                <p style="color: green;">✅ 已清理 ${cleanedCount} 个活动相关的数据项</p>
+            `;
+            
+            // 重新检查数据
+            setTimeout(checkAllData, 100);
+        }
+        
+        function cleanAllData() {
+            if (confirm('确定要清理所有localStorage数据吗？此操作不可恢复！')) {
+                localStorage.clear();
+                document.getElementById('cleanResult').innerHTML = `
+                    <p style="color: green;">✅ 已清理所有localStorage数据</p>
+                `;
+                setTimeout(checkAllData, 100);
+            }
+        }
+        
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkAllData();
+        };
+    </script>
+</body>
+</html>

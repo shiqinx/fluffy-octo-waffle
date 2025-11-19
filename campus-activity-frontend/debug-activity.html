@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+        .error { background: #ffe6e6; color: red; }
+        .success { background: #e6ffe6; color: green; }
+    </style>
+</head>
+<body>
+    <h1>活动数据调试工具</h1>
+    
+    <div class="test-section">
+        <h3>测试活动详情API</h3>
+        <button onclick="testActivityDetail('1')">测试活动ID=1</button>
+        <button onclick="testActivityDetail('2')">测试活动ID=2</button>
+        <button onclick="testActivityDetail('3')">测试活动ID=3</button>
+        <button onclick="testActivityDetail('4')">测试活动ID=4</button>
+        <button onclick="testActivityDetail('5')">测试活动ID=5</button>
+        <button onclick="testActivityDetail('6')">测试活动ID=6</button>
+        <div id="api-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>检查数据源</h3>
+        <button onclick="checkLocalStorage()">检查localStorage</button>
+        <button onclick="checkGlobalData()">检查GlobalData</button>
+        <div id="data-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>模拟路由跳转</h3>
+        <button onclick="simulateRoute('1')">跳转到活动详情(1)</button>
+        <button onclick="simulateRoute('2')">跳转到活动详情(2)</button>
+        <button onclick="simulateRoute('3')">跳转到活动详情(3)</button>
+        <div id="route-result" class="result"></div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { getActivityDetail } from './src/api/activity.js';
+        import { globalDataManager } from './src/api/global-data.js';
+        
+        window.testActivityDetail = async function(id) {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = `正在测试活动ID=${id}...`;
+            
+            try {
+                console.log(`🔍 测试活动ID: ${id}`);
+                const result = await getActivityDetail(id);
+                
+                if (result && result.success && result.data) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ 活动${id}获取成功<br>
+                            ID: ${result.data.id}<br>
+                            标题: ${result.data.title}<br>
+                            类型: ${result.data.type}<br>
+                            类别: ${result.data.category}<br>
+                            状态: ${result.data.status}<br>
+                            描述: ${result.data.description?.substring(0, 50)}...
+                        </div>
+                    `;
+                    console.log('✅ 活动数据:', result.data);
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 响应格式错误: ${JSON.stringify(result)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 获取活动${id}失败: ${error.message}</div>`;
+                console.error('❌ 错误:', error);
+            }
+        };
+        
+        window.checkLocalStorage = function() {
+            const resultDiv = document.getElementById('data-result');
+            const localStorageData = localStorage.getItem('campus_activities');
+            
+            if (localStorageData) {
+                const activities = JSON.parse(localStorageData);
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        📦 localStorage中有${activities.length}个活动<br>
+                        ${activities.map(a => `ID:${a.id} - ${a.title}`).join('<br>')}
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `<div class="error">📦 localStorage中没有活动数据</div>`;
+            }
+        };
+        
+        window.checkGlobalData = function() {
+            const resultDiv = document.getElementById('data-result');
+            const activities = globalDataManager.getActivities();
+            
+            resultDiv.innerHTML = `
+                <div class="success">
+                    🌐 GlobalData中有${activities.length}个活动<br>
+                    ${activities.map(a => `ID:${a.id} - ${a.title}`).join('<br>')}
+                </div>
+            `;
+            console.log('🌐 GlobalData活动:', activities);
+        };
+        
+        window.simulateRoute = function(id) {
+            const resultDiv = document.getElementById('route-result');
+            resultDiv.innerHTML = `
+                <div class="success">
+                    🚀 模拟跳转到活动详情页面<br>
+                    路由参数: id = ${id}<br>
+                    实际URL: http://localhost:3001/activity/${id}<br>
+                    <a href="/activity/${id}" target="_blank">点击跳转到真实页面</a>
+                </div>
+            `;
+        };
+        
+        // 页面加载时自动检查数据
+        window.addEventListener('load', () => {
+            console.log('🔍 调试页面已加载');
+            checkGlobalData();
+        });
+    </script>
+</body>
+</html>

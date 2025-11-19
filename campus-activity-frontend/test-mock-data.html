@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模拟数据测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>模拟数据测试页面</h1>
+    
+    <div class="test-section">
+        <h2>环境配置检查</h2>
+        <button onclick="checkEnvironment()">检查环境配置</button>
+        <div id="env-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>API测试</h2>
+        <button onclick="testActivityList()">测试获取活动列表</button>
+        <button onclick="testLogin()">测试登录</button>
+        <button onclick="testCreateActivity()">测试创建活动</button>
+        <div id="api-result"></div>
+    </div>
+
+    <script type="module">
+        // 导入模拟API函数
+        import { 
+            mockLogin, 
+            mockGetActivityList, 
+            mockCreateActivity,
+            mockActivities 
+        } from './src/api/mock.js';
+
+        // 检查环境配置
+        window.checkEnvironment = function() {
+            const result = document.getElementById('env-result');
+            const config = {
+                VITE_USE_MOCK: import.meta.env.VITE_USE_MOCK,
+                MODE: import.meta.env.MODE,
+                DEV: import.meta.env.DEV,
+                PROD: import.meta.env.PROD
+            };
+            
+            result.innerHTML = `
+                <div class="success">
+                    <h3>环境配置:</h3>
+                    <pre>${JSON.stringify(config, null, 2)}</pre>
+                    <p>模拟数据模式: ${config.VITE_USE_MOCK === 'true' ? '✅ 已启用' : '❌ 未启用'}</p>
+                </div>
+            `;
+        };
+
+        // 测试活动列表
+        window.testActivityList = async function() {
+            const result = document.getElementById('api-result');
+            try {
+                result.innerHTML = '<p>正在测试获取活动列表...</p>';
+                const response = await mockGetActivityList();
+                result.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 活动列表测试成功</h3>
+                        <p>获取到 ${response.data.list.length} 个活动</p>
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 活动列表测试失败</h3>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        };
+
+        // 测试登录
+        window.testLogin = async function() {
+            const result = document.getElementById('api-result');
+            try {
+                result.innerHTML = '<p>正在测试登录...</p>';
+                const response = await mockLogin({
+                    studentId: '2330502143',
+                    password: '123456'
+                });
+                result.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 登录测试成功</h3>
+                        <p>用户: ${response.data.user.realName}</p>
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 登录测试失败</h3>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        };
+
+        // 测试创建活动
+        window.testCreateActivity = async function() {
+            const result = document.getElementById('api-result');
+            try {
+                result.innerHTML = '<p>正在测试创建活动...</p>';
+                const activityData = {
+                    title: '测试活动',
+                    description: '这是一个测试活动',
+                    startTime: new Date(Date.now() + 86400000).toISOString(),
+                    endTime: new Date(Date.now() + 86400000 * 2).toISOString(),
+                    location: '测试地点',
+                    maxParticipants: 50,
+                    tags: ['测试']
+                };
+                const response = await mockCreateActivity(activityData);
+                result.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 创建活动测试成功</h3>
+                        <p>活动ID: ${response.data.id}</p>
+                        <pre>${JSON.stringify(response, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 创建活动测试失败</h3>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        };
+
+        // 页面加载时自动检查环境
+        window.addEventListener('load', function() {
+            checkEnvironment();
+        });
+    </script>
+</body>
+</html>

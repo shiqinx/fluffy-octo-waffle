@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .activity-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .activity-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .activity-item h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .activity-item p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .nav-links a:hover {
+            background: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 活动创建修复测试</h1>
+    
+    <div class="nav-links">
+        <a href="http://localhost:3001" target="_blank">🏠 主页</a>
+        <a href="http://localhost:3001/views/activity/ActivityList.html" target="_blank">📋 活动列表</a>
+        <a href="http://localhost:3001/views/activity/CreateActivity.html" target="_blank">➕ 创建活动</a>
+        <a href="http://localhost:3001/data-sync-debug.html" target="_blank">🔍 数据调试</a>
+    </div>
+
+    <div class="test-container">
+        <h2>📊 数据状态检查</h2>
+        <div id="dataStatus"></div>
+        <button class="btn" onclick="checkDataStatus()">刷新数据状态</button>
+        <button class="btn warning" onclick="clearTestData()">清理测试数据</button>
+    </div>
+
+    <div class="test-container">
+        <h2>🧪 测试操作</h2>
+        <div class="test-section">
+            <h3>1. 模拟用户登录</h3>
+            <button class="btn" onclick="simulateLogin()">模拟登录测试用户</button>
+            <div id="loginStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 创建测试活动</h3>
+            <button class="btn success" onclick="createTestActivity()">创建测试活动</button>
+            <div id="creationStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 验证数据同步</h3>
+            <button class="btn" onclick="verifySync()">验证数据同步</button>
+            <div id="syncStatus"></div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>📋 当前活动列表</h2>
+        <div id="activityList" class="activity-list"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>📝 操作日志</h2>
+        <div id="logOutput" class="log"></div>
+        <button class="btn" onclick="clearLog()">清空日志</button>
+    </div>
+
+    <script>
+        let logMessages = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            logMessages.push(logMessage);
+            
+            const logOutput = document.getElementById('logOutput');
+            logOutput.textContent = logMessages.join('\n');
+            logOutput.scrollTop = logOutput.scrollHeight;
+            
+            console.log(logMessage);
+        }
+
+        function clearLog() {
+            logMessages = [];
+            document.getElementById('logOutput').textContent = '';
+        }
+
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function checkDataStatus() {
+            try {
+                log('🔍 检查数据状态...');
+                
+                // 检查localStorage
+                const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                const statusHtml = `
+                    <div class="status info">
+                        <strong>📊 数据状态:</strong><br>
+                        📁 活动数量: ${activities.length}<br>
+                        👤 用户信息: ${user.username ? user.username : '未登录'}<br>
+                        🕒 最后更新: ${new Date().toLocaleString()}
+                    </div>
+                `;
+                
+                document.getElementById('dataStatus').innerHTML = statusHtml;
+                
+                // 更新活动列表显示
+                updateActivityList(activities);
+                
+                log(`✅ 数据状态检查完成: ${activities.length}个活动`);
+            } catch (error) {
+                log(`❌ 检查数据状态失败: ${error.message}`, 'error');
+                showStatus('dataStatus', `检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        function updateActivityList(activities) {
+            const listElement = document.getElementById('activityList');
+            
+            if (activities.length === 0) {
+                listElement.innerHTML = '<p style="text-align: center; color: #666;">暂无活动</p>';
+                return;
+            }
+            
+            const activitiesHtml = activities.map(activity => `
+                <div class="activity-item">
+                    <h4>${activity.title}</h4>
+                    <p>📅 时间: ${new Date(activity.startTime).toLocaleString()}</p>
+                    <p>📍 地点: ${activity.locationName || activity.location}</p>
+                    <p>👥 人数: ${activity.currentParticipants}/${activity.maxParticipants}</p>
+                    <p>🆔 ID: ${activity.id}</p>
+                </div>
+            `).join('');
+            
+            listElement.innerHTML = activitiesHtml;
+        }
+
+        async function simulateLogin() {
+            try {
+                log('👤 模拟用户登录...');
+                
+                const testUser = {
+                    id: 'test_user_' + Date.now(),
+                    username: 'testuser',
+                    nickname: '测试用户',
+                    email: 'test@example.com',
+                    avatar: '',
+                    phone: '13800138000',
+                    studentId: '2021001001',
+                    major: '计算机科学与技术',
+                    grade: '2021级',
+                    reputation: 85,
+                    isVerified: true,
+                    createdAt: new Date().toISOString()
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(testUser));
+                localStorage.setItem('token', 'mock_token_' + Date.now());
+                
+                showStatus('loginStatus', '✅ 用户登录成功', 'success');
+                log('✅ 用户登录成功: ' + testUser.username);
+                
+                // 更新数据状态
+                await checkDataStatus();
+            } catch (error) {
+                log(`❌ 登录失败: ${error.message}`, 'error');
+                showStatus('loginStatus', `登录失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function createTestActivity() {
+            try {
+                log('🎯 开始创建测试活动...');
+                
+                // 检查用户是否登录
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (!currentUser.username) {
+                    throw new Error('请先登录');
+                }
+                
+                const testActivity = {
+                    title: '测试活动_' + Date.now(),
+                    description: '这是一个用于测试数据同步的活动',
+                    category: 'study',
+                    startTime: new Date(Date.now() + 86400000).toISOString(), // 明天
+                    endTime: new Date(Date.now() + 86400000 + 3600000).toISOString(), // 明天+1小时
+                    location: {
+                        name: '测试地点',
+                        address: '测试地址'
+                    },
+                    maxParticipants: 20,
+                    tags: ['测试', '同步'],
+                    joinType: 'free'
+                };
+                
+                // 调用mock API创建活动
+                const response = await mockCreateActivity(testActivity);
+                
+                if (response.success) {
+                    showStatus('creationStatus', `✅ 活动创建成功: ${response.data.title}`, 'success');
+                    log(`✅ 活动创建成功: ${response.data.title} (ID: ${response.data.id})`);
+                    
+                    // 等待数据同步
+                    setTimeout(async () => {
+                        await checkDataStatus();
+                        await verifySync();
+                    }, 500);
+                } else {
+                    throw new Error(response.message || '创建失败');
+                }
+            } catch (error) {
+                log(`❌ 创建活动失败: ${error.message}`, 'error');
+                showStatus('creationStatus', `创建失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function verifySync() {
+            try {
+                log('🔍 验证数据同步...');
+                
+                // 检查localStorage中的数据
+                const storedActivities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                
+                // 检查数据完整性
+                const hasValidActivities = storedActivities.length > 0;
+                const hasValidStructure = storedActivities.every(activity => 
+                    activity.id && activity.title && activity.startTime
+                );
+                
+                if (hasValidActivities && hasValidStructure) {
+                    showStatus('syncStatus', `✅ 数据同步正常 (${storedActivities.length}个活动)`, 'success');
+                    log(`✅ 数据同步验证通过: ${storedActivities.length}个活动`);
+                } else {
+                    throw new Error('数据同步异常或数据结构不完整');
+                }
+            } catch (error) {
+                log(`❌ 数据同步验证失败: ${error.message}`, 'error');
+                showStatus('syncStatus', `同步验证失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearTestData() {
+            try {
+                log('🗑️ 清理测试数据...');
+                
+                // 保留默认活动，只清理测试创建的活动
+                const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                const filteredActivities = activities.filter(activity => 
+                    !activity.title.includes('测试活动_')
+                );
+                
+                localStorage.setItem('campus_activities', JSON.stringify(filteredActivities));
+                
+                showStatus('dataStatus', '✅ 测试数据已清理', 'success');
+                log('✅ 测试数据清理完成');
+                
+                // 更新显示
+                checkDataStatus();
+            } catch (error) {
+                log(`❌ 清理数据失败: ${error.message}`, 'error');
+            }
+        }
+
+        // Mock API function
+        async function mockCreateActivity(activityData) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    try {
+                        // 获取当前用户
+                        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                        
+                        // 生成新活动
+                        const newActivity = {
+                            id: 'activity_' + Date.now(),
+                            ...activityData,
+                            creatorId: currentUser.id || 'anonymous',
+                            creatorName: currentUser.nickname || currentUser.username || '匿名用户',
+                            currentParticipants: 0,
+                            createdAt: new Date().toISOString(),
+                            status: 'upcoming',
+                            isEnrolled: false,
+                            isApproved: false,
+                            isCreator: true
+                        };
+                        
+                        // 获取现有活动
+                        const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                        
+                        // 添加新活动到开头
+                        activities.unshift(newActivity);
+                        
+                        // 保存到localStorage
+                        localStorage.setItem('campus_activities', JSON.stringify(activities));
+                        
+                        resolve({
+                            success: true,
+                            data: newActivity,
+                            message: '活动创建成功'
+                        });
+                    } catch (error) {
+                        resolve({
+                            success: false,
+                            message: error.message
+                        });
+                    }
+                }, 100); // 模拟网络延迟
+            });
+        }
+
+        // 页面加载时检查数据状态
+        window.addEventListener('load', () => {
+            checkDataStatus();
+            log('🚀 测试页面加载完成');
+        });
+
+        // 定期刷新数据状态
+        setInterval(checkDataStatus, 30000); // 每30秒刷新一次
+    </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建活动ID 7</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 创建活动ID 7</h1>
+            <p>解决"活动不是我创建的吗"问题</p>
+        </div>
+
+        <div id="status" class="status info">
+            正在初始化...
+        </div>
+
+        <form id="activityForm">
+            <div class="form-group">
+                <label for="title">活动标题</label>
+                <input type="text" id="title" value="用户创建的测试活动" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">活动类型</label>
+                <select id="category">
+                    <option value="other">其他</option>
+                    <option value="lecture">讲座</option>
+                    <option value="sports">运动</option>
+                    <option value="game">桌游</option>
+                    <option value="study">学习</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">活动描述</label>
+                <textarea id="description" rows="4">这是用户创建的活动，用于测试活动ID 7的访问和显示。</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="location">活动地点</label>
+                <input type="text" id="location" value="测试地点">
+            </div>
+
+            <div class="form-group">
+                <label for="maxParticipants">最大参与人数</label>
+                <input type="number" id="maxParticipants" value="50" min="1" max="1000">
+            </div>
+
+            <div class="form-group">
+                <label for="startTime">开始时间</label>
+                <input type="datetime-local" id="startTime">
+            </div>
+
+            <div class="form-group">
+                <label for="endTime">结束时间</label>
+                <input type="datetime-local" id="endTime">
+            </div>
+
+            <div class="form-group">
+                <label for="enrollEndTime">报名截止时间</label>
+                <input type="datetime-local" id="enrollEndTime">
+            </div>
+
+            <button type="submit">创建活动ID 7</button>
+            <button type="button" onclick="checkExistingActivity()">检查现有活动</button>
+            <button type="button" onclick="deleteActivity()">删除活动ID 7</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { globalDataManager } from './src/api/global-data.js';
+
+        // 设置默认时间
+        function setDefaultTimes() {
+            const now = new Date();
+            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            const dayAfterTomorrow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+            
+            document.getElementById('startTime').value = formatDateTimeLocal(tomorrow);
+            document.getElementById('endTime').value = formatDateTimeLocal(dayAfterTomorrow);
+            document.getElementById('enrollEndTime').value = formatDateTimeLocal(tomorrow);
+        }
+
+        function formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function checkExistingActivity() {
+            try {
+                const activities = globalDataManager.getActivities();
+                const activity7 = activities.find(a => a.id === '7' || a.id === 7);
+                
+                if (activity7) {
+                    updateStatus(`✅ 活动ID 7已存在！标题: ${activity7.title}, 创建者ID: ${activity7.organizerId}`, 'success');
+                } else {
+                    updateStatus('❌ 活动ID 7不存在，需要创建', 'error');
+                }
+            } catch (error) {
+                updateStatus(`❌ 检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        function createActivity() {
+            try {
+                const currentUserId = globalDataManager.getCurrentUserId();
+                const users = globalDataManager.getUsers();
+                const currentUser = users.find(u => u.id === currentUserId);
+                
+                if (!currentUser) {
+                    updateStatus('❌ 未找到当前用户，请先登录', 'error');
+                    return;
+                }
+
+                const newActivity = {
+                    id: '7',
+                    title: document.getElementById('title').value,
+                    type: '用户活动',
+                    category: document.getElementById('category').value,
+                    description: document.getElementById('description').value,
+                    organizerId: currentUserId,
+                    organizerName: currentUser.realName,
+                    startTime: new Date(document.getElementById('startTime').value).toISOString(),
+                    endTime: new Date(document.getElementById('endTime').value).toISOString(),
+                    enrollStartTime: new Date().toISOString(),
+                    enrollEndTime: new Date(document.getElementById('enrollEndTime').value).toISOString(),
+                    location: document.getElementById('location').value,
+                    locationName: document.getElementById('location').value,
+                    maxParticipants: parseInt(document.getElementById('maxParticipants').value),
+                    currentParticipants: 1,
+                    status: 'recruiting',
+                    tags: ['用户创建', '测试'],
+                    coverImage: '/activity-cover-default.png',
+                    createdAt: new Date().toISOString(),
+                    distance: 0,
+                    enrollments: [],
+                    participants: [{
+                        userId: currentUserId,
+                        name: currentUser.realName,
+                        avatar: currentUser.avatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNEOURBREIiLz4KPHBhdGggZD0iTTIwIDIyQzIzLjMxMzcgMjIgMjYgMTkuMzEzNyAyNiAxNkMyNiAxMi42ODYzIDIzLjMxMzcgMTAgMjAgMTBDMTYuNjg2MyAxMCAxNCAxMi42ODYzIDE0IDE2QzE0IDE5LjMxMzcgMTYuNjg2MyAyMiAyMCAyMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yOCAzMEMyOCAyNy43OTAyIDI2LjIwOTggMjYgMjQgMjZIMTZDMTMuNzkwMiAyNiAxMiAyNy43OTAyIDEyIDMwVjMxQzEyIDMxLjU1MjMgMTIuNDQ3NyAzMiAxMyAzMkgyN0MyNy41NTIzIDMyIDI4IDMxLjU1MjMgMjggMzFWMzBaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
+                        creditScore: currentUser.creditScore || 100,
+                        status: 'approved',
+                        checkedIn: false
+                    }]
+                };
+
+                globalDataManager.addActivity(newActivity);
+                
+                // 创建参与者记录
+                const participants = [{
+                    userId: currentUserId,
+                    userName: currentUser.realName,
+                    status: 'approved',
+                    joinTime: new Date().toISOString()
+                }];
+                globalDataManager.setActivityParticipants('7', participants);
+                
+                // 同步到localStorage
+                const updatedActivities = globalDataManager.getActivities();
+                localStorage.setItem('campus_activities', JSON.stringify(updatedActivities));
+                
+                updateStatus(`✅ 活动ID 7创建成功！标题: ${newActivity.title}, 创建者: ${currentUser.realName}`, 'success');
+                
+                // 3秒后跳转到活动详情页
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:3001/activity/7';
+                }, 3000);
+                
+            } catch (error) {
+                updateStatus(`❌ 创建活动失败: ${error.message}`, 'error');
+            }
+        }
+
+        function deleteActivity() {
+            try {
+                if (confirm('确定要删除活动ID 7吗？')) {
+                    globalDataManager.removeActivity('7');
+                    localStorage.removeItem('campus_activities');
+                    updateStatus('✅ 活动ID 7删除成功！', 'success');
+                }
+            } catch (error) {
+                updateStatus(`❌ 删除活动失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 表单提交处理
+        document.getElementById('activityForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createActivity();
+        });
+
+        // 页面加载时初始化
+        window.addEventListener('load', function() {
+            setDefaultTimes();
+            setTimeout(() => {
+                checkExistingActivity();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

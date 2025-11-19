@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情修复测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        .test-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #1989fa;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        .test-link:hover {
+            background: #1677ff;
+        }
+        .success {
+            color: #67c23a;
+            font-weight: bold;
+        }
+        .error {
+            color: #f56c6c;
+            font-weight: bold;
+        }
+        .info {
+            color: #909399;
+        }
+        .steps {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .steps h3 {
+            margin-top: 0;
+            color: #1989fa;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .steps li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        .highlight {
+            background: #fff2e8;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 活动详情页面修复测试</h1>
+        
+        <div class="steps">
+            <h3>📋 修复内容</h3>
+            <ol>
+                <li><span class="highlight">移除错误回退逻辑</span>：删除了ActivityDetail.vue中API调用失败时显示错误模拟数据的代码</li>
+                <li><span class="highlight">增强错误处理</span>：API失败时显示错误提示并自动返回上一页</li>
+                <li><span class="highlight">改进Mock数据获取</span>：增加了详细的日志输出，便于调试数据获取问题</li>
+                <li><span class="highlight">数据一致性</span>：确保活动列表和详情页使用相同的数据源</li>
+            </ol>
+        </div>
+
+        <div class="test-item">
+            <h3>🧪 测试步骤</h3>
+            <p><strong>1. 清理浏览器缓存</strong></p>
+            <p>打开浏览器开发者工具（F12），在Console中执行以下代码清理localStorage：</p>
+            <pre style="background: #f8f8f8; padding: 10px; border-radius: 4px; overflow-x: auto;">
+localStorage.removeItem('campus_activities');
+console.log('✅ 已清理活动数据缓存');</pre>
+            
+            <p><strong>2. 刷新页面</strong></p>
+            <p>刷新应用页面，让系统重新初始化活动数据。</p>
+            
+            <p><strong>3. 测试不同活动</strong></p>
+            <p>点击下面的链接测试不同活动的详情页面：</p>
+        </div>
+
+        <div class="test-item">
+            <h3>🎯 测试链接</h3>
+            <p>这些链接会跳转到不同活动的详情页面，验证每个活动都显示正确的内容：</p>
+            
+            <a href="http://localhost:3000/activities/1" class="test-link" target="_blank">
+                🏀 篮球友谊赛 (ID: 1)
+            </a>
+            <a href="http://localhost:3000/activities/2" class="test-link" target="_blank">
+                🏥 中医养生讲座 (ID: 2)
+            </a>
+            <a href="http://localhost:3000/activities/3" class="test-link" target="_blank">
+                📸 摄影作品展览 (ID: 3)
+            </a>
+            <a href="http://localhost:3000/activities/4" class="test-link" target="_blank">
+                💻 编程马拉松大赛 (ID: 4)
+            </a>
+            <a href="http://localhost:3000/activities/5" class="test-link" target="_blank">
+                🎵 音乐节 (ID: 5)
+            </a>
+            <a href="http://localhost:3000/activities/6" class="test-link" target="_blank">
+                🎾 网球友谊赛 (ID: 6)
+            </a>
+            <a href="http://localhost:3000/activities/999" class="test-link" target="_blank">
+                ❌ 不存在的活动 (ID: 999) - 测试错误处理
+            </a>
+        </div>
+
+        <div class="test-item">
+            <h3>✅ 预期结果</h3>
+            <ul>
+                <li class="success">每个活动详情页面都显示正确的活动信息（标题、描述、时间、地点等）</li>
+                <li class="success">不再出现"所有活动都显示篮球内容"的问题</li>
+                <li class="success">访问不存在的活动时会显示错误提示并返回上一页</li>
+                <li class="success">浏览器控制台会显示详细的数据获取日志</li>
+            </ul>
+        </div>
+
+        <div class="test-item">
+            <h3>🐛 如果仍有问题</h3>
+            <p>如果问题仍然存在，请检查浏览器控制台的日志输出，特别关注：</p>
+            <ul>
+                <li><code>mockGetActivityDetail 被调用，activityId: X</code> - 确认API被正确调用</li>
+                <li><code>从localStorage获取活动详情: ...</code> - 检查数据获取情况</li>
+                <li><code>返回的活动详情: ...</code> - 确认返回的数据是否正确</li>
+            </ul>
+            
+            <p>如果需要重新初始化数据，可以在控制台运行：</p>
+            <pre style="background: #f8f8f8; padding: 10px; border-radius: 4px; overflow-x: auto;">
+// 复制 fix-activities.js 中的代码并执行
+// 或者访问活动列表页面重新加载数据</pre>
+        </div>
+
+        <div class="test-item info">
+            <h3>📝 修复说明</h3>
+            <p>这个修复解决了以下问题：</p>
+            <ul>
+                <li><strong>数据回退错误</strong>：之前API失败时会显示硬编码的错误数据</li>
+                <li><strong>用户体验差</strong>：现在会明确提示错误并返回</li>
+                <li><strong>调试困难</strong>：增加了详细的日志输出</li>
+            </ul>
+            <p>现在活动详情页面应该能正确显示每个活动的真实内容了！</p>
+        </div>
+    </div>
+
+    <script>
+        // 添加一些辅助功能
+        console.log('🔧 活动详情修复测试页面已加载');
+        console.log('📋 请按照页面上的步骤进行测试');
+        
+        // 检查开发服务器是否运行
+        fetch('http://localhost:3000')
+            .then(() => {
+                console.log('✅ 开发服务器运行正常');
+            })
+            .catch(() => {
+                console.error('❌ 开发服务器未运行，请先执行 npm run dev');
+            });
+    </script>
+</body>
+</html>

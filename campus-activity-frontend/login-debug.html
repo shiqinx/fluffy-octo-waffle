@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题详细诊断</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .user-card {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        input {
+            width: 200px;
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+        .warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>🔍 登录问题详细诊断工具</h1>
+    
+    <div class="container">
+        <h2>📋 当前用户数据</h2>
+        <div id="usersList"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 手动登录测试</h2>
+        <div class="test-section">
+            <h3>输入测试凭据</h3>
+            <input type="text" id="testStudentId" placeholder="学号" value="2330502143">
+            <input type="password" id="testPassword" placeholder="密码" value="abc123456">
+            <button onclick="testLogin()">测试登录</button>
+            <button onclick="clearLogs()">清除日志</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>快速测试</h3>
+            <button onclick="quickTest(1)">测试用户1 (孙金瑶)</button>
+            <button onclick="quickTest(2)">测试用户2 (卢敏婷)</button>
+            <button onclick="testWrongCredentials()">测试错误凭据</button>
+        </div>
+        
+        <div class="log-output" id="logOutput"></div>
+    </div>
+
+    <script type="module">
+        // 导入全局数据管理器
+        import { globalDataManager } from './src/api/global-data.js';
+        
+        // 日志输出函数
+        window.log = function(message, type = 'info') {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logOutput.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        };
+
+        window.clearLogs = function() {
+            document.getElementById('logOutput').innerHTML = '';
+        };
+
+        // 显示用户数据
+        function displayUsers() {
+            const users = globalDataManager.getUsers();
+            const usersList = document.getElementById('usersList');
+            
+            usersList.innerHTML = users.map(user => `
+                <div class="user-card">
+                    <strong>ID:</strong> ${user.id} | 
+                    <strong>学号:</strong> ${user.studentId} (类型: ${typeof user.studentId}) | 
+                    <strong>姓名:</strong> ${user.realName} | 
+                    <strong>密码:</strong> ${user.password} (类型: ${typeof user.password}, 长度: ${user.password.length}) |
+                    <strong>院系:</strong> ${user.department}
+                </div>
+            `).join('');
+            
+            log(`✅ 加载了 ${users.length} 个用户数据`, 'success');
+        }
+
+        // 模拟登录函数 (复制自mock.js)
+        async function mockLogin(data) {
+            const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            await delay(500);
+            
+            const studentId = data.studentId || data.username;
+            const password = data.password;
+            
+            log(`🔐 尝试登录: { studentId: "${studentId}", password: "${password ? "***" : ""}" }`, 'info');
+            log(`🔍 参数类型: studentId(${typeof studentId}), password(${typeof password})`, 'info');
+            
+            const currentUsers = globalDataManager.getUsers();
+            log(`📋 当前有 ${currentUsers.length} 个用户`, 'info');
+            
+            let user = null;
+            for (const u of currentUsers) {
+                log(`🔍 比较用户 ${u.realName}:`, 'info');
+                log(`  - 输入学号: "${studentId}" (${typeof studentId})`, 'info');
+                log(`  - 存储学号: "${u.studentId}" (${typeof u.studentId})`, 'info');
+                log(`  - 严格相等: ${u.studentId === studentId}`, 'info');
+                log(`  - 宽松相等: ${u.studentId == studentId}`, 'info');
+                log(`  - 输入密码: "${password}" (${typeof password})`, 'info');
+                log(`  - 存储密码: "${u.password}" (${typeof u.password})`, 'info');
+                log(`  - 严格相等: ${u.password === password}`, 'info');
+                log(`  - 宽松相等: ${u.password == password}`, 'info');
+                
+                if ((u.studentId == studentId) && (u.password == password)) {
+                    user = u;
+                    log(`✅ 找到匹配用户: ${u.realName}`, 'success');
+                    break;
+                } else {
+                    log(`❌ 用户 ${u.realName} 不匹配`, 'warning');
+                }
+            }
+            
+            if (user) {
+                const response = {
+                    success: true,
+                    data: {
+                        token: 'mock_jwt_token_' + Date.now(),
+                        user: {
+                            id: user.id,
+                            realName: user.realName,
+                            studentId: user.studentId,
+                            department: user.department,
+                            avatar: user.avatar,
+                            creditScore: user.creditScore
+                        }
+                    },
+                    message: '登录成功'
+                };
+                
+                log(`✅ 登录成功: ${user.realName} (ID: ${user.id})`, 'success');
+                return response;
+            } else {
+                log(`❌ 登录失败: 学号或密码错误`, 'error');
+                throw {
+                    success: false,
+                    message: '学号或密码错误'
+                };
+            }
+        }
+
+        // 测试登录
+        window.testLogin = async function() {
+            const studentId = document.getElementById('testStudentId').value;
+            const password = document.getElementById('testPassword').value;
+            
+            log(`\n🚀 开始登录测试`, 'info');
+            log(`📝 输入数据: { studentId: "${studentId}", password: "${password ? "***" : ""}" }`, 'info');
+            
+            try {
+                const result = await mockLogin({ studentId, password });
+                log(`🎉 登录测试成功:`, 'success');
+                log(JSON.stringify(result, null, 2), 'success');
+            } catch (error) {
+                log(`💥 登录测试失败:`, 'error');
+                log(JSON.stringify(error, null, 2), 'error');
+            }
+        };
+
+        // 快速测试
+        window.quickTest = async function(userId) {
+            const users = globalDataManager.getUsers();
+            const user = users.find(u => u.id === userId);
+            
+            if (user) {
+                document.getElementById('testStudentId').value = user.studentId;
+                document.getElementById('testPassword').value = user.password;
+                log(`🔄 已填入用户${userId} (${user.realName}) 的凭据`, 'info');
+                await testLogin();
+            } else {
+                log(`❌ 找不到用户ID ${userId}`, 'error');
+            }
+        };
+
+        // 测试错误凭据
+        window.testWrongCredentials = async function() {
+            document.getElementById('testStudentId').value = 'wrong_id';
+            document.getElementById('testPassword').value = 'wrong_password';
+            log(`🔄 已填入错误凭据`, 'warning');
+            await testLogin();
+        };
+
+        // 页面加载时显示用户数据
+        displayUsers();
+        log('🎯 登录诊断工具已就绪', 'success');
+    </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试数据生成</title>
+</head>
+<body>
+    <h1>测试个性化数据生成</h1>
+    <div id="output"></div>
+    
+    <script>
+        // 模拟活动数据
+        const mockActivities = [
+            { id: 1, title: '篮球友谊赛', organizer: { id: 1, name: '篮球社' } },
+            { id: 2, title: '图书馆学习小组', organizer: { id: 2, name: '学习部' } },
+            { id: 3, title: '实验技能培训', organizer: { id: 3, name: '实验中心' } },
+            { id: 4, title: '网球友谊赛', organizer: { id: 4, name: '网球社' } },
+            { id: 5, title: '编程马拉松', organizer: { id: 5, name: '编程协会' } },
+            { id: 6, title: '中医养生讲座', organizer: { id: 6, name: '中医学院' } },
+            { id: 7, title: '宿舍联谊活动', organizer: { id: 7, name: '学生会' } },
+            { id: 8, title: '晨跑俱乐部', organizer: { id: 8, name: '跑步协会' } }
+        ];
+
+        function getPersonalizedActivities(currentUserId, currentUserName) {
+            return mockActivities.map((activity, index) => {
+                const userSeed = currentUserId ? currentUserId.toString().charCodeAt(0) : 1;
+                const activitySeed = index + 1;
+                
+                const isEnrolled = (userSeed + activitySeed) % 3 === 0;
+                const isFavorite = (userSeed + activitySeed * 2) % 4 === 0;
+                const isApproved = isEnrolled && (userSeed + activitySeed * 3) % 2 === 0;
+                
+                return {
+                    ...activity,
+                    isEnrolled,
+                    isFavorite,
+                    isApproved,
+                    organizerId: activity.organizer.id
+                };
+            });
+        }
+
+        function testUserData(userId) {
+            const activities = getPersonalizedActivities(userId, `用户${userId}`);
+            const created = activities.filter(a => a.organizerId == userId);
+            const enrolled = activities.filter(a => a.isEnrolled && a.organizerId != userId);
+            const favorites = activities.filter(a => a.isFavorite && a.organizerId != userId);
+            
+            return {
+                userId,
+                created: created.map(a => a.title),
+                enrolled: enrolled.map(a => a.title),
+                favorites: favorites.map(a => a.title)
+            };
+        }
+
+        // 测试不同用户
+        const users = ['1', '2', '3'];
+        let output = '';
+        
+        users.forEach(userId => {
+            const result = testUserData(userId);
+            output += `<h2>用户${userId}</h2>`;
+            output += `<h3>我发布的 (${result.created.length})</h3><ul>${result.created.map(t => `<li>${t}</li>`).join('')}</ul>`;
+            output += `<h3>我报名的 (${result.enrolled.length})</h3><ul>${result.enrolled.map(t => `<li>${t}</li>`).join('')}</ul>`;
+            output += `<h3>我收藏的 (${result.favorites.length})</h3><ul>${result.favorites.map(t => `<li>${t}</li>`).join('')}</ul>`;
+            output += '<hr>';
+        });
+        
+        document.getElementById('output').innerHTML = output;
+    </script>
+</body>
+</html>

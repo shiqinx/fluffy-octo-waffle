@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错误检测页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #dc3545;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #17a2b8;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 错误检测与诊断页面</h1>
+        <p>此页面用于检测Vue应用中的JavaScript错误和导航问题</p>
+        
+        <div class="info">
+            <strong>当前URL:</strong> <span id="currentUrl"></span><br>
+            <strong>检测时间:</strong> <span id="detectTime"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🚨 错误监听</h2>
+        <div id="errorContainer"></div>
+        <button onclick="clearErrors()">清除错误</button>
+    </div>
+
+    <div class="container">
+        <h2>🔧 系统检测</h2>
+        <button onclick="runSystemCheck()">运行系统检测</button>
+        <div id="systemCheck"></div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Vue应用检测</h2>
+        <button onclick="testVueApp()">测试Vue应用</button>
+        <div id="vueTest"></div>
+    </div>
+
+    <div class="container">
+        <h2>📝 详细日志</h2>
+        <button onclick="clearLog()">清除日志</button>
+        <div id="logContainer" class="log"></div>
+    </div>
+
+    <script>
+        let errorContainer = document.getElementById('errorContainer');
+        let systemCheckDiv = document.getElementById('systemCheck');
+        let vueTestDiv = document.getElementById('vueTest');
+        let logContainer = document.getElementById('logContainer');
+        let errorCount = 0;
+        
+        // 更新时间
+        function updateTime() {
+            document.getElementById('detectTime').textContent = new Date().toLocaleString();
+        }
+        
+        // 更新URL
+        function updateUrl() {
+            document.getElementById('currentUrl').textContent = window.location.href;
+        }
+        
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logContainer.textContent += logEntry;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(`[错误检测] ${message}`);
+        }
+        
+        // 清除日志
+        function clearLog() {
+            logContainer.textContent = '';
+        }
+        
+        // 清除错误
+        function clearErrors() {
+            errorContainer.innerHTML = '';
+            errorCount = 0;
+            addLog('错误已清除');
+        }
+        
+        // 添加错误显示
+        function addError(message, source, lineno, colno, error) {
+            errorCount++;
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.innerHTML = `
+                <strong>错误 #${errorCount}:</strong> ${message}<br>
+                <small>来源: ${source || '未知'} | 行: ${lineno || '未知'} | 列: ${colno || '未知'}</small>
+                ${error ? `<br><small>错误对象: ${error.stack || error.toString()}</small>` : ''}
+            `;
+            errorContainer.appendChild(errorDiv);
+            
+            addLog(`捕获错误: ${message}`, 'error');
+        }
+        
+        // 运行系统检测
+        function runSystemCheck() {
+            addLog('开始系统检测...');
+            systemCheckDiv.innerHTML = '';
+            
+            // 检测基本环境
+            const checks = [
+                {
+                    name: 'JavaScript支持',
+                    test: () => typeof window !== 'undefined',
+                    success: '✅ JavaScript正常运行',
+                    fail: '❌ JavaScript环境异常'
+                },
+                {
+                    name: 'Console支持',
+                    test: () => typeof console !== 'undefined' && console.log,
+                    success: '✅ Console可用',
+                    fail: '❌ Console不可用'
+                },
+                {
+                    name: 'LocalStorage支持',
+                    test: () => typeof Storage !== 'undefined',
+                    success: '✅ LocalStorage可用',
+                    fail: '❌ LocalStorage不可用'
+                },
+                {
+                    name: 'SessionStorage支持',
+                    test: () => typeof sessionStorage !== 'undefined',
+                    success: '✅ SessionStorage可用',
+                    fail: '❌ SessionStorage不可用'
+                },
+                {
+                    name: 'Fetch API支持',
+                    test: () => typeof fetch !== 'undefined',
+                    success: '✅ Fetch API可用',
+                    fail: '❌ Fetch API不可用'
+                },
+                {
+                    name: 'History API支持',
+                    test: () => typeof history !== 'undefined' && history.pushState,
+                    success: '✅ History API可用',
+                    fail: '❌ History API不可用'
+                }
+            ];
+            
+            checks.forEach(check => {
+                const resultDiv = document.createElement('div');
+                try {
+                    const passed = check.test();
+                    resultDiv.className = passed ? 'success' : 'error';
+                    resultDiv.innerHTML = `<strong>${check.name}:</strong> ${passed ? check.success : check.fail}`;
+                    addLog(`${check.name}: ${passed ? '通过' : '失败'}`);
+                } catch (error) {
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `<strong>${check.name}:</strong> ${check.fail} (${error.message})`;
+                    addLog(`${check.name}: 检测失败 - ${error.message}`, 'error');
+                }
+                systemCheckDiv.appendChild(resultDiv);
+            });
+            
+            addLog('系统检测完成');
+        }
+        
+        // 测试Vue应用
+        function testVueApp() {
+            addLog('开始测试Vue应用...');
+            vueTestDiv.innerHTML = '';
+            
+            const tests = [
+                {
+                    name: 'Vue库加载',
+                    test: () => typeof window.Vue !== 'undefined' || document.querySelector('script[src*="vue"]'),
+                    success: '✅ Vue库已加载',
+                    fail: '❌ Vue库未加载'
+                },
+                {
+                    name: 'Vue Router加载',
+                    test: () => typeof window.VueRouter !== 'undefined' || document.querySelector('script[src*="router"]'),
+                    success: '✅ Vue Router已加载',
+                    fail: '❌ Vue Router未加载'
+                },
+                {
+                    name: 'Pinia加载',
+                    test: () => typeof window.Pinia !== 'undefined' || document.querySelector('script[src*="pinia"]'),
+                    success: '✅ Pinia已加载',
+                    fail: '❌ Pinia未加载'
+                },
+                {
+                    name: 'Vant加载',
+                    test: () => typeof window.vant !== 'undefined' || document.querySelector('script[src*="vant"]'),
+                    success: '✅ Vant已加载',
+                    fail: '❌ Vant未加载'
+                },
+                {
+                    name: 'Vue应用挂载',
+                    test: () => document.querySelector('#app') && document.querySelector('#app').__vue__,
+                    success: '✅ Vue应用已挂载',
+                    fail: '❌ Vue应用未挂载'
+                }
+            ];
+            
+            tests.forEach(test => {
+                const resultDiv = document.createElement('div');
+                try {
+                    const passed = test.test();
+                    resultDiv.className = passed ? 'success' : 'warning';
+                    resultDiv.innerHTML = `<strong>${test.name}:</strong> ${passed ? test.success : test.fail}`;
+                    addLog(`${test.name}: ${passed ? '通过' : '失败'}`);
+                } catch (error) {
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `<strong>${test.name}:</strong> ${test.fail} (${error.message})`;
+                    addLog(`${test.name}: 测试失败 - ${error.message}`, 'error');
+                }
+                vueTestDiv.appendChild(resultDiv);
+            });
+            
+            // 尝试检测Vue应用的内部状态
+            try {
+                const appElement = document.querySelector('#app');
+                if (appElement) {
+                    const vueApp = appElement.__vue__;
+                    if (vueApp) {
+                        const statusDiv = document.createElement('div');
+                        statusDiv.className = 'success';
+                        statusDiv.innerHTML = `
+                            <strong>Vue应用状态:</strong><br>
+                            - 组件名称: ${vueApp.$options.name || 'App'}<br>
+                            - 已挂载: ${vueApp._isMounted ? '是' : '否'}<br>
+                            - 数据状态: ${vueApp._data ? '正常' : '异常'}
+                        `;
+                        vueTestDiv.appendChild(statusDiv);
+                        addLog('Vue应用内部状态正常');
+                    }
+                }
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.innerHTML = `<strong>Vue应用状态检测失败:</strong> ${error.message}`;
+                vueTestDiv.appendChild(errorDiv);
+                addLog(`Vue应用状态检测失败: ${error.message}`, 'error');
+            }
+            
+            addLog('Vue应用测试完成');
+        }
+        
+        // 监听错误
+        window.addEventListener('error', function(event) {
+            addError(event.message, event.filename, event.lineno, event.colno, event.error);
+        });
+        
+        // 监听未处理的Promise拒绝
+        window.addEventListener('unhandledrejection', function(event) {
+            addError(`未处理的Promise拒绝: ${event.reason}`, 'Promise', '', '', event.reason);
+        });
+        
+        // 监听资源加载错误
+        window.addEventListener('error', function(event) {
+            if (event.target !== window) {
+                addError(`资源加载失败: ${event.target.src || event.target.href}`, event.target.tagName, '', '', event.error);
+            }
+        }, true);
+        
+        // 初始化
+        function init() {
+            updateTime();
+            updateUrl();
+            
+            addLog('错误检测页面已加载');
+            addLog('开始监听JavaScript错误...');
+            
+            // 每秒更新时间
+            setInterval(updateTime, 1000);
+            
+            // 监听URL变化
+            let currentUrl = window.location.href;
+            setInterval(() => {
+                const newUrl = window.location.href;
+                if (newUrl !== currentUrl) {
+                    addLog(`URL变化: ${currentUrl} -> ${newUrl}`);
+                    currentUrl = newUrl;
+                    updateUrl();
+                }
+            }, 100);
+            
+            // 自动运行检测
+            setTimeout(() => {
+                runSystemCheck();
+                testVueApp();
+            }, 1000);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .activity { margin: 5px 0; padding: 5px; background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>活动数据生成测试</h1>
+    <div id="output"></div>
+
+    <script>
+        // 模拟活动数据
+        const mockActivities = [
+            { id: 1, title: '篮球友谊赛', organizer: { id: 1, name: '篮球社' } },
+            { id: 2, title: '图书馆学习小组', organizer: { id: 2, name: '学习部' } },
+            { id: 3, title: '实验技能培训', organizer: { id: 3, name: '实验中心' } },
+            { id: 4, title: '网球友谊赛', organizer: { id: 4, name: '网球社' } },
+            { id: 5, title: '编程马拉松', organizer: { id: 5, name: '编程协会' } },
+            { id: 6, title: '中医养生讲座', organizer: { id: 6, name: '中医学院' } },
+            { id: 7, title: '宿舍联谊活动', organizer: { id: 7, name: '学生会' } },
+            { id: 8, title: '晨跑俱乐部', organizer: { id: 8, name: '跑步协会' } }
+        ];
+
+        function getPersonalizedActivities(currentUserId, currentUserName) {
+            return mockActivities.map((activity, index) => {
+                const userSeed = currentUserId ? currentUserId.toString().charCodeAt(0) : 1;
+                const activitySeed = index + 1;
+                
+                const isEnrolled = (userSeed + activitySeed) % 3 === 0;
+                const isFavorite = (userSeed + activitySeed * 2) % 5 === 0 || (userSeed + activitySeed) % 7 === 0;
+                const isApproved = isEnrolled && (userSeed + activitySeed * 3) % 2 === 0;
+                
+                return {
+                    ...activity,
+                    isEnrolled,
+                    isFavorite,
+                    isApproved,
+                    organizerId: activity.organizer.id
+                };
+            });
+        }
+
+        function testUserData(userId) {
+            const activities = getPersonalizedActivities(userId, `用户${userId}`);
+            const created = activities.filter(a => a.organizerId == userId);
+            const enrolled = activities.filter(a => a.isEnrolled && a.organizerId != userId);
+            const favorites = activities.filter(a => a.isFavorite && a.organizerId != userId);
+            
+            return {
+                userId,
+                created,
+                enrolled,
+                favorites
+            };
+        }
+
+        function displayResults() {
+            const output = document.getElementById('output');
+            const users = ['1', '2', '3'];
+            
+            users.forEach(userId => {
+                const data = testUserData(userId);
+                const section = document.createElement('div');
+                section.className = 'section';
+                
+                section.innerHTML = `
+                    <h3>用户${data.userId}</h3>
+                    <div><strong>我发布的 (${data.created.length}):</strong></div>
+                    ${data.created.map(a => `<div class="activity">${a.title}</div>`).join('')}
+                    
+                    <div><strong>我报名的 (${data.enrolled.length}):</strong></div>
+                    ${data.enrolled.map(a => `<div class="activity">${a.title}</div>`).join('')}
+                    
+                    <div><strong>我收藏的 (${data.favorites.length}):</strong></div>
+                    ${data.favorites.map(a => `<div class="activity">${a.title}</div>`).join('')}
+                `;
+                
+                output.appendChild(section);
+            });
+        }
+
+        displayResults();
+    </script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动列表修复验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .activity-item {
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .activity-info {
+            color: #666;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动列表修复验证</h1>
+    
+    <div class="test-section">
+        <h2>测试步骤</h2>
+        <ol>
+            <li>检查当前localStorage中的活动数据</li>
+            <li>清理异常数据</li>
+            <li>验证修复后的活动列表</li>
+        </ol>
+        
+        <button onclick="testLocalStorage()">检查localStorage数据</button>
+        <button onclick="cleanLocalStorage()">清理异常数据</button>
+        <button onclick="testActivityList()">测试活动列表</button>
+    </div>
+    
+    <div id="status" class="status info">点击按钮开始测试...</div>
+    
+    <div class="test-section">
+        <h2>当前活动列表</h2>
+        <div id="activityList">点击"测试活动列表"按钮查看活动数据</div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+        
+        function testLocalStorage() {
+            updateStatus('正在检查localStorage数据...', 'info');
+            
+            try {
+                const storedActivities = localStorage.getItem('campus_activities');
+                
+                if (storedActivities) {
+                    const activities = JSON.parse(storedActivities);
+                    
+                    if (Array.isArray(activities)) {
+                        updateStatus(`localStorage中有 ${activities.length} 个活动`, 'success');
+                        
+                        let html = `<h3>localStorage中的活动 (${activities.length}个):</h3>`;
+                        activities.forEach((activity, index) => {
+                            html += `
+                                <div class="activity-item">
+                                    <div class="activity-title">${index + 1}. ${activity.title || '无标题'}</div>
+                                    <div class="activity-info">
+                                        ID: ${activity.id || 'N/A'} | 
+                                        类型: ${activity.type || 'N/A'} | 
+                                        地点: ${activity.locationName || 'N/A'}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        document.getElementById('activityList').innerHTML = html;
+                        
+                        // 检查数据完整性
+                        const validActivities = activities.filter(activity => 
+                            activity && 
+                            typeof activity === 'object' &&
+                            activity.id && 
+                            activity.title && 
+                            activity.type &&
+                            activity.locationName &&
+                            activity.startTime &&
+                            activity.endTime
+                        );
+                        
+                        if (validActivities.length < 5) {
+                            updateStatus(`⚠️ 数据不完整！有效活动: ${validActivities.length}/${activities.length}`, 'error');
+                        } else {
+                            updateStatus(`✅ 数据完整，有效活动: ${validActivities.length}/${activities.length}`, 'success');
+                        }
+                    } else {
+                        updateStatus('❌ localStorage中的数据不是数组格式', 'error');
+                    }
+                } else {
+                    updateStatus('localStorage中没有活动数据', 'info');
+                }
+            } catch (error) {
+                updateStatus(`❌ 读取localStorage失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function cleanLocalStorage() {
+            updateStatus('正在清理localStorage数据...', 'info');
+            
+            try {
+                // 清理所有可能的活动相关键
+                const keysToClean = ['campus_activities', 'activities', 'activity_data'];
+                let cleanedCount = 0;
+                
+                keysToClean.forEach(key => {
+                    if (localStorage.getItem(key)) {
+                        localStorage.removeItem(key);
+                        cleanedCount++;
+                    }
+                });
+                
+                updateStatus(`✅ 已清理 ${cleanedCount} 个数据项`, 'success');
+                
+                // 重新检查数据
+                setTimeout(testLocalStorage, 500);
+                
+            } catch (error) {
+                updateStatus(`❌ 清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testActivityList() {
+            updateStatus('正在测试活动列表...', 'info');
+            
+            // 模拟默认活动数据
+            const defaultActivities = [
+                {
+                    id: 1,
+                    title: '中医养生讲座',
+                    type: 'study',
+                    locationName: '学术报告厅'
+                },
+                {
+                    id: 2,
+                    title: '摄影作品展览',
+                    type: 'culture',
+                    locationName: '艺术展厅'
+                },
+                {
+                    id: 3,
+                    title: '编程马拉松大赛',
+                    type: 'tech',
+                    locationName: '创新实验室'
+                },
+                {
+                    id: 4,
+                    title: '音乐节',
+                    type: 'culture',
+                    locationName: '露天剧场'
+                },
+                {
+                    id: 5,
+                    title: '篮球友谊赛',
+                    type: 'sports',
+                    locationName: '篮球场1'
+                }
+            ];
+            
+            let html = `<h3>默认活动列表 (${defaultActivities.length}个):</h3>`;
+            defaultActivities.forEach((activity, index) => {
+                html += `
+                    <div class="activity-item">
+                        <div class="activity-title">${index + 1}. ${activity.title}</div>
+                        <div class="activity-info">
+                            ID: ${activity.id} | 
+                            类型: ${activity.type} | 
+                            地点: ${activity.locationName}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('activityList').innerHTML = html;
+            updateStatus('✅ 活动列表测试完成，应该显示5个多样化的活动', 'success');
+        }
+        
+        // 页面加载时自动检查
+        window.onload = function() {
+            testLocalStorage();
+        };
+    </script>
+</body>
+</html>

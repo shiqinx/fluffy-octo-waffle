@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动功能测试 - 美化版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .test-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .test-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .test-1 .test-icon { background: linear-gradient(135deg, #FF6B6B, #FF8E53); }
+        .test-2 .test-icon { background: linear-gradient(135deg, #4ECDC4, #44A08D); }
+        .test-3 .test-icon { background: linear-gradient(135deg, #45B7D1, #2196F3); }
+        .test-4 .test-icon { background: linear-gradient(135deg, #F7B731, #F5A623); }
+
+        .test-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .test-description {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .test-button {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .test-1 .test-button { background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: white; }
+        .test-2 .test-button { background: linear-gradient(135deg, #4ECDC4, #44A08D); color: white; }
+        .test-3 .test-button { background: linear-gradient(135deg, #45B7D1, #2196F3); color: white; }
+        .test-4 .test-button { background: linear-gradient(135deg, #F7B731, #F5A623); color: white; }
+
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 60px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            border-left: 4px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .result-box.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+
+        .result-box.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.success { background: #28a745; }
+        .status-indicator.error { background: #dc3545; }
+        .status-indicator.pending { background: #ffc107; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .summary-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .summary-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 活动功能测试</h1>
+            <p class="subtitle">验证活动创建、状态计算、位置信息和列表获取功能</p>
+        </header>
+
+        <div class="test-grid">
+            <!-- 测试1: 活动创建 -->
+            <div class="test-card test-1">
+                <div class="test-header">
+                    <div class="test-icon">📝</div>
+                    <h2 class="test-title">活动创建</h2>
+                </div>
+                <p class="test-description">测试活动创建功能，包括基本信息、时间设置和位置信息</p>
+                <button class="test-button" onclick="testActivityCreation()">
+                    <span id="loading1" style="display:none;" class="loading"></span>
+                    <span id="text1">测试活动创建</span>
+                </button>
+                <div id="result1" class="result-box">等待测试...</div>
+            </div>
+
+            <!-- 测试2: 状态计算 -->
+            <div class="test-card test-2">
+                <div class="test-header">
+                    <div class="test-icon">🔄</div>
+                    <h2 class="test-title">状态计算</h2>
+                </div>
+                <p class="test-description">测试活动状态动态计算，包括招募中、进行中、已结束等状态</p>
+                <button class="test-button" onclick="testStatusCalculation()">
+                    <span id="loading2" style="display:none;" class="loading"></span>
+                    <span id="text2">测试状态计算</span>
+                </button>
+                <div id="result2" class="result-box">等待测试...</div>
+            </div>
+
+            <!-- 测试3: 位置信息 -->
+            <div class="test-card test-3">
+                <div class="test-header">
+                    <div class="test-icon">📍</div>
+                    <h2 class="test-title">位置信息</h2>
+                </div>
+                <p class="test-description">测试活动位置信息的保存和获取，包括坐标和地点名称</p>
+                <button class="test-button" onclick="testLocationInfo()">
+                    <span id="loading3" style="display:none;" class="loading"></span>
+                    <span id="text3">测试位置信息</span>
+                </button>
+                <div id="result3" class="result-box">等待测试...</div>
+            </div>
+
+            <!-- 测试4: 列表获取 -->
+            <div class="test-card test-4">
+                <div class="test-header">
+                    <div class="test-icon">📋</div>
+                    <h2 class="test-title">列表获取</h2>
+                </div>
+                <p class="test-description">测试活动列表获取功能，验证新创建的活动能正确显示</p>
+                <button class="test-button" onclick="testActivityList()">
+                    <span id="loading4" style="display:none;" class="loading"></span>
+                    <span id="text4">测试列表获取</span>
+                </button>
+                <div id="result4" class="result-box">等待测试...</div>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <h2 class="summary-title">📊 测试总结</h2>
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalTests">0</div>
+                    <div class="stat-label">总测试数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="passedTests">0</div>
+                    <div class="stat-label">通过测试</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="failedTests">0</div>
+                    <div class="stat-label">失败测试</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="successRate">0%</div>
+                    <div class="stat-label">成功率</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入必要的模块
+        import { globalDataManager } from '../src/api/globalDataManager.js';
+        import { mockCreateActivity, mockGetActivityDetail, calculateActivityStatus, mockGetActivityList } from '../src/api/mock.js';
+        import { campusBuildings } from '../src/config/map.js';
+
+        // 测试数据
+        const testActivityData = {
+            title: '测试活动 - 美化版',
+            description: '这是一个用于测试功能的活动，包含完整的位置信息',
+            category: 'study',
+            maxParticipants: 10,
+            startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16),
+            endTime: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 16),
+            location: campusBuildings[0], // 使用第一个校园建筑
+            requiresApproval: false
+        };
+
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0
+        };
+
+        // 更新测试统计
+        function updateStats() {
+            document.getElementById('totalTests').textContent = testResults.total;
+            document.getElementById('passedTests').textContent = testResults.passed;
+            document.getElementById('failedTests').textContent = testResults.failed;
+            const rate = testResults.total > 0 ? Math.round((testResults.passed / testResults.total) * 100) : 0;
+            document.getElementById('successRate').textContent = rate + '%';
+        }
+
+        // 显示加载状态
+        function showLoading(testNum, show = true) {
+            document.getElementById(`loading${testNum}`).style.display = show ? 'inline-block' : 'none';
+            document.getElementById(`text${testNum}`).style.opacity = show ? '0.5' : '1';
+        }
+
+        // 显示测试结果
+        function showResult(testNum, result, isSuccess = true) {
+            const resultBox = document.getElementById(`result${testNum}`);
+            resultBox.className = `result-box ${isSuccess ? 'success' : 'error'}`;
+            resultBox.innerHTML = `
+                <span class="status-indicator ${isSuccess ? 'success' : 'error'}"></span>
+                ${result}
+            `;
+        }
+
+        // 测试1: 活动创建
+        window.testActivityCreation = async function() {
+            showLoading(1, true);
+            testResults.total++;
+            
+            try {
+                const newActivity = await mockCreateActivity(testActivityData);
+                
+                if (newActivity && newActivity.id && newActivity.location) {
+                    const result = `✅ 活动创建成功！<br>
+                    ID: ${newActivity.id}<br>
+                    标题: ${newActivity.title}<br>
+                    位置: ${newActivity.location.name}<br>
+                    坐标: [${newActivity.location.coordinates[0]}, ${newActivity.location.coordinates[1]}]<br>
+                    报名时间: ${newActivity.enrollStartTime ? '已设置' : '未设置'}`;
+                    
+                    showResult(1, result, true);
+                    testResults.passed++;
+                } else {
+                    throw new Error('活动创建返回数据不完整');
+                }
+            } catch (error) {
+                showResult(1, `❌ 活动创建失败: ${error.message}`, false);
+                testResults.failed++;
+            }
+            
+            showLoading(1, false);
+            updateStats();
+        };
+
+        // 测试2: 状态计算
+        window.testStatusCalculation = async function() {
+            showLoading(2, true);
+            testResults.total++;
+            
+            try {
+                // 创建一个测试活动
+                const testActivity = {
+                    ...testActivityData,
+                    startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()
+                };
+                
+                const status = calculateActivityStatus(testActivity);
+                
+                if (status && typeof status === 'string') {
+                    const result = `✅ 状态计算成功！<br>
+                    当前时间: ${new Date().toLocaleString()}<br>
+                    活动开始: ${new Date(testActivity.startTime).toLocaleString()}<br>
+                    计算状态: ${status}<br>
+                    状态类型: ${typeof status}`;
+                    
+                    showResult(2, result, true);
+                    testResults.passed++;
+                } else {
+                    throw new Error('状态计算返回值无效');
+                }
+            } catch (error) {
+                showResult(2, `❌ 状态计算失败: ${error.message}`, false);
+                testResults.failed++;
+            }
+            
+            showLoading(2, false);
+            updateStats();
+        };
+
+        // 测试3: 位置信息
+        window.testLocationInfo = async function() {
+            showLoading(3, true);
+            testResults.total++;
+            
+            try {
+                const newActivity = await mockCreateActivity(testActivityData);
+                const activityDetail = await mockGetActivityDetail(newActivity.id);
+                
+                if (activityDetail && activityDetail.location && activityDetail.location.coordinates) {
+                    const coords = activityDetail.location.coordinates;
+                    const isValidCoords = Array.isArray(coords) && coords.length === 2 && 
+                                       typeof coords[0] === 'number' && typeof coords[1] === 'number';
+                    
+                    if (isValidCoords) {
+                        const result = `✅ 位置信息测试成功！<br>
+                        地点名称: ${activityDetail.location.name}<br>
+                        详细地址: ${activityDetail.location.address}<br>
+                        经度: ${coords[0]}<br>
+                        纬度: ${coords[1]}<br>
+                        坐标格式: 正确`;
+                        
+                        showResult(3, result, true);
+                        testResults.passed++;
+                    } else {
+                        throw new Error('坐标数据格式不正确');
+                    }
+                } else {
+                    throw new Error('位置信息获取失败');
+                }
+            } catch (error) {
+                showResult(3, `❌ 位置信息测试失败: ${error.message}`, false);
+                testResults.failed++;
+            }
+            
+            showLoading(3, false);
+            updateStats();
+        };
+
+        // 测试4: 列表获取
+        window.testActivityList = async function() {
+            showLoading(4, true);
+            testResults.total++;
+            
+            try {
+                // 先创建一个新活动
+                const newActivity = await mockCreateActivity(testActivityData);
+                
+                // 获取活动列表
+                const activities = await mockGetActivityList();
+                
+                if (Array.isArray(activities)) {
+                    const foundNewActivity = activities.find(a => a.id === newActivity.id);
+                    
+                    if (foundNewActivity) {
+                        const result = `✅ 列表获取测试成功！<br>
+                        总活动数: ${activities.length}<br>
+                        新活动ID: ${foundNewActivity.id}<br>
+                        新活动标题: ${foundNewActivity.title}<br>
+                        新活动位置: ${foundNewActivity.locationName || foundNewActivity.location?.name}<br>
+                        列表包含新活动: 是`;
+                        
+                        showResult(4, result, true);
+                        testResults.passed++;
+                    } else {
+                        throw new Error('新创建的活动未在列表中找到');
+                    }
+                } else {
+                    throw new Error('活动列表不是数组格式');
+                }
+            } catch (error) {
+                showResult(4, `❌ 列表获取测试失败: ${error.message}`, false);
+                testResults.failed++;
+            }
+            
+            showLoading(4, false);
+            updateStats();
+        };
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 活动功能测试页面已加载');
+            console.log('📊 可用测试项目: 活动创建、状态计算、位置信息、列表获取');
+        });
+    </script>
+</body>
+</html>

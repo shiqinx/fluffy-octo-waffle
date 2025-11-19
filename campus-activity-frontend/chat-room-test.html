@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天室功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .quick-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .quick-link {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .quick-link:hover {
+            background: #5a6fd8;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:before {
+            content: "✅ ";
+            color: green;
+            font-weight: bold;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗨️ 聊天室功能测试</h1>
+            <p>测试校园活动系统的聊天室功能</p>
+        </div>
+        
+        <div class="content">
+            <div class="quick-links">
+                <a href="http://localhost:5173" class="quick-link">🏠 主页</a>
+                <a href="http://localhost:5173/messages" class="quick-link">💬 消息中心</a>
+                <a href="http://localhost:5173/activity/1" class="quick-link">🎯 活动详情</a>
+                <a href="http://localhost:5173/chat/1" class="quick-link">💭 聊天室</a>
+                <a href="http://localhost:5173/create-activity" class="quick-link">➕ 创建活动</a>
+            </div>
+
+            <div class="test-section">
+                <h3><span class="status-indicator status-ok"></span>环境检查</h3>
+                <div id="environment-status">
+                    <p>正在检查开发服务器状态...</p>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>🧪 功能测试步骤</h3>
+                <ol>
+                    <li><strong>消息页面入口测试</strong>：在消息中心查看是否有活动聊天消息</li>
+                    <li><strong>活动详情页入口测试</strong>：进入活动详情页，点击"聊天室"按钮</li>
+                    <li><strong>聊天室页面功能测试</strong>：
+                        <ul>
+                            <li>检查聊天记录是否正确显示</li>
+                            <li>测试发送新消息功能</li>
+                            <li>验证消息时间格式化</li>
+                            <li>检查用户头像和名称显示</li>
+                        </ul>
+                    </li>
+                    <li><strong>API集成测试</strong>：检查Mock数据是否正确返回</li>
+                </ol>
+            </div>
+
+            <div class="test-section">
+                <h3>📊 测试结果记录</h3>
+                <div id="test-results">
+                    <div class="test-result info">
+                        <strong>准备就绪</strong>：点击下面的按钮开始测试
+                    </div>
+                </div>
+                <button onclick="runTests()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                    🚀 开始测试
+                </button>
+            </div>
+
+            <div class="test-section">
+                <h3>✅ 已实现功能</h3>
+                <ul class="feature-list">
+                    <li>活动详情页聊天室按钮显示逻辑（仅参与者可见）</li>
+                    <li>聊天室页面路由配置（/chat/:activityId）</li>
+                    <li>聊天记录加载和显示功能</li>
+                    <li>消息发送功能（支持API调用和本地模拟）</li>
+                    <li>时间格式化显示</li>
+                    <li>用户头像和名称显示</li>
+                    <li>消息发送者样式区分</li>
+                    <li>Mock数据集成（全局数据管理器）</li>
+                    <li>路由跳转修复（移除多余的activity路径）</li>
+                </ul>
+            </div>
+
+            <div class="test-section">
+                <h3>🔧 技术实现</h3>
+                <ul>
+                    <li><strong>前端框架</strong>：Vue 3 + Vite</li>
+                    <li><strong>UI组件</strong>：Vant 4</li>
+                    <li><strong>路由管理</strong>：Vue Router</li>
+                    <li><strong>数据模拟</strong>：Mock.js + 全局数据管理器</li>
+                    <li><strong>状态管理</strong>：Pinia</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查开发服务器状态
+        async function checkEnvironment() {
+            const statusDiv = document.getElementById('environment-status');
+            try {
+                const response = await fetch('http://localhost:5173', { method: 'HEAD' });
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="test-result success"><span class="status-indicator status-ok"></span>开发服务器运行正常 ✅</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="test-result error"><span class="status-indicator status-error"></span>开发服务器响应异常 ❌</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="test-result error"><span class="status-indicator status-error"></span>无法连接到开发服务器 ❌<br>请确保运行 npm run dev</div>';
+            }
+        }
+
+        // 运行测试
+        async function runTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="test-result info">🔄 正在运行测试...</div>';
+
+            const tests = [
+                {
+                    name: '开发服务器连接',
+                    test: async () => {
+                        const response = await fetch('http://localhost:5173', { method: 'HEAD' });
+                        return response.ok;
+                    }
+                },
+                {
+                    name: '活动详情页加载',
+                    test: async () => {
+                        const response = await fetch('http://localhost:5173/activity/1');
+                        return response.ok;
+                    }
+                },
+                {
+                    name: '聊天室页面加载',
+                    test: async () => {
+                        const response = await fetch('http://localhost:5173/chat/1');
+                        return response.ok;
+                    }
+                },
+                {
+                    name: '消息页面加载',
+                    test: async () => {
+                        const response = await fetch('http://localhost:5173/messages');
+                        return response.ok;
+                    }
+                }
+            ];
+
+            let results = [];
+            for (const test of tests) {
+                try {
+                    const passed = await test.test();
+                    results.push({ name: test.name, passed });
+                } catch (error) {
+                    results.push({ name: test.name, passed: false, error: error.message });
+                }
+            }
+
+            // 显示测试结果
+            let html = '';
+            results.forEach(result => {
+                const className = result.passed ? 'success' : 'error';
+                const indicator = result.passed ? 'status-ok' : 'status-error';
+                const icon = result.passed ? '✅' : '❌';
+                html += `<div class="test-result ${className}">
+                    <span class="status-indicator ${indicator}"></span>
+                    ${icon} ${result.name}: ${result.passed ? '通过' : '失败'}
+                    ${result.error ? `<br><small>错误: ${result.error}</small>` : ''}
+                </div>`;
+            });
+
+            const passedCount = results.filter(r => r.passed).length;
+            const totalCount = results.length;
+            
+            html += `<div class="test-result info">
+                <strong>测试完成</strong>：${passedCount}/${totalCount} 项测试通过
+            </div>`;
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // 页面加载时检查环境
+        window.addEventListener('load', checkEnvironment);
+
+        // 每30秒自动检查一次环境状态
+        setInterval(checkEnvironment, 30000);
+    </script>
+</body>
+</html>

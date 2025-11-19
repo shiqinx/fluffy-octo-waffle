@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建功能最终验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .activity-list {
+            margin-top: 20px;
+        }
+        .activity-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 活动创建功能最终验证</h1>
+    
+    <div class="container">
+        <h2>🚀 完整流程测试</h2>
+        <button onclick="runCompleteTest()">运行完整测试</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 当前活动列表</h2>
+        <button onclick="loadCurrentActivities()">刷新活动列表</button>
+        <div id="activityList" class="activity-list"></div>
+    </div>
+
+    <script type="module">
+        import { mockCreateActivity, mockGetActivityList } from './src/api/mock.js';
+
+        window.runCompleteTest = runCompleteTest;
+        window.loadCurrentActivities = loadCurrentActivities;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            console.log(logEntry);
+            
+            const container = document.getElementById('testResults');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = logEntry;
+            container.appendChild(statusDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function runCompleteTest() {
+            const container = document.getElementById('testResults');
+            container.innerHTML = '';
+            
+            log('🎯 开始完整流程测试...', 'info');
+
+            try {
+                // 步骤1: 获取当前活动数量
+                log('📊 步骤1: 获取当前活动数量', 'info');
+                const beforeResult = await mockGetActivityList();
+                const beforeCount = beforeResult.data.length;
+                log(`创建前活动数量: ${beforeCount}`, 'info');
+
+                // 步骤2: 创建新活动
+                log('➕ 步骤2: 创建新活动', 'info');
+                const activityData = {
+                    title: `最终验证活动_${Date.now()}`,
+                    type: "验证测试",
+                    category: "final_test",
+                    description: "用于最终验证活动创建功能的测试活动",
+                    location: "验证测试地点",
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+                    maxParticipants: 30,
+                    tags: ["最终验证", "测试"]
+                };
+
+                const createResult = await mockCreateActivity(activityData);
+                if (createResult.success) {
+                    log(`✅ 活动创建成功！ID: ${createResult.data.id} (${typeof createResult.data.id})`, 'success');
+                    log(`活动标题: ${createResult.data.title}`, 'info');
+                } else {
+                    log(`❌ 活动创建失败: ${createResult.message}`, 'error');
+                    return;
+                }
+
+                // 步骤3: 立即检查活动列表
+                log('📋 步骤3: 检查活动列表更新', 'info');
+                const afterResult = await mockGetActivityList();
+                const afterCount = afterResult.data.length;
+                log(`创建后活动数量: ${afterCount}`, 'info');
+
+                // 步骤4: 验证新活动是否在列表中
+                log('🔍 步骤4: 验证新活动是否在列表中', 'info');
+                const newActivity = afterResult.data.find(act => act.id === createResult.data.id);
+                
+                if (newActivity) {
+                    log(`✅ 新创建的活动在列表中找到！`, 'success');
+                    log(`标题匹配: ${newActivity.title === activityData.title}`, 'info');
+                    log(`ID类型一致: ${typeof newActivity.id === typeof createResult.data.id}`, 'info');
+                    
+                    if (afterCount === beforeCount + 1) {
+                        log(`✅ 活动数量正确增加: ${beforeCount} → ${afterCount}`, 'success');
+                        log('🎉 活动创建功能完全正常！', 'success');
+                    } else {
+                        log(`⚠️ 活动数量异常: 期望 ${beforeCount + 1}, 实际 ${afterCount}`, 'warning');
+                    }
+                } else {
+                    log(`❌ 新创建的活动未在列表中找到！`, 'error');
+                    log(`新活动ID: ${createResult.data.id}`, 'warning');
+                    log(`列表中的活动ID: ${afterResult.data.map(act => act.id).join(', ')}`, 'warning');
+                }
+
+                // 步骤5: 刷新显示
+                log('🔄 步骤5: 刷新活动列表显示', 'info');
+                await loadCurrentActivities();
+
+            } catch (error) {
+                log(`❌ 测试过程中发生错误: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadCurrentActivities() {
+            const container = document.getElementById('activityList');
+            container.innerHTML = '';
+
+            try {
+                const result = await mockGetActivityList();
+                
+                if (result.success) {
+                    log(`📋 加载到 ${result.data.length} 个活动`, 'info');
+                    
+                    if (result.data.length === 0) {
+                        container.innerHTML = '<p class="status warning">暂无活动</p>';
+                        return;
+                    }
+
+                    result.data.forEach((activity, index) => {
+                        const activityDiv = document.createElement('div');
+                        activityDiv.className = 'activity-item';
+                        activityDiv.innerHTML = `
+                            <strong>活动 ${index + 1}</strong><br>
+                            <strong>ID:</strong> ${activity.id} (${typeof activity.id})<br>
+                            <strong>标题:</strong> ${activity.title}<br>
+                            <strong>类型:</strong> ${activity.type}<br>
+                            <strong>状态:</strong> ${activity.status}<br>
+                            <strong>地点:</strong> ${activity.location}<br>
+                            <strong>最大参与人数:</strong> ${activity.maxParticipants}<br>
+                            <strong>创建时间:</strong> ${new Date(activity.createdAt).toLocaleString()}
+                        `;
+                        container.appendChild(activityDiv);
+                    });
+                } else {
+                    container.innerHTML = `<p class="status error">加载失败: ${result.message}</p>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="status error">加载错误: ${error.message}</p>`;
+            }
+        }
+
+        // 页面加载时自动加载活动列表
+        window.addEventListener('load', () => {
+            log('🚀 活动创建功能最终验证工具已加载', 'info');
+            loadCurrentActivities();
+        });
+    </script>
+</body>
+</html>

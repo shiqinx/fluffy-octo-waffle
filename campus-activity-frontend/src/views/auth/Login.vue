@@ -1,79 +1,92 @@
+<!-- @/views/auth/Login.vue -->
 <template>
-  <div class="login-page">
-    <!-- 背景装饰 -->
-    <div class="background-decor">
-      <div class="circle circle-1"></div>
-      <div class="circle circle-2"></div>
-      <div class="circle circle-3"></div>
-    </div>
-
-    <!-- 主要内容 -->
-    <div class="login-content">
-      <!-- 头部品牌信息 -->
-      <div class="brand-header">
-        <div class="logo">
-          <div class="logo-icon">🏫</div>
-          <h1 class="brand-title">校园活动平台</h1>
+  <div class="login-page gradient-bg">
+    <div class="login-container">
+      <!-- 头部 -->
+      <div class="login-header">
+        <div class="logo-placeholder">
+          <van-icon name="friends-o" size="48" color="white" />
         </div>
-        <p class="brand-subtitle">基于位置的校园活动与组队平台</p>
+        <h1 class="title">校园活动平台</h1>
+        <p class="subtitle">基于位置的校园活动与组队平台</p>
       </div>
 
       <!-- 登录表单 -->
-      <div class="login-form-container">
-        <h2 class="form-title">用户登录</h2>
-        
-        <div class="form-wrapper">
-          <!-- 学号输入 -->
-          <div class="input-group">
-            <div class="input-icon">🎓</div>
-            <input
-              v-model="loginForm.studentId"
-              type="text"
-              placeholder="请输入学号"
-              class="form-input"
+      <div class="login-form card">
+        <van-form @submit="onSubmit" class="form">
+          <van-cell-group inset>
+            <!-- 学号输入框 -->
+            <div class="custom-field">
+              <div class="field-label">学号</div>
+              <div class="input-wrapper">
+                <input
+                  v-model="form.studentId"
+                  type="text"
+                  class="custom-input"
+                  placeholder="请输入学号"
+                  @input="validateField('studentId')"
+                />
+                <div 
+                  v-if="form.studentId" 
+                  class="clear-icon" 
+                  @click="clearStudentId"
+                >
+                  ×
+                </div>
+              </div>
+            </div>
+            
+            <!-- 密码输入框 -->
+            <div class="custom-field">
+              <div class="field-label">密码</div>
+              <div class="input-wrapper">
+                <input
+                  v-model="form.password"
+                  type="password"
+                  class="custom-input"
+                  placeholder="请输入密码"
+                  @input="validateField('password')"
+                />
+                <div 
+                  v-if="form.password" 
+                  class="clear-icon" 
+                  @click="clearPassword"
+                >
+                  ×
+                </div>
+              </div>
+            </div>
+          </van-cell-group>
+
+          <!-- 记住密码和忘记密码 -->
+          <div class="login-options">
+            <van-checkbox v-model="rememberPassword" shape="square">
+              记住密码
+            </van-checkbox>
+            <a class="forgot-password" @click="onForgotPassword">
+              忘记密码？
+            </a>
+          </div>
+
+          <div class="submit-btn">
+            <van-button 
+              round 
+              block 
+              type="primary" 
+              native-type="submit" 
+              :loading="loading"
+              size="large"
             >
+              登录
+            </van-button>
           </div>
+        </van-form>
+      </div>
 
-          <!-- 密码输入 -->
-          <div class="input-group">
-            <div class="input-icon">🔒</div>
-            <input
-              v-model="loginForm.password"
-              type="password"
-              placeholder="请输入密码"
-              class="form-input"
-            >
-          </div>
-
-          <!-- 记住我 -->
-          <div class="remember-me">
-            <label class="checkbox-label">
-              <input
-                v-model="loginForm.rememberMe"
-                type="checkbox"
-                class="checkbox-input"
-              >
-              <span class="checkbox-custom"></span>
-              <span class="checkbox-text">记住我的账户和密码</span>
-            </label>
-          </div>
-
-          <!-- 登录按钮 -->
-          <button
-            @click="onSubmit"
-            :disabled="loading"
-            class="login-btn"
-          >
-            <span v-if="!loading">登录</span>
-            <span v-else class="loading-text">登录中...</span>
-          </button>
-        </div>
-
-        <!-- 注册链接 -->
-        <div class="register-link">
-          <span>还没有账号？</span>
-          <a @click="goToRegister" class="link">立即注册</a>
-        </div>
+      <!-- 注册链接 -->
+      <div class="register-section">
+        <span class="register-text">还没有账号？</span>
+        <router-link to="/register" class="register-link">立即注册</router-link>
       </div>
     </div>
   </div>
@@ -82,345 +95,335 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast, showConfirmDialog } from 'vant'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const loginForm = ref({
+const form = ref({
   studentId: '',
-  password: '',
-  rememberMe: false
+  password: ''
 })
-const loading = ref(false)
 
-// 加载记住的账户信息
-const loadRememberedAccount = () => {
-  const remembered = localStorage.getItem('rememberedAccount')
-  if (remembered) {
-    try {
-      const account = JSON.parse(remembered)
-      loginForm.value = { ...loginForm.value, ...account }
-    } catch (error) {
-      console.error('加载记住的账户失败:', error)
-    }
+const loading = ref(false)
+const rememberPassword = ref(false)
+
+// 清除学号
+const clearStudentId = () => {
+  form.value.studentId = ''
+  console.log('清除学号成功')
+}
+
+// 清除密码
+const clearPassword = () => {
+  form.value.password = ''
+  console.log('清除密码成功')
+  // 如果清除了密码，自动取消记住密码
+  if (rememberPassword.value) {
+    rememberPassword.value = false
+    localStorage.removeItem('rememberedLogin')
   }
 }
 
-// 保存账户信息
-const saveRememberedAccount = () => {
-  if (loginForm.value.rememberMe) {
-    const account = {
-      studentId: loginForm.value.studentId,
-      password: loginForm.value.password,
-      rememberMe: true
+// 简单的字段验证
+const validateField = (fieldName) => {
+  console.log(`${fieldName} 输入内容:`, form.value[fieldName])
+}
+
+// 从本地存储加载记住的密码
+const loadRememberedPassword = () => {
+  try {
+    const remembered = localStorage.getItem('rememberedLogin')
+    if (remembered) {
+      const loginData = JSON.parse(remembered)
+      form.value.studentId = loginData.studentId || ''
+      form.value.password = loginData.password || ''
+      rememberPassword.value = true
+      console.log('✅ 已加载记住的登录信息')
     }
-    localStorage.setItem('rememberedAccount', JSON.stringify(account))
+  } catch (error) {
+    console.error('加载记住的密码失败:', error)
+    localStorage.removeItem('rememberedLogin')
+  }
+}
+
+// 保存记住的密码
+const saveRememberedPassword = () => {
+  if (rememberPassword.value && form.value.studentId && form.value.password) {
+    const loginData = {
+      studentId: form.value.studentId,
+      password: form.value.password,
+      timestamp: Date.now()
+    }
+    localStorage.setItem('rememberedLogin', JSON.stringify(loginData))
+    console.log('💾 已保存记住的登录信息')
   } else {
-    localStorage.removeItem('rememberedAccount')
+    localStorage.removeItem('rememberedLogin')
+    console.log('🗑️ 已清除记住的登录信息')
   }
 }
 
 const onSubmit = async () => {
-  if (!loginForm.value.studentId.trim()) {
-    alert('请输入学号')
+  console.log('🔐 开始登录流程...')
+  console.log('📝 表单数据:', form.value)
+  console.log('💾 记住密码:', rememberPassword.value)
+  
+  // 详细调试表单数据
+  console.log('🔍 详细调试:')
+  console.log('- form.value 类型:', typeof form.value)
+  console.log('- form.value.studentId:', form.value.studentId)
+  console.log('- form.value.studentId 类型:', typeof form.value.studentId)
+  console.log('- form.value.studentId 长度:', form.value.studentId ? form.value.studentId.length : 'N/A')
+  console.log('- form.value.password:', form.value.password)
+  console.log('- form.value.password 类型:', typeof form.value.password)
+  console.log('- form.value.password 长度:', form.value.password ? form.value.password.length : 'N/A')
+  
+  // 简单验证
+  if (!form.value.studentId || form.value.studentId.trim() === '') {
+    console.log('❌ 学号为空，显示提示')
+    showToast('请填写学号')
+    return
+  }
+  if (!form.value.password || form.value.password.trim() === '') {
+    console.log('❌ 密码为空，显示提示')
+    showToast('请填写密码')
     return
   }
   
-  if (!loginForm.value.password.trim()) {
-    alert('请输入密码')
-    return
-  }
-
+  console.log('✅ 前端验证通过，开始调用登录API')
   loading.value = true
-
+  
   try {
-    const result = await authStore.login(loginForm.value)
+    console.log('🔍 调用 authStore.loginUser 参数:')
+    console.log('- 第一个参数 (studentId):', form.value.studentId)
+    console.log('- 第二个参数 (password):', form.value.password)
     
-    if (result.success) {
-      saveRememberedAccount()
-      alert('登录成功！')
-      router.push('/')
-    } else {
-      alert(result.message || '登录失败')
-    }
+    const result = await authStore.loginUser(form.value.studentId, form.value.password)
+    console.log('✅ 登录API返回:', result)
+    
+    // 根据用户选择保存或清除记住的密码
+    saveRememberedPassword()
+    
+    showToast('登录成功')
+    router.replace('/home')
+    
   } catch (error) {
-    console.error('登录错误:', error)
-    alert('登录失败，请重试')
+    console.error('❌ 登录错误:', error)
+    console.error('❌ 错误类型:', typeof error)
+    console.error('❌ 错误消息:', error.message)
+    console.error('❌ 错误详情:', error)
+    showToast(error.message || '登录失败')
   } finally {
     loading.value = false
   }
 }
 
-const goToRegister = () => {
-  router.push('/register')
+const onForgotPassword = () => {
+  showConfirmDialog({
+    title: '忘记密码',
+    message: '请联系系统管理员或辅导员重置密码。\n\n学生事务中心电话：020-12345678',
+    confirmButtonText: '知道了',
+    showCancelButton: false
+  })
 }
 
+// 页面加载时检查是否有记住的密码
 onMounted(() => {
-  authStore.initUser()
-  loadRememberedAccount()
-  
-  if (authStore.isAuthenticated) {
-    router.push('/')
-  }
+  loadRememberedPassword()
 })
 </script>
 
 <style scoped>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  position: relative;
-  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.background-decor {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.circle-1 {
-  width: 200px;
-  height: 200px;
-  top: -50px;
-  left: -50px;
-}
-
-.circle-2 {
-  width: 150px;
-  height: 150px;
-  bottom: 100px;
-  right: -50px;
-}
-
-.circle-3 {
-  width: 100px;
-  height: 100px;
-  top: 50%;
-  right: 20%;
-}
-
-.login-content {
+.login-container {
   width: 100%;
   max-width: 400px;
-  z-index: 1;
 }
 
-.brand-header {
+.login-header {
   text-align: center;
-  margin-bottom: 40px;
   color: white;
+  margin-bottom: 40px;
 }
 
-.logo {
+.logo-placeholder {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  margin: 0 auto 20px;
 }
 
-.logo-icon {
-  font-size: 40px;
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 
-.brand-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.brand-subtitle {
+.subtitle {
   font-size: 14px;
   opacity: 0.9;
   margin: 0;
 }
 
-.login-form-container {
+.login-form {
+  margin-bottom: 24px;
   background: white;
-  border-radius: 20px;
-  padding: 40px 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-.form-title {
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-}
-
-.form-wrapper {
-  margin-bottom: 30px;
-}
-
-.input-group {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-.input-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 18px;
-  z-index: 1;
-}
-
-.form-input {
-  width: 100%;
-  height: 50px;
-  padding: 0 20px 0 50px;
-  border: 2px solid #f1f3f4;
   border-radius: 12px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background: #fafbfc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: #667eea;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.form {
+  padding: 0;
 }
 
-.remember-me {
-  margin: 20px 0 30px 0;
+/* 自定义输入框样式 */
+.custom-field {
+  margin: 16px;
+  padding-top: 8px;
 }
 
-.checkbox-label {
+.field-label {
+  font-size: 14px;
+  color: #323233;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+/* 输入框包装器 */
+.input-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  cursor: pointer;
-  font-size: 14px;
-  color: #666;
 }
 
-.checkbox-input {
-  display: none;
-}
-
-.checkbox-custom {
-  width: 18px;
-  height: 18px;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  margin-right: 8px;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.checkbox-input:checked + .checkbox-custom {
-  background: #667eea;
-  border-color: #667eea;
-}
-
-.checkbox-input:checked + .checkbox-custom::after {
-  content: '✓';
-  position: absolute;
-  color: white;
-  font-size: 12px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.checkbox-text {
-  user-select: none;
-}
-
-.login-btn {
+.custom-input {
   width: 100%;
-  height: 50px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  border-radius: 12px;
+  height: 48px;
+  padding: 12px 40px 12px 12px;
+  border: 1px solid #ebedf0;
+  border-radius: 6px;
   font-size: 16px;
-  font-weight: 600;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.custom-input:focus {
+  border-color: #1989fa;
+}
+
+.custom-input::placeholder {
+  color: #c8c9cc;
+}
+
+/* 清除按钮样式 - 修复定位问题 */
+.clear-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #c8c9cc;
   cursor: pointer;
-  transition: all 0.3s ease;
+  z-index: 10;
+  background: white;
+  border-radius: 50%;
+  font-weight: bold;
+  user-select: none;
+  transition: all 0.2s;
 }
 
-.login-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+.clear-icon:hover {
+  color: #969799;
+  background: #f5f5f5;
+  transform: translateY(-50%) scale(1.1);
 }
 
-.login-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
+/* 登录选项样式 */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 0;
+  margin-top: 8px;
 }
 
-.loading-text {
-  display: inline-block;
-  animation: pulse 1.5s infinite;
+:deep(.van-checkbox) {
+  font-size: 14px;
 }
 
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+:deep(.van-checkbox__icon) {
+  font-size: 16px;
+}
+
+:deep(.van-checkbox__label) {
+  color: #666;
+  font-size: 14px;
+}
+
+.forgot-password {
+  color: #667eea;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.submit-btn {
+  padding: 20px 16px 0;
+}
+
+.register-section {
+  text-align: center;
+  color: white;
+}
+
+.register-text {
+  opacity: 0.9;
 }
 
 .register-link {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-
-.link {
-  color: #667eea;
+  color: #ffd700;
   margin-left: 8px;
   text-decoration: none;
   font-weight: 500;
-  cursor: pointer;
 }
 
-.link:hover {
+.register-link:hover {
   text-decoration: underline;
 }
 
 /* 响应式设计 */
 @media (max-width: 480px) {
-  .login-page {
-    padding: 15px;
+  .login-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
   
-  .login-form-container {
-    padding: 30px 20px;
-  }
-  
-  .brand-title {
-    font-size: 24px;
-  }
-  
-  .form-title {
-    font-size: 20px;
+  .forgot-password {
+    align-self: flex-end;
   }
 }
 </style>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路由问题诊断</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #155724; }
+        .error { color: #721c24; }
+        .warning { color: #856404; }
+        .activity-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-decoration: none;
+            color: inherit;
+            background: #fafafa;
+        }
+        .activity-link:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔍 路由问题诊断工具</h1>
+        <p>当前URL: <strong id="current-url"></strong></p>
+        <p>当前路径: <strong id="current-path"></strong></p>
+        
+        <button class="test-btn" onclick="testMockFunction()">🧪 测试 Mock 函数</button>
+        <button class="test-btn" onclick="testRouteParams()">📍 测试路由参数</button>
+        <button class="test-btn" onclick="clearLog()">🗑️ 清除日志</button>
+        
+        <div id="log" class="log">点击按钮开始测试...</div>
+    </div>
+
+    <div class="test-container">
+        <h2>🎯 活动链接测试</h2>
+        <p>点击以下链接测试不同活动的详情页：</p>
+        <div id="activity-links"></div>
+    </div>
+
+    <script type="module">
+        // 模拟正确的活动数据
+        const correctActivities = [
+            { id: "1", title: "中医养生讲座", type: "lecture" },
+            { id: "2", title: "篮球友谊赛", type: "sports" },
+            { id: "3", title: "英语角活动", type: "academic" },
+            { id: "4", title: "编程马拉松", type: "competition" },
+            { id: "5", title: "志愿者招募", type: "volunteer" },
+            { id: "6", title: "摄影展览", type: "cultural" }
+        ];
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateCurrentPageInfo() {
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('current-path').textContent = window.location.pathname;
+        }
+
+        function renderActivityLinks() {
+            const linksDiv = document.getElementById('activity-links');
+            linksDiv.innerHTML = '';
+            
+            correctActivities.forEach(activity => {
+                const link = document.createElement('a');
+                link.href = `/activities/${activity.id}`;
+                link.className = 'activity-link';
+                link.innerHTML = `
+                    <h3>${activity.title}</h3>
+                    <p><strong>ID:</strong> ${activity.id} | <strong>类型:</strong> ${activity.type}</p>
+                    <p><strong>链接:</strong> /activities/${activity.id}</p>
+                `;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    testActivityNavigation(activity);
+                };
+                linksDiv.appendChild(link);
+            });
+        }
+
+        function testActivityNavigation(activity) {
+            log(`🎯 测试导航到活动: ${activity.title} (ID: ${activity.id})`);
+            
+            // 模拟修复后的查找逻辑
+            const foundActivity = correctActivities.find(act => String(act.id) === String(activity.id));
+            
+            if (foundActivity) {
+                log(`✅ Mock 查找成功: ${foundActivity.title}`, 'success');
+                log(`📍 应该跳转到: /activities/${activity.id}`);
+                
+                // 实际跳转
+                window.location.href = `/activities/${activity.id}`;
+            } else {
+                log(`❌ Mock 查找失败: 未找到ID ${activity.id}`, 'error');
+            }
+        }
+
+        window.testMockFunction = async function() {
+            log('🧪 测试 Mock 函数...');
+            
+            try {
+                // 尝试导入 mock 函数
+                const { mockGetActivityDetail } = await import('./src/api/mock.js');
+                log('✅ 成功导入 mockGetActivityDetail 函数', 'success');
+                
+                // 测试每个活动
+                for (const activity of correctActivities) {
+                    try {
+                        const result = await mockGetActivityDetail(activity.id);
+                        if (result.success && result.data.title === activity.title) {
+                            log(`✅ ID ${activity.id}: ${activity.title} - 正确`, 'success');
+                        } else {
+                            log(`❌ ID ${activity.id}: 期望 ${activity.title}, 实际 ${result.data?.title}`, 'error');
+                        }
+                    } catch (error) {
+                        log(`❌ ID ${activity.id}: 测试失败 - ${error.message}`, 'error');
+                    }
+                }
+            } catch (error) {
+                log(`❌ 导入 mock 函数失败: ${error.message}`, 'error');
+                log('📝 这可能是因为在浏览器环境中无法直接导入 ES6 模块', 'warning');
+                
+                // 在浏览器中模拟测试逻辑
+                log('🔄 在浏览器中模拟测试逻辑...');
+                correctActivities.forEach(activity => {
+                    const found = correctActivities.find(act => String(act.id) === String(activity.id));
+                    const status = found && found.title === activity.title ? '✅' : '❌';
+                    log(`${status} ID ${activity.id}: ${activity.title} - ${status === '✅' ? '正确' : '错误'}`);
+                });
+            }
+        };
+
+        window.testRouteParams = function() {
+            log('📍 测试当前路由参数...');
+            
+            const currentPath = window.location.pathname;
+            const activityMatch = currentPath.match(/\/activities\/(\d+)/);
+            
+            if (activityMatch) {
+                const activityId = activityMatch[1];
+                log(`🎯 当前活动ID: ${activityId} (类型: ${typeof activityId})`);
+                
+                const foundActivity = correctActivities.find(act => String(act.id) === String(activityId));
+                if (foundActivity) {
+                    log(`✅ 应该显示: ${foundActivity.title}`, 'success');
+                    
+                    // 检查页面实际显示的内容
+                    setTimeout(() => {
+                        const titleElements = [
+                            document.querySelector('h1'),
+                            document.querySelector('.activity-title'),
+                            document.querySelector('.title'),
+                            document.querySelector('[class*="title"]')
+                        ].filter(el => el);
+                        
+                        if (titleElements.length > 0) {
+                            titleElements.forEach((element, index) => {
+                                const text = element.textContent.trim();
+                                log(`🏷️ 标题元素 ${index + 1}: "${text}"`);
+                                
+                                if (text.includes(foundActivity.title)) {
+                                    log(`✅ 标题匹配正确！`, 'success');
+                                } else if (text.includes('中医养生讲座') && foundActivity.title !== '中医养生讲座') {
+                                    log(`❌ 标题仍然错误！显示"中医养生讲座"而不是"${foundActivity.title}"`, 'error');
+                                    log('🔧 这表明修复未生效，可能需要：', 'warning');
+                                    log('1. 强制刷新浏览器 (Ctrl+F5)');
+                                    log('2. 清除浏览器缓存');
+                                    log('3. 重启开发服务器');
+                                } else {
+                                    log(`⚠️ 标题不匹配: "${text}"`, 'warning');
+                                }
+                            });
+                        } else {
+                            log('❌ 未找到页面标题元素', 'error');
+                        }
+                    }, 1000);
+                } else {
+                    log(`❌ 未找到ID ${activityId} 对应的活动`, 'error');
+                }
+            } else {
+                log('ℹ️ 当前不在活动详情页');
+                log('👇 请点击下方的活动链接进行测试');
+            }
+        };
+
+        window.clearLog = function() {
+            document.getElementById('log').innerHTML = '日志已清除...';
+        };
+
+        // 初始化
+        updateCurrentPageInfo();
+        renderActivityLinks();
+        log('🚀 路由诊断工具已加载', 'success');
+        log('💡 请点击活动链接测试详情页显示是否正确', 'info');
+    </script>
+</body>
+</html>

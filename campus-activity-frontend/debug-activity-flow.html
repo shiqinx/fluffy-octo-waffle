@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动数据流调试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+        }
+        .section h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+        .success {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>活动数据流调试工具</h2>
+        
+        <div class="section">
+            <h3>1. 模拟 activityStore.loadActivities()</h3>
+            <button onclick="simulateLoadActivities()">模拟加载数据</button>
+            <div id="load-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>2. 模拟创建新活动</h3>
+            <button onclick="simulateCreateActivity()">创建测试活动</button>
+            <div id="create-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>3. 模拟 filteredActivities 计算属性</h3>
+            <button onclick="simulateFilteredActivities()">计算筛选结果</button>
+            <div id="filter-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>4. 检查数据一致性</h3>
+            <button onclick="checkDataConsistency()">检查数据一致性</button>
+            <div id="consistency-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>5. 当前 localStorage 状态</h3>
+            <button onclick="showLocalStorageStatus()">显示状态</button>
+            <div id="storage-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟 activityStore 的数据结构
+        let mockActivities = [];
+        let loading = false;
+
+        // 模拟 loadActivitiesFromStorage 函数
+        function loadActivitiesFromStorage() {
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    const activities = JSON.parse(stored);
+                    console.log('从localStorage加载活动:', activities.length, '个');
+                    return activities;
+                }
+            } catch (error) {
+                console.error('从localStorage加载活动失败:', error);
+            }
+            return [];
+        }
+
+        // 模拟 saveActivitiesToStorage 函数
+        function saveActivitiesToStorage(activities) {
+            try {
+                localStorage.setItem('campus_activities', JSON.stringify(activities));
+                console.log('活动数据已保存到localStorage');
+                return true;
+            } catch (error) {
+                console.error('保存活动数据失败:', error);
+                return false;
+            }
+        }
+
+        // 模拟 activityStore.loadActivities()
+        function simulateLoadActivities() {
+            const result = document.getElementById('load-result');
+            loading = true;
+            result.innerHTML = '正在加载...';
+            
+            setTimeout(() => {
+                try {
+                    console.log('🔄 模拟 activityStore.loadActivities()');
+                    mockActivities = loadActivitiesFromStorage();
+                    loading = false;
+                    
+                    result.className = 'result success';
+                    result.innerHTML = `✅ 加载完成<br>
+                        活动数量: ${mockActivities.length}<br>
+                        <pre>${JSON.stringify(mockActivities.slice(0, 2), null, 2)}</pre>`;
+                } catch (error) {
+                    loading = false;
+                    result.className = 'result error';
+                    result.innerHTML = `❌ 加载失败: ${error.message}`;
+                }
+            }, 100);
+        }
+
+        // 模拟创建新活动
+        function simulateCreateActivity() {
+            const result = document.getElementById('create-result');
+            
+            try {
+                const newActivity = {
+                    id: Date.now(),
+                    title: '新创建的测试活动 - ' + new Date().toLocaleTimeString(),
+                    type: 'sports',
+                    category: 'sports',
+                    locationName: '测试地点',
+                    location: {
+                        name: '测试地点',
+                        address: '测试地址'
+                    },
+                    description: '这是新创建的测试活动',
+                    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    endTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
+                    registrationDeadline: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+                    currentParticipants: 1,
+                    maxParticipants: 20,
+                    organizer: {
+                        id: 1,
+                        name: '测试组织者',
+                        avatar: ''
+                    },
+                    distance: 0.5,
+                    isEnrolled: false,
+                    isApproved: false,
+                    status: 'open',
+                    participants: [],
+                    enrollments: [],
+                    createdAt: new Date().toISOString()
+                };
+
+                // 添加到数组开头（模拟 unshift）
+                mockActivities.unshift(newActivity);
+                
+                // 保存到 localStorage
+                const saved = saveActivitiesToStorage(mockActivities);
+                
+                result.className = saved ? 'result success' : 'result error';
+                result.innerHTML = `${saved ? '✅' : '❌'} 创建活动<br>
+                    活动标题: ${newActivity.title}<br>
+                    当前活动总数: ${mockActivities.length}<br>
+                    新活动在数组中的位置: 第0位`;
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ 创建失败: ${error.message}`;
+            }
+        }
+
+        // 模拟 filteredActivities 计算属性
+        function simulateFilteredActivities() {
+            const result = document.getElementById('filter-result');
+            
+            try {
+                console.log('🔄 模拟 filteredActivities 计算');
+                
+                // 模拟计算属性逻辑
+                let filteredResult = [...mockActivities];
+                
+                // 这里可以添加筛选逻辑，现在只是简单返回所有活动
+                result.className = 'result success';
+                result.innerHTML = `✅ 筛选计算完成<br>
+                    原始活动数量: ${mockActivities.length}<br>
+                    筛选后数量: ${filteredResult.length}<br>
+                    <pre>${JSON.stringify(filteredResult.slice(0, 3), null, 2)}</pre>`;
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ 筛选失败: ${error.message}`;
+            }
+        }
+
+        // 检查数据一致性
+        function checkDataConsistency() {
+            const result = document.getElementById('consistency-result');
+            
+            try {
+                const storedActivities = loadActivitiesFromStorage();
+                const isConsistent = JSON.stringify(mockActivities) === JSON.stringify(storedActivities);
+                
+                result.className = isConsistent ? 'result success' : 'result error';
+                result.innerHTML = `数据一致性检查:<br>
+                    内存中活动数量: ${mockActivities.length}<br>
+                    localStorage中活动数量: ${storedActivities.length}<br>
+                    数据一致性: ${isConsistent ? '✅ 一致' : '❌ 不一致'}<br>
+                    ${!isConsistent ? '<pre>内存: ' + JSON.stringify(mockActivities.slice(0, 1), null, 2) + '</pre><pre>存储: ' + JSON.stringify(storedActivities.slice(0, 1), null, 2) + '</pre>' : ''}`;
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ 检查失败: ${error.message}`;
+            }
+        }
+
+        // 显示 localStorage 状态
+        function showLocalStorageStatus() {
+            const result = document.getElementById('storage-result');
+            
+            try {
+                const stored = localStorage.getItem('campus_activities');
+                if (stored) {
+                    const activities = JSON.parse(stored);
+                    result.className = 'result success';
+                    result.innerHTML = `localStorage 状态:<br>
+                        数据存在: ✅<br>
+                        活动数量: ${activities.length}<br>
+                        数据大小: ${(stored.length / 1024).toFixed(2)} KB<br>
+                        最新活动: ${activities[0]?.title || '无'}<br>
+                        创建时间: ${activities[0]?.createdAt || '未知'}`;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `localStorage 状态:<br>
+                        数据存在: ❌<br>
+                        活动数量: 0<br>
+                        状态: 空的`;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `❌ 读取失败: ${error.message}`;
+            }
+        }
+
+        // 页面加载时自动执行一次
+        window.onload = function() {
+            simulateLoadActivities();
+        };
+    </script>
+</body>
+</html>

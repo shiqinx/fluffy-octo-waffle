@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清理缓存</title>
+</head>
+<body>
+    <h1>正在清理缓存...</h1>
+    <script>
+        // 清理所有相关的localStorage数据
+        localStorage.removeItem('campus_activities');
+        localStorage.removeItem('activity_detail_cache');
+        localStorage.removeItem('user_activities');
+        
+        console.log('缓存清理完成');
+        
+        // 显示清理结果
+        document.body.innerHTML = `
+            <h1>✅ 缓存清理完成</h1>
+            <p>已清理以下数据：</p>
+            <ul>
+                <li>campus_activities - 活动列表数据</li>
+                <li>activity_detail_cache - 活动详情缓存</li>
+                <li>user_activities - 用户活动数据</li>
+            </ul>
+            <p>现在可以重新访问应用，活动数据将恢复正常显示</p>
+            <p><a href="/">返回首页</a> | <a href="/activities">查看活动列表</a></p>
+        `;
+    </script>
+</body>
+</html>

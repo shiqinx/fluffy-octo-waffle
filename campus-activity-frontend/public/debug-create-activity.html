@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建活动调试测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #1989fa;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #1677ff;
+        }
+        .activity-item {
+            border: 1px solid #eee;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <h1>创建活动功能调试测试</h1>
+    
+    <div class="container">
+        <!-- 创建活动表单 -->
+        <div class="section">
+            <h2>创建新活动</h2>
+            <form id="createForm">
+                <div class="form-group">
+                    <label>活动标题:</label>
+                    <input type="text" id="title" value="测试活动 - 调试专用" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>活动类型:</label>
+                    <select id="type">
+                        <option value="sports">运动</option>
+                        <option value="study">学习</option>
+                        <option value="entertainment">娱乐</option>
+                        <option value="social">社交</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>活动描述:</label>
+                    <textarea id="description" rows="3">这是一个用于调试创建活动的测试活动</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>最大参与人数:</label>
+                    <input type="number" id="maxParticipants" value="20" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label>活动地点:</label>
+                    <input type="text" id="locationName" value="测试地点">
+                </div>
+                
+                <div class="form-group">
+                    <label>开始时间:</label>
+                    <input type="datetime-local" id="startTime">
+                </div>
+                
+                <div class="form-group">
+                    <label>结束时间:</label>
+                    <input type="datetime-local" id="endTime">
+                </div>
+                
+                <button type="submit">创建活动</button>
+                <button type="button" onclick="loadActivities()">刷新活动列表</button>
+            </form>
+            
+            <div id="createLog" class="log"></div>
+        </div>
+        
+        <!-- 活动列表 -->
+        <div class="section">
+            <h2>当前活动列表</h2>
+            <div id="activityList"></div>
+            <div id="listLog" class="log"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入API函数
+        import { createActivity, getActivityList } from '/src/api/activity.js';
+        
+        // 全局变量
+        let activities = [];
+        
+        // 日志函数
+        function log(elementId, message, type = 'info') {
+            const logElement = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logElement.appendChild(logEntry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // 设置默认时间
+        function setDefaultTimes() {
+            const now = new Date();
+            const startTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 明天
+            const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2小时后
+            
+            document.getElementById('startTime').value = startTime.toISOString().slice(0, 16);
+            document.getElementById('endTime').value = endTime.toISOString().slice(0, 16);
+        }
+        
+        // 创建活动
+        window.createActivityForm = async function(formData) {
+            try {
+                log('createLog', '开始创建活动...', 'info');
+                
+                const activityData = {
+                    title: formData.get('title'),
+                    type: formData.get('type'),
+                    description: formData.get('description'),
+                    maxParticipants: parseInt(formData.get('maxParticipants')),
+                    locationName: formData.get('locationName'),
+                    startTime: new Date(formData.get('startTime')).toISOString(),
+                    endTime: new Date(formData.get('endTime')).toISOString(),
+                    needApproval: false
+                };
+                
+                log('createLog', `活动数据: ${JSON.stringify(activityData, null, 2)}`, 'info');
+                
+                const response = await createActivity(activityData);
+                
+                log('createLog', `创建响应: ${JSON.stringify(response, null, 2)}`, 'success');
+                
+                if (response && response.success) {
+                    log('createLog', `活动创建成功！ID: ${response.data.id}`, 'success');
+                    // 等待一秒后刷新列表
+                    setTimeout(() => {
+                        loadActivities();
+                    }, 1000);
+                } else {
+                    log('createLog', `创建失败: ${response?.message || '未知错误'}`, 'error');
+                }
+                
+            } catch (error) {
+                log('createLog', `创建异常: ${error.message}`, 'error');
+                console.error('创建活动异常:', error);
+            }
+        };
+        
+        // 加载活动列表
+        window.loadActivities = async function() {
+            try {
+                log('listLog', '开始加载活动列表...', 'info');
+                
+                const response = await getActivityList({
+                    page: 1,
+                    pageSize: 50
+                });
+                
+                log('listLog', `列表响应: ${JSON.stringify(response, null, 2)}`, 'info');
+                
+                if (response && response.success) {
+                    activities = response.data?.list || response.data?.items || response.data || [];
+                    log('listLog', `成功加载 ${activities.length} 个活动`, 'success');
+                    displayActivities();
+                } else {
+                    log('listLog', `加载失败: ${response?.message || '未知错误'}`, 'error');
+                }
+                
+            } catch (error) {
+                log('listLog', `加载异常: ${error.message}`, 'error');
+                console.error('加载活动列表异常:', error);
+            }
+        };
+        
+        // 显示活动列表
+        function displayActivities() {
+            const listElement = document.getElementById('activityList');
+            
+            if (activities.length === 0) {
+                listElement.innerHTML = '<p>暂无活动</p>';
+                return;
+            }
+            
+            listElement.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <h3>${activity.title || '未命名活动'}</h3>
+                    <p><strong>类型:</strong> ${activity.type || '未知'}</p>
+                    <p><strong>描述:</strong> ${activity.description || '无描述'}</p>
+                    <p><strong>地点:</strong> ${activity.locationName || '未设置'}</p>
+                    <p><strong>时间:</strong> ${new Date(activity.startTime).toLocaleString()}</p>
+                    <p><strong>参与人数:</strong> ${activity.currentParticipants || 0}/${activity.maxParticipants || 0}</p>
+                    <p><strong>组织者:</strong> ${activity.organizer?.name || '未知'}</p>
+                    <p><strong>状态:</strong> ${activity.status || '未知'}</p>
+                    <p><strong>ID:</strong> ${activity.id}</p>
+                </div>
+            `).join('');
+        }
+        
+        // 表单提交处理
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            await createActivityForm(formData);
+        });
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            setDefaultTimes();
+            loadActivities();
+        });
+        
+        // 暴露函数到全局作用域
+        window.loadActivities = loadActivities;
+    </script>
+</body>
+</html>

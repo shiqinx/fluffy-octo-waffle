@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>活动详情页面测试</h1>
+    
+    <div class="test-item">
+        <h3>测试说明</h3>
+        <p>此页面用于测试活动详情加载功能是否正常工作。</p>
+        <ul>
+            <li>测试活动ID 1 (篮球友谊赛)</li>
+            <li>测试活动ID 2 (图书馆学习小组)</li>
+            <li>测试不存在的活动ID 999</li>
+        </ul>
+    </div>
+
+    <div class="test-item">
+        <h3>测试链接</h3>
+        <a href="http://localhost:3001/activity/1" target="_blank">活动详情 ID=1</a><br>
+        <a href="http://localhost:3001/activity/2" target="_blank">活动详情 ID=2</a><br>
+        <a href="http://localhost:3001/activity/999" target="_blank">活动详情 ID=999 (不存在)</a>
+    </div>
+
+    <div class="test-item">
+        <h3>修复内容</h3>
+        <p>✅ 修复了fetchActivityDetail函数中的ID类型匹配问题</p>
+        <p>✅ 修复了ActivityDetail.vue中loadActivity方法的ID处理</p>
+        <p>✅ 支持字符串和数字类型的ID比较</p>
+    </div>
+
+    <script>
+        console.log('活动详情测试页面已加载');
+        
+        // 测试不同的ID类型
+        const testIds = ['1', 1, '2', 2, '999', 999];
+        
+        testIds.forEach(id => {
+            console.log(`测试ID: ${id} (类型: ${typeof id})`);
+        });
+        
+        // 模拟fetchActivityDetail的ID比较逻辑
+        function testIdComparison(routeId, activityId) {
+            return activityId === routeId || 
+                   activityId == routeId || 
+                   String(activityId) === String(routeId);
+        }
+        
+        console.log('ID比较测试:');
+        console.log('字符串"1" vs 数字1:', testIdComparison('1', 1)); // 应该为true
+        console.log('字符串"999" vs 数字999:', testIdComparison('999', 999)); // 应该为true
+        console.log('字符串"1" vs 数字2:', testIdComparison('1', 2)); // 应该为false
+    </script>
+</body>
+</html>

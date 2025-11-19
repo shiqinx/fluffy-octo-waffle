@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路由跳转测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .activity-item:hover {
+            background: #e9ecef;
+        }
+        .activity-info {
+            flex: 1;
+        }
+        .activity-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .activity-id {
+            color: #666;
+            font-size: 12px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .log-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .debug-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 路由跳转测试工具</h1>
+        
+        <div class="debug-info">
+            <strong>测试目的：</strong>验证活动列表点击跳转到详情页时，ID参数是否正确传递
+        </div>
+
+        <div class="test-section">
+            <h3>📋 模拟活动列表</h3>
+            <div id="activityList"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 测试操作</h3>
+            <button class="test-button" onclick="testRouteGeneration()">测试路由生成</button>
+            <button class="test-button" onclick="testLocalStorageData()">检查localStorage数据</button>
+            <button class="test-button" onclick="clearTestData()">清理测试数据</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 测试日志</h3>
+            <div id="testLog" class="log-section"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟活动数据（与mock.js中的数据保持一致）
+        const mockActivities = [
+            {
+                id: 1,
+                title: "中医养生讲座",
+                type: "lecture",
+                location: { name: "教学楼A101" },
+                startTime: "2024-01-15T14:00:00",
+                currentParticipants: 25,
+                maxParticipants: 100
+            },
+            {
+                id: 2,
+                title: "摄影作品展览",
+                type: "exhibition",
+                location: { name: "艺术馆二楼" },
+                startTime: "2024-01-16T10:00:00",
+                currentParticipants: 30,
+                maxParticipants: 80
+            },
+            {
+                id: 3,
+                title: "编程马拉松大赛",
+                type: "competition",
+                location: { name: "计算机实验室" },
+                startTime: "2024-01-17T09:00:00",
+                currentParticipants: 15,
+                maxParticipants: 50
+            },
+            {
+                id: 4,
+                title: "篮球友谊赛",
+                type: "sports",
+                location: { name: "体育馆" },
+                startTime: "2024-01-18T16:00:00",
+                currentParticipants: 20,
+                maxParticipants: 40
+            },
+            {
+                id: 5,
+                title: "校园音乐节",
+                type: "entertainment",
+                location: { name: "大礼堂" },
+                startTime: "2024-01-19T19:00:00",
+                currentParticipants: 150,
+                maxParticipants: 300
+            },
+            {
+                id: 6,
+                title: "图书馆学习小组",
+                type: "study",
+                location: { name: "图书馆三楼" },
+                startTime: "2024-01-20T14:00:00",
+                currentParticipants: 12,
+                maxParticipants: 25
+            }
+        ];
+
+        let testLog = [];
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            testLog.push(`[${timestamp}] ${message}`);
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            document.getElementById('testLog').textContent = testLog.join('\n');
+        }
+
+        function renderActivityList() {
+            const listContainer = document.getElementById('activityList');
+            listContainer.innerHTML = '';
+
+            mockActivities.forEach(activity => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                item.innerHTML = `
+                    <div class="activity-info">
+                        <div class="activity-title">${activity.title}</div>
+                        <div class="activity-id">ID: ${activity.id}</div>
+                    </div>
+                    <button class="test-button" onclick="simulateClick(${activity.id}, '${activity.title}')">
+                        测试跳转
+                    </button>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function simulateClick(activityId, activityTitle) {
+            log(`👆 模拟点击活动: ${activityTitle} (ID: ${activityId})`);
+            
+            // 模拟路由生成
+            const routePath = `/activities/${activityId}`;
+            log(`🛣️ 生成路由路径: ${routePath}`);
+            
+            // 模拟路由参数解析
+            const params = extractRouteParams(routePath);
+            log(`📋 解析路由参数: ${JSON.stringify(params)}`);
+            
+            // 模拟API调用
+            simulateApiCall(params.id);
+        }
+
+        function extractRouteParams(routePath) {
+            const match = routePath.match(/\/activities\/(\d+)/);
+            return match ? { id: match[1] } : null;
+        }
+
+        function simulateApiCall(activityId) {
+            log(`🌐 模拟API调用: getActivityDetail(${activityId})`);
+            
+            // 查找对应的活动数据
+            const activity = mockActivities.find(a => a.id == activityId);
+            
+            if (activity) {
+                log(`✅ 找到活动数据: ${activity.title} (ID: ${activity.id})`);
+                log(`📊 活动详情: ${JSON.stringify(activity, null, 2)}`);
+            } else {
+                log(`❌ 未找到ID为 ${activityId} 的活动数据`);
+            }
+        }
+
+        function testRouteGeneration() {
+            log('🧪 开始测试路由生成...');
+            
+            mockActivities.forEach(activity => {
+                const routePath = `/activities/${activity.id}`;
+                const params = extractRouteParams(routePath);
+                const isValid = params && params.id == activity.id;
+                
+                log(`${isValid ? '✅' : '❌'} 活动: ${activity.title} -> 路由: ${routePath} -> 参数ID: ${params?.id}`);
+            });
+        }
+
+        function testLocalStorageData() {
+            log('🔍 检查localStorage中的活动数据...');
+            
+            const keys = ['campus_activities', 'activity_detail_cache', 'user_activities'];
+            
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        log(`📦 ${key}: ${JSON.stringify(parsed, null, 2)}`);
+                    } catch (e) {
+                        log(`❌ ${key}: 数据解析失败 - ${e.message}`);
+                    }
+                } else {
+                    log(`📭 ${key}: 无数据`);
+                }
+            });
+        }
+
+        function clearTestData() {
+            log('🗑️ 清理测试数据...');
+            
+            const keys = ['campus_activities', 'activity_detail_cache', 'user_activities'];
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+                log(`🗑️ 已清理: ${key}`);
+            });
+            
+            testLog = [];
+            updateLogDisplay();
+            log('📝 测试日志已清空');
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 路由跳转测试工具初始化完成');
+            renderActivityList();
+            log('📋 活动列表已渲染');
+        });
+    </script>
+</body>
+</html>

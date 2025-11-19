@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动创建修复验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .activity-list {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            background: white;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 活动创建修复验证</h1>
+    
+    <div class="container">
+        <h2>📊 当前状态</h2>
+        <div id="current-status"></div>
+        <button onclick="checkCurrentStatus()">🔄 检查状态</button>
+    </div>
+
+    <div class="container">
+        <h2>🧪 创建测试活动</h2>
+        <div id="test-status"></div>
+        <button onclick="createTestActivity()">🚀 创建测试活动</button>
+        <button onclick="clearAllActivities()">🗑️ 清空所有活动</button>
+    </div>
+
+    <div class="container">
+        <h2>📋 活动列表</h2>
+        <div id="activity-list" class="activity-list"></div>
+        <button onclick="refreshActivityList()">🔄 刷新列表</button>
+    </div>
+
+    <div class="container">
+        <h2>📝 操作日志</h2>
+        <div id="operation-log" class="log"></div>
+        <button onclick="clearLog()">🗑️ 清空日志</button>
+    </div>
+
+    <script>
+        // 日志系统
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('operation-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666">[${timestamp}]</span> <span style="color: ${getTypeColor(type)}">${message}</span>`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function getTypeColor(type) {
+            const colors = {
+                'info': '#007bff',
+                'success': '#28a745',
+                'warning': '#ffc107',
+                'error': '#dc3545'
+            };
+            return colors[type] || '#007bff';
+        }
+
+        // 检查当前状态
+        function checkCurrentStatus() {
+            log('检查当前状态...', 'info');
+            
+            const campusActivities = localStorage.getItem('campus_activities');
+            const activities = localStorage.getItem('activities');
+            
+            let statusHtml = '';
+            
+            if (campusActivities) {
+                const parsed = JSON.parse(campusActivities);
+                statusHtml += `<div class="status success">✅ campus_activities: ${parsed.length} 个活动</div>`;
+                log(`campus_activities包含 ${parsed.length} 个活动`, 'success');
+            } else {
+                statusHtml += `<div class="status warning">⚠️ campus_activities: 无数据</div>`;
+                log('campus_activities无数据', 'warning');
+            }
+            
+            if (activities) {
+                const parsed = JSON.parse(activities);
+                statusHtml += `<div class="status info">ℹ️ activities: ${parsed.length} 个活动</div>`;
+                log(`activities包含 ${parsed.length} 个活动`, 'info');
+            } else {
+                statusHtml += `<div class="status info">ℹ️ activities: 无数据</div>`;
+                log('activities无数据', 'info');
+            }
+            
+            document.getElementById('current-status').innerHTML = statusHtml;
+        }
+
+        // 创建测试活动
+        function createTestActivity() {
+            log('开始创建测试活动...', 'info');
+            
+            const testActivity = {
+                id: Date.now(),
+                title: '修复验证测试活动 ' + new Date().toLocaleTimeString(),
+                type: 'test',
+                category: 'test',
+                locationName: '测试地点',
+                description: '这是一个用于验证修复效果的测试活动',
+                startTime: new Date(Date.now() + 3600000).toISOString(),
+                endTime: new Date(Date.now() + 7200000).toISOString(),
+                currentParticipants: 1,
+                maxParticipants: 10,
+                organizer: { id: 1, name: '测试用户', creditScore: 100 },
+                distance: 0,
+                isEnrolled: false,
+                status: 'open',
+                createdAt: new Date().toISOString()
+            };
+            
+            try {
+                // 获取现有活动
+                let activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                
+                // 添加新活动到开头
+                activities.unshift(testActivity);
+                
+                // 保存到localStorage（使用正确的key）
+                localStorage.setItem('campus_activities', JSON.stringify(activities));
+                
+                document.getElementById('test-status').innerHTML = '<div class="status success">✅ 测试活动创建成功</div>';
+                log(`测试活动创建成功: ${testActivity.title}`, 'success');
+                
+                // 刷新活动列表显示
+                refreshActivityList();
+                
+            } catch (error) {
+                document.getElementById('test-status').innerHTML = '<div class="status error">❌ 测试活动创建失败</div>';
+                log(`测试活动创建失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 清空所有活动
+        function clearAllActivities() {
+            log('清空所有活动数据...', 'info');
+            
+            try {
+                localStorage.removeItem('campus_activities');
+                localStorage.removeItem('activities');
+                
+                document.getElementById('test-status').innerHTML = '<div class="status success">✅ 活动数据已清空</div>';
+                log('活动数据已清空', 'success');
+                
+                // 刷新活动列表显示
+                refreshActivityList();
+                
+            } catch (error) {
+                document.getElementById('test-status').innerHTML = '<div class="status error">❌ 清空失败</div>';
+                log(`清空失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 刷新活动列表
+        function refreshActivityList() {
+            log('刷新活动列表...', 'info');
+            
+            try {
+                const activities = JSON.parse(localStorage.getItem('campus_activities') || '[]');
+                
+                let listHtml = '';
+                if (activities.length === 0) {
+                    listHtml = '<div style="text-align: center; color: #666; padding: 20px;">暂无活动</div>';
+                } else {
+                    activities.forEach(activity => {
+                        listHtml += `
+                            <div class="activity-item">
+                                <strong>${activity.title}</strong><br>
+                                <small>ID: ${activity.id} | 类型: ${activity.type || activity.category} | 地点: ${activity.locationName}</small>
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('activity-list').innerHTML = listHtml;
+                log(`活动列表已刷新，显示 ${activities.length} 个活动`, 'info');
+                
+            } catch (error) {
+                document.getElementById('activity-list').innerHTML = '<div style="color: red;">加载失败</div>';
+                log(`刷新活动列表失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 清空日志
+        function clearLog() {
+            document.getElementById('operation-log').innerHTML = '';
+            log('日志已清空', 'info');
+        }
+
+        // 页面加载时自动检查
+        document.addEventListener('DOMContentLoaded', function() {
+            log('活动创建修复验证工具已加载', 'info');
+            checkCurrentStatus();
+            refreshActivityList();
+        });
+    </script>
+</body>
+</html>

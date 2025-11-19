@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报名功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .test-link {
+            display: inline-block;
+            background: #1989fa;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 8px;
+            transition: background-color 0.3s;
+        }
+        .test-link:hover {
+            background: #1677ff;
+        }
+        .test-link.secondary {
+            background: #6c757d;
+        }
+        .test-link.secondary:hover {
+            background: #5a6268;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .status {
+            background: #e8f5e8;
+            border: 1px solid #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 报名功能测试页面</h1>
+    
+    <div class="test-section">
+        <h2>📋 测试说明</h2>
+        <div class="status">
+            <strong>修复内容：</strong>
+            <ul>
+                <li>✅ 修复了EnrollmentForm组件事件名称不匹配问题（enroll → submit）</li>
+                <li>✅ 修复了handleEnrollment方法未使用表单数据的问题</li>
+                <li>✅ 添加了showToast导入以提供更好的用户体验</li>
+                <li>✅ 报名数据现在包含学号、专业、年级等完整信息</li>
+            </ul>
+        </div>
+        <div class="warning">
+            <strong>测试步骤：</strong>
+            <ol>
+                <li>点击下面的活动链接进入活动详情页面</li>
+                <li>确保已登录（用户ID不能是组织者ID）</li>
+                <li>点击"立即报名"按钮</li>
+                <li>填写报名表单（学号、姓名、专业、年级）</li>
+                <li>提交表单，检查是否显示"报名成功！等待组织者审核"</li>
+                <li>检查页面状态是否变为"审核中"</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎪 活动详情页面测试</h2>
+        <p>点击下面的链接测试不同活动的报名功能：</p>
+        
+        <a href="http://localhost:3001/activity/1" class="test-link" target="_blank">
+            🏀 篮球友谊赛 (ID: 1)
+        </a>
+        <a href="http://localhost:3001/activity/2" class="test-link" target="_blank">
+            📚 图书馆学习小组 (ID: 2)
+        </a>
+        <a href="http://localhost:3001/activity/3" class="test-link secondary" target="_blank">
+            🎨 其他活动 (ID: 3)
+        </a>
+    </div>
+
+    <div class="test-section">
+        <h2>👤 用户角色测试</h2>
+        <p>不同用户ID的角色说明：</p>
+        <ul>
+            <li><strong>用户ID = 1：</strong> 篮球友谊赛的组织者（无法报名自己的活动）</li>
+            <li><strong>用户ID = 3：</strong> 图书馆学习小组的组织者（无法报名自己的活动）</li>
+            <li><strong>其他用户ID：</strong> 普通参与者（可以报名活动）</li>
+        </ul>
+        <div class="warning">
+            <strong>注意：</strong> 如果当前登录用户是活动组织者，将看不到报名按钮，而是会显示管理功能。
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 技术细节</h2>
+        <h3>修复的问题：</h3>
+        <ol>
+            <li><strong>事件名称不匹配：</strong> EnrollmentForm组件触发的是'enroll'事件，但ActivityDetail.vue监听的是'submit'事件</li>
+            <li><strong>数据未使用：</strong> handleEnrollment方法没有使用传入的表单数据</li>
+            <li><strong>提示方式：</strong> 使用alert而不是showToast，用户体验较差</li>
+        </ol>
+        
+        <h3>报名流程：</h3>
+        <ol>
+            <li>用户点击"立即报名"按钮</li>
+            <li>显示EnrollmentForm表单组件</li>
+            <li>用户填写报名信息并提交</li>
+            <li>触发'submit'事件，传递表单数据</li>
+            <li>handleEnrollment方法处理报名，创建报名记录</li>
+            <li>更新活动状态，显示成功提示</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 预期结果</h2>
+        <div class="status">
+            <strong>成功标准：</strong>
+            <ul>
+                <li>✅ 报名表单能正常显示和提交</li>
+                <li>✅ 报名数据包含完整的用户信息</li>
+                <li>✅ 报名成功后显示友好的成功提示</li>
+                <li>✅ 页面状态正确更新为"审核中"</li>
+                <li>✅ 可以取消报名</li>
+                <li>✅ 组织者可以审核报名</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 添加一些交互功能
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('报名功能测试页面已加载');
+            
+            // 检查链接是否可访问
+            const links = document.querySelectorAll('.test-link');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    console.log('测试链接:', this.href);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

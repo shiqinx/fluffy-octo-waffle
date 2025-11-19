@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        input { margin: 5px; padding: 5px; }
+        button { padding: 10px 15px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 登录功能调试</h1>
+    
+    <div class="test-section">
+        <h2>直接测试登录API</h2>
+        <input type="text" id="studentId" value="20210001" placeholder="学号">
+        <input type="password" id="password" value="123456" placeholder="密码">
+        <button onclick="testDirectLogin()">测试登录</button>
+        <div id="directResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试验证函数</h2>
+        <button onclick="testValidation()">测试参数验证</button>
+        <div id="validationResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试Mock数据</h2>
+        <button onclick="testMockLogin()">测试Mock登录</button>
+        <div id="mockResult"></div>
+    </div>
+
+    <script type="module">
+        // 导入需要的模块
+        import { validateLoginParams } from './src/utils/validation.js'
+        import { login } from './src/api/auth.js'
+        
+        window.testDirectLogin = async function() {
+            const studentId = document.getElementById('studentId').value
+            const password = document.getElementById('password').value
+            const resultDiv = document.getElementById('directResult')
+            
+            resultDiv.innerHTML = '<div class="result">测试中...</div>'
+            
+            try {
+                console.log('🔐 开始测试登录:', { studentId, password })
+                
+                const result = await login({ studentId, password })
+                console.log('✅ 登录结果:', result)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>登录成功!</strong><br>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ 登录失败:', error)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>登录失败!</strong><br>
+                    <pre>${error.message || error}</pre>
+                </div>`
+            }
+        }
+        
+        window.testValidation = async function() {
+            const studentId = document.getElementById('studentId').value
+            const password = document.getElementById('password').value
+            const resultDiv = document.getElementById('validationResult')
+            
+            resultDiv.innerHTML = '<div class="result">验证中...</div>'
+            
+            try {
+                console.log('🔍 开始验证参数:', { studentId, password })
+                
+                const result = await validateLoginParams({ studentId, password })
+                console.log('✅ 验证结果:', result)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>验证成功!</strong><br>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ 验证失败:', error)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>验证失败!</strong><br>
+                    <pre>${error.message || error}</pre>
+                </div>`
+            }
+        }
+        
+        window.testMockLogin = async function() {
+            const resultDiv = document.getElementById('mockResult')
+            
+            resultDiv.innerHTML = '<div class="result">测试Mock...</div>'
+            
+            try {
+                // 直接导入mock函数测试
+                const { mockLogin } = await import('./src/api/mock.js')
+                
+                const mockRequest = {
+                    userId: "20210001",
+                    userPassword: "123456",
+                    rememberMe: false
+                }
+                
+                console.log('🎭 测试Mock登录:', mockRequest)
+                
+                const result = await mockLogin(mockRequest)
+                console.log('✅ Mock结果:', result)
+                
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>Mock测试成功!</strong><br>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                </div>`
+            } catch (error) {
+                console.error('❌ Mock测试失败:', error)
+                
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>Mock测试失败!</strong><br>
+                    <pre>${error.message || error}</pre>
+                </div>`
+            }
+        }
+        
+        // 页面加载时显示环境信息
+        console.log('🌍 环境信息:', {
+            VITE_USE_MOCK: import.meta.env.VITE_USE_MOCK,
+            VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
+        })
+    </script>
+</body>
+</html>
