@@ -28,14 +28,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         log.info("=== 配置Spring Security ===");
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf ->csrf.disable())
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.disable()) // 允许H2控制台iframe嵌入
                 )
-                /*.authorizeHttpRequests(authz -> {
-                    authz.anyRequest().permitAll();  // 🔥 临时允许所有请求
-                    log.info("=== 临时开放所有请求权限 ===");
-                });*/
 
                 .authorizeHttpRequests(authz -> authz
                         // 放行H2控制台相关路径
@@ -64,6 +60,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        log.info("🛡️ Spring Security配置完成");
         return http.build();
     }
 }

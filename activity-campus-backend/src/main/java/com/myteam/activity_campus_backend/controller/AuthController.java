@@ -1,11 +1,14 @@
 package com.myteam.activity_campus_backend.controller;
 
+import com.myteam.activity_campus_backend.config.JwtAuthenticationFilter;
 import com.myteam.activity_campus_backend.dto.response.ErrorResponse;
 import com.myteam.activity_campus_backend.dto.response.RefreshTokenResponse;
 import com.myteam.activity_campus_backend.dto.response.TokenCheckResponse;
 import com.myteam.activity_campus_backend.util.JWTTokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,7 @@ public class AuthController {
     @Autowired
     private JWTTokenUtil jwtTokenUtil;
 
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     /**
      * 刷新令牌接口
      */
@@ -36,6 +40,7 @@ public class AuthController {
             @NotBlank(message = "Authorization header不能为空")
             String authorizationHeader) {
 
+        log.info("🔄 刷新令牌请求");
         try {
             String refreshToken = jwtTokenUtil.extractTokenFromHeader(authorizationHeader);
 
